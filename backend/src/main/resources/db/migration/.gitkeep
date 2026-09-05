@@ -1,0 +1,2 @@
+# Flyway migration location. Schema migrations (V<n>__<description>.sql) are
+# added with the features that need them; none exist yet.

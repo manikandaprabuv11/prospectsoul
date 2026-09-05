@@ -1,0 +1,15 @@
+# Test overrides. The datasource is supplied by Testcontainers via
+# @ServiceConnection, so only the settings that would otherwise reach out to
+# external infrastructure are pinned here.
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # jwk-set-uri takes precedence over issuer-uri and is resolved lazily,
+          # so the context loads without a running Keycloak.
+          jwk-set-uri: http://localhost:8081/realms/vyoog/protocol/openid-connect/certs
+
+  ai:
+    openai:
+      api-key: test-key-not-used

@@ -1,0 +1,124 @@
+# Local development infrastructure for ProspectSoul.
+#
+# Backend and frontend are run from the host (mvn spring-boot:run / npm run dev)
+# and reach these services on localhost. Containers reach each other by service
+# name on the prospectsoul network.
+#
+# Credentials come from .env (copy .env.example). They are development-only.
+
+name: prospectsoul
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: prospectsoul-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-prospectsoul}
+      POSTGRES_USER: ${POSTGRES_USER:-prospectsoul}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prospectsoul}
+      KEYCLOAK_DB: ${KEYCLOAK_DB:-keycloak}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-prospectsoul} -d ${POSTGRES_DB:-prospectsoul}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - prospectsoul
+
+  # Keycloak keeps its own schema in the same PostgreSQL instance, in a
+  # separate database created by the init script.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4
+    container_name: prospectsoul-keycloak
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm", "--http-port=8080"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KEYCLOAK_DB:-keycloak}
+      KC_DB_USERNAME: ${POSTGRES_USER:-prospectsoul}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-prospectsoul}
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      # Must match the URL the browser and the backend use, so that the issuer
+      # in issued tokens matches what the resource server validates against.
+      KC_HOSTNAME: http://localhost:${KEYCLOAK_PORT:-8081}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+    ports:
+      - "${KEYCLOAK_PORT:-8081}:8080"
+    volumes:
+      - ./docker/keycloak:/opt/keycloak/data/import:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # The image has no curl/wget; Keycloak exposes management probes on 9000.
+      test:
+        - CMD-SHELL
+        - "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"status\": \"UP\"' <&3"
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 45s
+    networks:
+      - prospectsoul
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: prospectsoul-minio
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-prospectsoul}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-prospectsoul}
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "mc ready local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - prospectsoul
+
+  # One-shot: creates the application bucket, then exits.
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    container_name: prospectsoul-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-prospectsoul}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-prospectsoul}
+      MINIO_BUCKET: ${MINIO_BUCKET:-prospectsoul}
+    entrypoint:
+      - sh
+      - -c
+      - |
+        mc alias set local http://minio:9000 "$$MINIO_ACCESS_KEY" "$$MINIO_SECRET_KEY" &&
+        mc mb --ignore-existing "local/$$MINIO_BUCKET" &&
+        echo "bucket $$MINIO_BUCKET ready"
+    restart: "no"
+    networks:
+      - prospectsoul
+
+volumes:
+  postgres-data:
+  minio-data:
+
+networks:
+  prospectsoul:
+    driver: bridge
