@@ -1,3 +1,0 @@
-# Changelog
-
-Not implemented yet.
