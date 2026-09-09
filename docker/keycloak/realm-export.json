@@ -8,9 +8,43 @@
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": true,
   "editUsernameAllowed": false,
-  "accessTokenLifespan": 1800,
-  "ssoSessionIdleTimeout": 3600,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
   "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      {
+        "name": "PS_ANALYST",
+        "description": "Research Analyst — Imports files, resolves duplicates, runs AI research, verifies evidence, confirms qualifications",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "PS_SALES_LEAD",
+        "description": "Sales Lead — Reviews qualified pool, approves exports, overrides tiers with reason",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "PS_ADMIN",
+        "description": "Administrator — Configures ICP profiles, templates, reasons, caps, manages users and roles",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "PS_VIEWER",
+        "description": "Viewer — Read-only access to search, timelines, and reports",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "PS_COO",
+        "description": "COO — Operational dashboard, pipeline throughput, source analytics, data quality",
+        "composite": false,
+        "clientRole": false
+      }
+    ]
+  },
   "clients": [
     {
       "clientId": "prospectsoul-web",
@@ -65,21 +99,143 @@
   ],
   "users": [
     {
-      "username": "dev",
+      "id": "a1000000-0000-0000-0000-000000000001",
+      "username": "analyst",
       "enabled": true,
       "emailVerified": true,
-      "email": "dev@example.invalid",
-      "firstName": "Dev",
-      "lastName": "User",
+      "email": "priya@vyoog.com",
+      "firstName": "Priya",
+      "lastName": "Sharma",
       "credentials": [
         {
           "type": "password",
-          "value": "dev",
+          "value": "analyst123",
           "temporary": false
         }
       ],
       "realmRoles": [
-        "default-roles-vyoog"
+        "default-roles-vyoog",
+        "PS_ANALYST"
+      ]
+    },
+    {
+      "id": "a1000000-0000-0000-0000-000000000002",
+      "username": "analyst2",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "deepa@vyoog.com",
+      "firstName": "Deepa",
+      "lastName": "Krishnan",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "analyst123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-vyoog",
+        "PS_ANALYST"
+      ]
+    },
+    {
+      "id": "b2000000-0000-0000-0000-000000000001",
+      "username": "saleslead",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "kumar@vyoog.com",
+      "firstName": "Kumar",
+      "lastName": "Rajan",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "saleslead123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-vyoog",
+        "PS_SALES_LEAD"
+      ]
+    },
+    {
+      "id": "c3000000-0000-0000-0000-000000000001",
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "ravi@vyoog.com",
+      "firstName": "Ravi",
+      "lastName": "Chandran",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-vyoog",
+        "PS_ADMIN"
+      ]
+    },
+    {
+      "id": "d4000000-0000-0000-0000-000000000001",
+      "username": "viewer",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "meera@vyoog.com",
+      "firstName": "Meera",
+      "lastName": "Natarajan",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "viewer123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-vyoog",
+        "PS_VIEWER"
+      ]
+    },
+    {
+      "id": "d4000000-0000-0000-0000-000000000002",
+      "username": "viewer2",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "arun@vyoog.com",
+      "firstName": "Arun",
+      "lastName": "Prakash",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "viewer123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-vyoog",
+        "PS_VIEWER"
+      ]
+    },
+    {
+      "id": "e5000000-0000-0000-0000-000000000001",
+      "username": "coo",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "senthil@vyoog.com",
+      "firstName": "Senthil",
+      "lastName": "Kumar",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "coo123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-vyoog",
+        "PS_COO"
       ]
     }
   ]

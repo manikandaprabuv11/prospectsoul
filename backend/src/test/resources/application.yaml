@@ -2,6 +2,8 @@
 # @ServiceConnection, so only the settings that would otherwise reach out to
 # external infrastructure are pinned here.
 spring:
+  profiles:
+    active: test
   security:
     oauth2:
       resourceserver:
@@ -13,3 +15,12 @@ spring:
   ai:
     openai:
       api-key: test-key-not-used
+
+keycloak:
+  admin:
+    server-url: http://localhost:8081
+    realm: master
+    client-id: admin-cli
+    username: admin
+    password: admin
+  target-realm: vyoog

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProspectSoul — Login Design Template</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,700&display=swap" rel="stylesheet">
+<style>
+/* ======================================
+   DESIGN TOKENS — extract these for React
+   ====================================== */
+:root {
+  /* Brand */
+  --ps-navy:       #162032;
+  --ps-navy-mid:   #1e2d44;
+  --ps-navy-light: #263a56;
+  --ps-copper:     #c27a3e;
+  --ps-copper-glow:#d4944f;
+  --ps-copper-soft:#f8ead5;
+
+  /* Neutrals */
+  --ps-white:      #ffffff;
+  --ps-off-white:  #f7f8f6;
+  --ps-gray-100:   #f0f1ef;
+  --ps-gray-200:   #e2e4df;
+  --ps-gray-400:   #9ea2a0;
+  --ps-gray-600:   #5e6360;
+  --ps-gray-800:   #2c302e;
+  --ps-black:      #111413;
+
+  /* Semantic */
+  --ps-success:    #2d8a5e;
+  --ps-error:      #c93b3b;
+  --ps-error-soft: #fce8e8;
+  --ps-focus:      rgba(194,122,62,0.4);
+
+  /* Type */
+  --font-display: 'Fraunces', serif;
+  --font-body:    'Inter', sans-serif;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* Shadows */
+  --shadow-field: 0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px var(--ps-gray-200);
+  --shadow-field-focus: 0 0 0 3px var(--ps-focus), 0 0 0 1px var(--ps-copper);
+  --shadow-btn: 0 1px 3px rgba(0,0,0,0.1), 0 2px 8px rgba(194,122,62,0.15);
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font-body);
+  color: var(--ps-gray-800);
+  background: var(--ps-off-white);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ======================================
+   LAYOUT — full viewport split
+   ====================================== */
+.login-shell {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+
+/* ======================================
+   LEFT PANEL — brand
+   ====================================== */
+.brand-panel {
+  background: var(--ps-navy);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 48px;
+  position: relative;
+  overflow: hidden;
+}
+.brand-panel::after {
+  content: '';
+  position: absolute;
+  bottom: -140px;
+  right: -100px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--ps-navy-light) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.logo-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--ps-copper) 0%, var(--ps-copper-glow) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.logo-mark svg { width: 22px; height: 22px; }
+.logo-text {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ps-white);
+  letter-spacing: -0.02em;
+}
+
+.brand-hero {
+  max-width: 380px;
+}
+.brand-hero h1 {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--ps-white);
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+}
+.brand-hero p {
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--ps-gray-400);
+  max-width: 340px;
+}
+
+.brand-stats {
+  display: flex;
+  gap: 40px;
+}
+.stat-item .stat-num {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--ps-copper);
+}
+.stat-item .stat-label {
+  font-size: 13px;
+  color: var(--ps-gray-400);
+  margin-top: 2px;
+}
+
+/* ======================================
+   RIGHT PANEL — form
+   ====================================== */
+.form-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+}
+.form-container {
+  width: 100%;
+  max-width: 400px;
+}
+
+.form-header {
+  margin-bottom: 40px;
+}
+.form-header h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--ps-black);
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+.form-header p {
+  color: var(--ps-gray-600);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Fields */
+.field-group {
+  margin-bottom: 22px;
+}
+.field-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ps-gray-800);
+  margin-bottom: 7px;
+}
+.field-group input[type="text"],
+.field-group input[type="email"],
+.field-group input[type="password"] {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--ps-black);
+  background: var(--ps-white);
+  border: none;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-field);
+  transition: box-shadow 0.15s ease;
+  outline: none;
+}
+.field-group input:focus {
+  box-shadow: var(--shadow-field-focus);
+}
+.field-group input::placeholder {
+  color: var(--ps-gray-400);
+}
+
+/* Password field with toggle */
+.password-wrap {
+  position: relative;
+}
+.password-wrap input {
+  padding-right: 48px;
+}
+.password-toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ps-gray-400);
+  display: flex;
+  padding: 4px;
+}
+.password-toggle:hover { color: var(--ps-gray-600); }
+
+/* Error state */
+.field-group.has-error input {
+  box-shadow: 0 0 0 1px var(--ps-error), 0 0 0 3px rgba(201,59,59,0.15);
+}
+.field-error {
+  font-size: 13px;
+  color: var(--ps-error);
+  margin-top: 6px;
+}
+
+/* Inline error banner */
+.login-error {
+  background: var(--ps-error-soft);
+  border: 1px solid rgba(201,59,59,0.2);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--ps-error);
+}
+.login-error svg { flex-shrink: 0; }
+
+/* Options row */
+.options-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ps-gray-600);
+}
+.remember-me input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  accent-color: var(--ps-copper);
+  cursor: pointer;
+}
+.forgot-link {
+  font-size: 14px;
+  color: var(--ps-copper);
+  text-decoration: none;
+  font-weight: 500;
+}
+.forgot-link:hover {
+  color: var(--ps-copper-glow);
+  text-decoration: underline;
+}
+
+/* Submit button */
+.btn-login {
+  width: 100%;
+  height: 50px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ps-white);
+  background: linear-gradient(135deg, var(--ps-copper) 0%, var(--ps-copper-glow) 100%);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  box-shadow: var(--shadow-btn);
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+}
+.btn-login:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 12px rgba(194,122,62,0.3);
+}
+.btn-login:active {
+  transform: translateY(0);
+}
+.btn-login:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Loading spinner in button */
+.btn-login .spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Footer */
+.form-footer {
+  margin-top: 36px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ps-gray-400);
+}
+
+/* ======================================
+   RESPONSIVE — mobile
+   ====================================== */
+@media (max-width: 960px) {
+  .login-shell {
+    grid-template-columns: 1fr;
+  }
+  .brand-panel {
+    display: none;
+  }
+  .form-panel {
+    padding: 32px 24px;
+  }
+  .form-container {
+    max-width: 420px;
+  }
+  /* Show a minimal brand header on mobile */
+  .mobile-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+  .mobile-brand .logo-mark { width: 36px; height: 36px; }
+  .mobile-brand .logo-text { font-size: 18px; color: var(--ps-black); }
+}
+@media (min-width: 961px) {
+  .mobile-brand { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="login-shell">
+  <!-- LEFT: Brand panel -->
+  <div class="brand-panel">
+    <div class="logo-row">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="logo-text">ProspectSoul</span>
+    </div>
+
+    <div class="brand-hero">
+      <h1>Your company intelligence starts here</h1>
+      <p>One record per company. Every research decision tracked. Every qualification backed by evidence. No prospect ever re-researched from zero.</p>
+    </div>
+
+    <div class="brand-stats">
+      <div class="stat-item">
+        <div class="stat-num">100k</div>
+        <div class="stat-label">companies tracked</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">6</div>
+        <div class="stat-label">pipeline stages</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">10s</div>
+        <div class="stat-label">to answer "seen before?"</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Form panel -->
+  <div class="form-panel">
+    <div class="form-container">
+      <div class="mobile-brand">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="logo-text" style="font-family:var(--font-display);font-weight:700;">ProspectSoul</span>
+      </div>
+
+      <div class="form-header">
+        <h2>Sign in</h2>
+        <p>Enter your credentials to access the platform</p>
+      </div>
+
+      <!-- Error state example (hidden by default, shown on auth failure) -->
+      <div class="login-error" style="display:flex;">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M9 5.5v4M9 12h.007" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Invalid username or password
+      </div>
+
+      <form>
+        <div class="field-group">
+          <label for="username">Username or email</label>
+          <input type="text" id="username" placeholder="priya@vyoog.com" autocomplete="username">
+        </div>
+
+        <div class="field-group">
+          <label for="password">Password</label>
+          <div class="password-wrap">
+            <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password">
+            <button type="button" class="password-toggle" tabindex="-1" aria-label="Show password">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M1.5 10s3-6 8.5-6 8.5 6 8.5 6-3 6-8.5 6-8.5-6-8.5-6z" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="options-row">
+          <label class="remember-me">
+            <input type="checkbox"> Remember me
+          </label>
+          <a href="/forgot-password" class="forgot-link">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn-login">Sign in</button>
+
+        <!-- Loading state: replace button text -->
+        <!-- <button type="submit" class="btn-login" disabled><span class="spinner"></span>Signing in…</button> -->
+      </form>
+
+      <div class="form-footer">
+        Vyoog Information Private Limited — internal use only
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

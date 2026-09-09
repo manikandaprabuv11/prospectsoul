@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProspectSoul — Access Control &amp; Authentication Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#171b21;
+    --muted:#5b6169;
+    --paper:#f5f6f4;
+    --raised:#ffffff;
+    --line:#dcded8;
+    --indigo:#2c3e6b;
+    --indigo-soft:#e7ebf3;
+    --teal:#2f7d74;
+    --teal-soft:#e4f0ee;
+    --amber:#a86a10;
+    --amber-soft:#faf1de;
+    --rust:#a33a2c;
+    --rust-soft:#f7e9e6;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:16px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{
+    font-family:'Source Serif 4', serif;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    color:var(--ink);
+  }
+  code, .mono{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.88em;
+  }
+  a{color:var(--indigo);}
+
+  /* ---------- shell ---------- */
+  .shell{
+    display:grid;
+    grid-template-columns:250px minmax(0,760px);
+    justify-content:center;
+    gap:64px;
+    max-width:1180px;
+    margin:0 auto;
+    padding:56px 32px 120px;
+  }
+  nav.toc{
+    position:sticky;
+    top:40px;
+    align-self:start;
+    font-size:14px;
+  }
+  nav.toc .eyebrow{
+    font-size:13px;
+    color:var(--muted);
+    margin-bottom:14px;
+  }
+  nav.toc ol{
+    list-style:none;
+    margin:0;
+    padding:0;
+    border-left:2px solid var(--line);
+  }
+  nav.toc li{margin:0;}
+  nav.toc a{
+    display:block;
+    padding:7px 0 7px 16px;
+    color:var(--muted);
+    text-decoration:none;
+    border-left:2px solid transparent;
+    margin-left:-2px;
+  }
+  nav.toc a:hover{color:var(--ink);border-left-color:var(--indigo);}
+
+  header.title{margin-bottom:52px;}
+  header.title .kicker{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:var(--indigo);
+    margin-bottom:10px;
+  }
+  header.title h1{
+    font-size:42px;
+    line-height:1.12;
+    margin:0 0 16px;
+  }
+  header.title p.dek{
+    font-size:18px;
+    color:var(--muted);
+    max-width:56ch;
+    margin:0;
+  }
+  header.title .meta{
+    display:flex;
+    gap:20px;
+    margin-top:28px;
+    padding-top:20px;
+    border-top:1px solid var(--line);
+    font-size:13.5px;
+    color:var(--muted);
+  }
+  header.title .meta strong{color:var(--ink); font-weight:600;}
+
+  section.doc-section{
+    margin-top:64px;
+    padding-top:8px;
+    scroll-margin-top:32px;
+  }
+  section.doc-section h2{
+    font-size:26px;
+    display:flex;
+    align-items:baseline;
+    gap:12px;
+    margin:0 0 6px;
+  }
+  section.doc-section h2 .num{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:15px;
+    font-weight:500;
+    color:var(--indigo);
+  }
+  section.doc-section > p.lede{
+    color:var(--muted);
+    font-size:16px;
+    margin:0 0 28px;
+    max-width:62ch;
+  }
+  h3{font-size:18px; margin:32px 0 12px;}
+  p{max-width:70ch;}
+
+  /* ---------- callouts ---------- */
+  .callout{
+    border-left:3px solid var(--indigo);
+    background:var(--indigo-soft);
+    padding:14px 18px;
+    border-radius:2px;
+    margin:20px 0;
+    font-size:14.5px;
+  }
+  .callout.invariant{border-left-color:var(--teal); background:var(--teal-soft);}
+  .callout.warn{border-left-color:var(--amber); background:var(--amber-soft);}
+  .callout.danger{border-left-color:var(--rust); background:var(--rust-soft);}
+  .callout .label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--muted);
+    display:block;
+    margin-bottom:4px;
+  }
+
+  /* ---------- tables ---------- */
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:20px 0 28px;
+    font-size:14.5px;
+  }
+  th,td{
+    text-align:left;
+    padding:10px 12px;
+    border-bottom:1px solid var(--line);
+    vertical-align:top;
+  }
+  thead th{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    font-weight:500;
+    color:var(--muted);
+    border-bottom:1px solid var(--ink);
+    padding-bottom:8px;
+  }
+  td.center, th.center{text-align:center;}
+  .grant{color:var(--teal); font-weight:600;}
+  .deny{color:var(--muted);}
+  tr:last-child td{border-bottom:none;}
+
+  /* ---------- code blocks ---------- */
+  pre{
+    background:#1c2028;
+    color:#e4e6e8;
+    padding:18px 20px;
+    border-radius:6px;
+    overflow-x:auto;
+    font-size:13.5px;
+    line-height:1.6;
+    margin:18px 0;
+  }
+  pre code{color:inherit; font-size:inherit;}
+  .tok-key{color:#9db4d9;}
+  .tok-str{color:#a8cf9e;}
+  .tok-com{color:#7d8390;}
+  .tok-tag{color:#e0a666;}
+
+  /* ---------- diagrams ---------- */
+  .diagram{
+    background:var(--raised);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:24px;
+    margin:20px 0 28px;
+  }
+  .diagram figcaption{
+    font-size:13px;
+    color:var(--muted);
+    margin-top:10px;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  svg text{font-family:'IBM Plex Sans', sans-serif;}
+  svg .mono-text{font-family:'IBM Plex Mono', monospace;}
+
+  /* ---------- misc ---------- */
+  ul.plain{padding-left:20px; margin:12px 0;}
+  ul.plain li{margin-bottom:6px;}
+  .divider{height:1px; background:var(--line); margin:56px 0 0;}
+  footer.doc-footer{
+    margin-top:80px;
+    padding-top:24px;
+    border-top:1px solid var(--line);
+    font-size:13px;
+    color:var(--muted);
+  }
+  .badge{
+    display:inline-block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    padding:2px 8px;
+    border-radius:3px;
+    background:var(--indigo-soft);
+    color:var(--indigo);
+  }
+  .badge.open{background:var(--amber-soft); color:var(--amber);}
+
+  @media (max-width: 900px){
+    .shell{grid-template-columns:1fr; padding:32px 20px 80px;}
+    nav.toc{position:static; border-bottom:1px solid var(--line); padding-bottom:24px; margin-bottom:8px;}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <nav class="toc">
+    <div class="eyebrow">Contents</div>
+    <ol>
+      <li><a href="#principles">1. Principles</a></li>
+      <li><a href="#idp">2. Identity provider architecture</a></li>
+      <li><a href="#roles">3. Roles &amp; capability matrix</a></li>
+      <li><a href="#authn">4. Authentication flow</a></li>
+      <li><a href="#authz">5. Request authorization flow</a></li>
+      <li><a href="#endpoints">6. API endpoint security contract</a></li>
+      <li><a href="#frontend">7. Frontend route &amp; action guards</a></li>
+      <li><a href="#errors">8. Error handling</a></li>
+      <li><a href="#audit">9. Audit trail integration</a></li>
+      <li><a href="#config">10. Configuration reference</a></li>
+      <li><a href="#testing">11. Testing requirements</a></li>
+      <li><a href="#open">12. Open items</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="title">
+      <div class="kicker">ProspectSoul · Technical Design Companion</div>
+      <h1>Access control &amp; authentication design</h1>
+      <p class="dek">A role-based access control system built on Keycloak OIDC: one realm, two clients, five roles, enforced at the server and mirrored — never substituted — in the UI.</p>
+      <div class="meta">
+        <span>Version <strong>1.0</strong></span>
+        <span>Companion to <strong>Technical Design Spec v1.0</strong></span>
+        <span>Status <strong>Draft for review</strong></span>
+      </div>
+    </header>
+
+    <section class="doc-section" id="principles">
+      <h2><span class="num">01</span> Principles</h2>
+      <p class="lede">Five rules govern every decision in this document. Where an implementation choice isn't obvious, resolve it against these first.</p>
+      <ul class="plain">
+        <li><strong>Authorization is a backend concern.</strong> The UI hides buttons a role can't use, but the API is the actual gate. A hidden button and a missing <code>@PreAuthorize</code> are not the same control.</li>
+        <li><strong>Roles are coarse by design.</strong> Five roles map to how the small internal team actually works today (PRD §2). Splitting roles further is a configuration change in Keycloak, not a code change.</li>
+        <li><strong>Every mutation is attributable.</strong> The actor in every audit row comes from the validated JWT, never from a client-supplied field.</li>
+        <li><strong>Tokens are ephemeral, sessions are not silently extended.</strong> Silent refresh keeps a logged-in analyst working; it does not paper over an expired or revoked session.</li>
+        <li><strong>The identity provider owns identity.</strong> ProspectSoul never stores passwords, never implements its own login form, and never re-implements MFA. Keycloak is the source of truth for who someone is; ProspectSoul only asks what they're allowed to do.</li>
+      </ul>
+    </section>
+
+    <section class="doc-section" id="idp">
+      <h2><span class="num">02</span> Identity provider architecture</h2>
+      <p class="lede">Keycloak is the single identity provider for ProspectSoul and every other Vyoog Spring Boot application. One realm, two OIDC clients, five realm roles.</p>
+
+      <table>
+        <thead><tr><th>Item</th><th>Value</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Realm</td><td class="mono">vyoog</td><td>Shared across Vyoog internal tools, not created per-product</td></tr>
+          <tr><td>SPA client</td><td class="mono">prospectsoul-web</td><td>Public client, Authorization Code + PKCE, no client secret</td></tr>
+          <tr><td>API client</td><td class="mono">prospectsoul-api</td><td>Bearer-only resource server, validates tokens issued for the realm</td></tr>
+          <tr><td>Roles</td><td class="mono">PS_ANALYST · PS_SALES_LEAD · PS_ADMIN · PS_VIEWER · PS_COO</td><td>Realm roles, present in <code class="mono">realm_access.roles</code> of the access token</td></tr>
+          <tr><td>Token lifetime</td><td>Short-lived access token + refresh token</td><td>Exact TTLs are a Keycloak realm setting, not an application constant</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout invariant">
+        <span class="label">Why bearer-only, not confidential</span>
+        The SPA can't keep a client secret safe in a browser, so <code class="mono">prospectsoul-web</code> is public and relies on PKCE. The API never accepts credentials directly — it only ever validates a token that Keycloak already issued.
+      </div>
+
+      <div class="callout warn">
+        <span class="label">Reserved, not active</span>
+        A service-to-service client-credentials grant is reserved on <code class="mono">prospectsoul-api</code> for the future <code class="mono">POST /api/companies/from-source</code> programmatic import endpoint (PRD §13 Item 1; Tech Spec §4.1). It is part of the identity design but must not be built or wired up until a real programmatic source exists — see Developer Guide §14.
+      </div>
+    </section>
+
+    <section class="doc-section" id="roles">
+      <h2><span class="num">03</span> Roles &amp; capability matrix</h2>
+      <p class="lede">Five roles, unchanged from the PRD. This table is the single source of truth for every <code>@PreAuthorize</code> annotation and every frontend route guard — implementations should reference it, not restate it with drift.</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Capability</th>
+            <th class="center">Analyst</th>
+            <th class="center">Sales Lead</th>
+            <th class="center">Admin</th>
+            <th class="center">Viewer</th>
+            <th class="center">COO</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Import, triage, research, verify, qualify</td>
+            <td class="center grant">✓</td><td class="center grant">✓</td><td class="center grant">✓</td>
+            <td class="center deny">—</td><td class="center deny">—</td>
+          </tr>
+          <tr>
+            <td>Tier override (mandatory reason)</td>
+            <td class="center grant">✓</td><td class="center grant">✓</td><td class="center grant">✓</td>
+            <td class="center deny">—</td><td class="center deny">—</td>
+          </tr>
+          <tr>
+            <td>Create export</td>
+            <td class="center deny">—</td><td class="center grant">✓</td><td class="center grant">✓</td>
+            <td class="center deny">—</td><td class="center deny">—</td>
+          </tr>
+          <tr>
+            <td>Configure ICP / templates / reasons / caps</td>
+            <td class="center deny">—</td><td class="center deny">—</td><td class="center grant">✓</td>
+            <td class="center deny">—</td><td class="center deny">—</td>
+          </tr>
+          <tr>
+            <td>Read / search / reports</td>
+            <td class="center grant">✓</td><td class="center grant">✓</td><td class="center grant">✓</td>
+            <td class="center grant">✓</td><td class="center grant">✓</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <span class="label">Governance note, carried from PRD §2</span>
+        The Research Analyst both resolves duplicates and confirms qualifications in v1 — acceptable at current team size. If the team grows, separating those duties is a role/permission change, not an architecture change.
+      </div>
+    </section>
+
+    <section class="doc-section" id="authn">
+      <h2><span class="num">04</span> Authentication flow</h2>
+      <p class="lede">The SPA never sees a password. It redirects to Keycloak, gets a code, exchanges it for tokens, and keeps the session alive with silent, invisible refreshes.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 700 380" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow1" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto">
+              <path d="M0,0 L7,3.5 L0,7 Z" fill="#5b6169"/>
+            </marker>
+          </defs>
+          <!-- lanes -->
+          <text x="60" y="26" font-size="13" font-weight="600" fill="#171b21">Browser (SPA)</text>
+          <line x1="60" y1="38" x2="60" y2="360" stroke="#dcded8" stroke-width="2"/>
+          <text x="350" y="26" font-size="13" font-weight="600" fill="#2c3e6b" text-anchor="middle">Keycloak (vyoog realm)</text>
+          <line x1="350" y1="38" x2="350" y2="360" stroke="#dcded8" stroke-width="2"/>
+          <text x="630" y="26" font-size="13" font-weight="600" fill="#171b21" text-anchor="end">ProspectSoul API</text>
+          <line x1="630" y1="38" x2="630" y2="360" stroke="#dcded8" stroke-width="2"/>
+
+          <!-- step 1 -->
+          <line x1="60" y1="60" x2="350" y2="60" stroke="#5b6169" stroke-width="1.4" marker-end="url(#arrow1)"/>
+          <text x="205" y="52" font-size="12" text-anchor="middle" fill="#171b21">redirect + PKCE code_challenge</text>
+
+          <!-- step 2 -->
+          <rect x="300" y="76" width="100" height="26" rx="3" fill="#e7ebf3"/>
+          <text x="350" y="93" font-size="11.5" text-anchor="middle" fill="#2c3e6b" class="mono-text">login form</text>
+
+          <!-- step 3 -->
+          <line x1="350" y1="116" x2="60" y2="116" stroke="#5b6169" stroke-width="1.4" marker-end="url(#arrow1)"/>
+          <text x="205" y="108" font-size="12" text-anchor="middle" fill="#171b21">redirect back with authorization code</text>
+
+          <!-- step 4 -->
+          <line x1="60" y1="150" x2="350" y2="150" stroke="#5b6169" stroke-width="1.4" marker-end="url(#arrow1)"/>
+          <text x="205" y="142" font-size="12" text-anchor="middle" fill="#171b21">token exchange: code + code_verifier</text>
+
+          <!-- step 5 -->
+          <line x1="350" y1="184" x2="60" y2="184" stroke="#2f7d74" stroke-width="1.4" marker-end="url(#arrow1)"/>
+          <text x="205" y="176" font-size="12" text-anchor="middle" fill="#2f7d74">access token + refresh token (JWT)</text>
+
+          <rect x="20" y="200" width="220" height="30" rx="3" fill="#e4f0ee"/>
+          <text x="130" y="219" font-size="11.5" text-anchor="middle" fill="#2f7d74" class="mono-text">tokens held in memory only</text>
+
+          <!-- step 6 -->
+          <line x1="60" y1="252" x2="630" y2="252" stroke="#5b6169" stroke-width="1.4" marker-end="url(#arrow1)"/>
+          <text x="345" y="244" font-size="12" text-anchor="middle" fill="#171b21">API request, header: Authorization: Bearer &lt;token&gt;</text>
+
+          <line x1="630" y1="286" x2="60" y2="286" stroke="#5b6169" stroke-width="1.4" marker-end="url(#arrow1)"/>
+          <text x="345" y="278" font-size="12" text-anchor="middle" fill="#171b21">200 / 403 (see §5)</text>
+
+          <!-- step 7 silent refresh -->
+          <rect x="270" y="308" width="160" height="30" rx="3" fill="#faf1de"/>
+          <text x="350" y="327" font-size="11.5" text-anchor="middle" fill="#a86a10" class="mono-text">hidden iframe, before expiry</text>
+          <line x1="60" y1="352" x2="350" y2="352" stroke="#a86a10" stroke-width="1.4" marker-end="url(#arrow1)"/>
+          <text x="205" y="345" font-size="12" text-anchor="middle" fill="#a86a10">silent refresh — new access token, no user interaction</text>
+        </svg>
+        <figcaption>fig. 1 — login and silent-refresh sequence, keycloak-js against the vyoog realm</figcaption>
+      </figure>
+
+      <h3>Frontend responsibilities</h3>
+      <ul class="plain">
+        <li><code>keycloak-js</code> initializes on app load; unauthenticated users are redirected, not shown a local login form.</li>
+        <li>Access tokens live in memory (the keycloak-js adapter's internal state) — never in <code>localStorage</code> — so a stale tab reload always re-establishes the session cleanly.</li>
+        <li>Silent refresh runs in a hidden iframe ahead of token expiry. A failed refresh (session revoked, SSO expired) forces a real redirect to login, not a silent failure.</li>
+        <li>The API client wrapper attaches the current access token to every request; it does not attempt to refresh tokens itself — that's the adapter's job.</li>
+      </ul>
+    </section>
+
+    <section class="doc-section" id="authz">
+      <h2><span class="num">05</span> Request authorization flow</h2>
+      <p class="lede">Every request is authorized twice by the time it reaches business logic: once by Spring Security's resource-server filter (is this token valid?), once by method security (is this role allowed to call this method?).</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow2" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto">
+              <path d="M0,0 L7,3.5 L0,7 Z" fill="#5b6169"/>
+            </marker>
+          </defs>
+          <rect x="20" y="20" width="140" height="46" rx="5" fill="#ffffff" stroke="#dcded8"/>
+          <text x="90" y="47" font-size="12.5" text-anchor="middle" fill="#171b21">Incoming request</text>
+
+          <line x1="90" y1="66" x2="90" y2="96" stroke="#5b6169" stroke-width="1.4" marker-end="url(#arrow2)"/>
+          <rect x="20" y="96" width="140" height="52" rx="5" fill="#e7ebf3"/>
+          <text x="90" y="118" font-size="12" text-anchor="middle" fill="#2c3e6b">JWT signature +</text>
+          <text x="90" y="134" font-size="12" text-anchor="middle" fill="#2c3e6b">issuer validation</text>
+
+          <line x1="90" y1="148" x2="90" y2="178" stroke="#5b6169" stroke-width="1.4" marker-end="url(#arrow2)"/>
+          <path d="M20,178 L160,178 L150,238 L30,238 Z" fill="#f7e9e6" stroke="#dcded8"/>
+          <text x="90" y="200" font-size="11.5" text-anchor="middle" fill="#a33a2c">invalid / expired?</text>
+          <text x="90" y="216" font-size="11.5" text-anchor="middle" fill="#a33a2c" font-weight="600">401 unauthenticated</text>
+
+          <line x1="160" y1="122" x2="260" y2="122" stroke="#5b6169" stroke-width="1.4" marker-end="url(#arrow2)"/>
+          <rect x="260" y="96" width="170" height="52" rx="5" fill="#e7ebf3"/>
+          <text x="345" y="118" font-size="12" text-anchor="middle" fill="#2c3e6b">extract realm_access.roles</text>
+          <text x="345" y="134" font-size="12" text-anchor="middle" fill="#2c3e6b">→ Spring GrantedAuthority</text>
+
+          <line x1="430" y1="122" x2="510" y2="122" stroke="#5b6169" stroke-width="1.4" marker-end="url(#arrow2)"/>
+          <rect x="510" y="96" width="170" height="52" rx="5" fill="#e7ebf3"/>
+          <text x="595" y="118" font-size="12" text-anchor="middle" fill="#2c3e6b">@PreAuthorize on</text>
+          <text x="595" y="134" font-size="12" text-anchor="middle" fill="#2c3e6b">controller / service method</text>
+
+          <line x1="595" y1="148" x2="595" y2="178" stroke="#5b6169" stroke-width="1.4" marker-end="url(#arrow2)"/>
+          <path d="M525,178 L665,178 L655,238 L535,238 Z" fill="#f7e9e6" stroke="#dcded8"/>
+          <text x="595" y="200" font-size="11.5" text-anchor="middle" fill="#a33a2c">role not permitted?</text>
+          <text x="595" y="216" font-size="11.5" text-anchor="middle" fill="#a33a2c" font-weight="600">403 role denied</text>
+
+          <line x1="595" y1="148" x2="345" y2="270" stroke="#2f7d74" stroke-width="1.4" marker-end="url(#arrow2)"/>
+          <rect x="230" y="270" width="230" height="40" rx="5" fill="#e4f0ee"/>
+          <text x="345" y="295" font-size="12.5" text-anchor="middle" fill="#2f7d74" font-weight="600">business logic executes → AuditService.record(...)</text>
+        </svg>
+        <figcaption>fig. 2 — per-request authorization, resource-server filter then method security</figcaption>
+      </figure>
+
+      <h3>Backend implementation</h3>
+      <pre><code><span class="tok-key">@RestController</span>
+<span class="tok-key">@RequestMapping</span>(<span class="tok-str">"/api/v1/companies"</span>)
+<span class="tok-key">public class</span> CompanyController {
+
+    <span class="tok-key">@PreAuthorize</span>(<span class="tok-str">"hasAnyRole('PS_ANALYST','PS_SALES_LEAD','PS_ADMIN')"</span>)
+    <span class="tok-key">@PostMapping</span>
+    <span class="tok-key">public</span> CompanyDto create(<span class="tok-key">@RequestBody</span> <span class="tok-key">@Valid</span> CompanyCreateRequest req,
+                             Authentication auth) {
+        <span class="tok-com">// actor id read from auth.getName() (JWT subject) — never from the request body</span>
+        <span class="tok-key">return</span> companyService.create(req, auth);
+    }
+
+    <span class="tok-key">@PreAuthorize</span>(<span class="tok-str">"hasAnyRole('PS_ANALYST','PS_SALES_LEAD','PS_ADMIN','PS_VIEWER','PS_COO')"</span>)
+    <span class="tok-key">@GetMapping</span>
+    <span class="tok-key">public</span> Page&lt;CompanyDto&gt; search(CompanySearchRequest q) { ... }
+}</code></pre>
+
+      <div class="callout invariant">
+        <span class="label">Invariant, restated from Developer Guide §16</span>
+        Authorization is enforced server-side, per method, via <code class="mono">@PreAuthorize</code>. A frontend route guard is a UX convenience layered on top of this — it is never the control itself.
+      </div>
+    </section>
+
+    <section class="doc-section" id="endpoints">
+      <h2><span class="num">06</span> API endpoint security contract</h2>
+      <p class="lede">Every endpoint in the Technical Design Spec (§4) maps to one row in the capability matrix. This table is the contract Claude Code implements against — add a row here before adding a controller method.</p>
+
+      <table>
+        <thead><tr><th>Endpoint group</th><th>Representative routes</th><th>Required role(s)</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Companies &amp; contacts — read</td>
+            <td class="mono">GET /companies, GET /companies/{id}, GET /companies/{id}/timeline</td>
+            <td>Any authenticated role</td>
+          </tr>
+          <tr>
+            <td>Companies &amp; contacts — write</td>
+            <td class="mono">POST /companies, PATCH /companies/{id}, POST /companies/{id}/verify, POST /companies/{id}/state</td>
+            <td>Analyst · Sales Lead · Admin</td>
+          </tr>
+          <tr>
+            <td>Imports</td>
+            <td class="mono">POST /imports, POST /import-templates</td>
+            <td>Analyst · Sales Lead · Admin</td>
+          </tr>
+          <tr>
+            <td>Triage</td>
+            <td class="mono">POST /duplicates/{id}/resolve</td>
+            <td>Analyst · Sales Lead · Admin</td>
+          </tr>
+          <tr>
+            <td>Research &amp; activities</td>
+            <td class="mono">POST /research/queue, POST /activities/{id}/verify</td>
+            <td>Analyst · Sales Lead · Admin</td>
+          </tr>
+          <tr>
+            <td>Qualification</td>
+            <td class="mono">POST /companies/{id}/qualifications</td>
+            <td>Analyst · Sales Lead · Admin (tier override included)</td>
+          </tr>
+          <tr>
+            <td>Export</td>
+            <td class="mono">POST /exports</td>
+            <td>Sales Lead · Admin</td>
+          </tr>
+          <tr>
+            <td>Admin configuration</td>
+            <td class="mono">/icp-profiles, /admin/disqualification-reasons, /admin/settings, /export-templates</td>
+            <td>Admin only</td>
+          </tr>
+          <tr>
+            <td>Reports</td>
+            <td class="mono">/reports/*</td>
+            <td>Any authenticated role</td>
+          </tr>
+          <tr>
+            <td>Reserved, not built</td>
+            <td class="mono">POST /companies/from-source</td>
+            <td>Service client-credentials token (<code class="mono">prospectsoul-api</code>) — deferred, see §2</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="doc-section" id="frontend">
+      <h2><span class="num">07</span> Frontend route &amp; action guards</h2>
+      <p class="lede">The UI mirrors §3 exactly, for usability — a Viewer should never see an Export button they'd get a 403 on. It is a convenience, not a boundary.</p>
+
+      <pre><code><span class="tok-com">// auth/guards.ts</span>
+<span class="tok-key">export const</span> canMutateCompany = (roles: Role[]) =&gt;
+  roles.some(r =&gt; [<span class="tok-str">'PS_ANALYST'</span>, <span class="tok-str">'PS_SALES_LEAD'</span>, <span class="tok-str">'PS_ADMIN'</span>].includes(r));
+
+<span class="tok-key">export const</span> canExport = (roles: Role[]) =&gt;
+  roles.some(r =&gt; [<span class="tok-str">'PS_SALES_LEAD'</span>, <span class="tok-str">'PS_ADMIN'</span>].includes(r));
+
+<span class="tok-key">export const</span> canConfigure = (roles: Role[]) =&gt; roles.includes(<span class="tok-str">'PS_ADMIN'</span>);
+
+<span class="tok-com">// route definition</span>
+&lt;Route path=<span class="tok-str">"/settings"</span> element={
+  &lt;RequireRole allow={[<span class="tok-str">'PS_ADMIN'</span>]}&gt;&lt;SettingsPage /&gt;&lt;/RequireRole&gt;
+} /&gt;</code></pre>
+
+      <ul class="plain">
+        <li>Sidebar navigation is role-filtered at render time (UI/UX Spec §1) — Settings never appears for non-Admins, Ready Pool/Exports never appear below Sales Lead.</li>
+        <li>Action buttons (Disqualify, Override, Export, Configure) check the same guard functions; a denied action is hidden, not disabled-with-tooltip, to keep the screen uncluttered — this is a product choice, revisit if users ask "why can't I see X."</li>
+        <li>Guards read roles from the decoded access token already held by the keycloak-js adapter; they do not make a network call to determine permissions.</li>
+      </ul>
+    </section>
+
+    <section class="doc-section" id="errors">
+      <h2><span class="num">08</span> Error handling</h2>
+      <p class="lede">Authorization failures are ordinary <code>application/problem+json</code> responses — no special-cased error shape for auth.</p>
+
+      <table>
+        <thead><tr><th>Status</th><th>Meaning</th><th>Typical cause</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">401</td><td>Unauthenticated</td><td>Missing, expired, or malformed bearer token</td></tr>
+          <tr><td class="mono">403</td><td>Role denied</td><td>Valid token, role lacks the required authority for this method</td></tr>
+        </tbody>
+      </table>
+
+      <pre><code>{
+  <span class="tok-key">"type"</span>: <span class="tok-str">"https://prospectsoul/errors/forbidden"</span>,
+  <span class="tok-key">"title"</span>: <span class="tok-str">"Role denied"</span>,
+  <span class="tok-key">"status"</span>: <span class="tok-tag">403</span>,
+  <span class="tok-key">"detail"</span>: <span class="tok-str">"PS_VIEWER cannot create companies"</span>
+}</code></pre>
+
+      <div class="callout">
+        <span class="label">UX rule, from UI/UX Spec §4</span>
+        Errors surface the <code class="mono">detail</code> field verbatim — no generic "something went wrong," including for 401/403.
+      </div>
+    </section>
+
+    <section class="doc-section" id="audit">
+      <h2><span class="num">09</span> Audit trail integration</h2>
+      <p class="lede">Authentication and authorization feed directly into auditability — the actor on every row is a validated identity, not a claim the client made.</p>
+
+      <ul class="plain">
+        <li>Every mutating service method calls <code class="mono">AuditService.record(entityType, entityId, actorId, action, previousState, newState)</code> explicitly — never a listener triggered by magic (Developer Guide §7, §16).</li>
+        <li><code class="mono">actorId</code> is always read from the validated JWT subject (<code class="mono">auth.getName()</code> / <code class="mono">sub</code> claim), inside the same transaction as the mutation.</li>
+        <li>Role-restriction tests (403 paths) are part of the Definition of Done for every sprint (Roadmap §0) — not an end-of-project hardening pass.</li>
+      </ul>
+    </section>
+
+    <section class="doc-section" id="config">
+      <h2><span class="num">10</span> Configuration reference</h2>
+      <p class="lede">Environment variables that govern authentication, from Technical Design Spec §9.</p>
+      <table>
+        <thead><tr><th>Variable</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">KEYCLOAK_ISSUER_URI</td><td>Issuer URL the resource server validates tokens against</td></tr>
+          <tr><td class="mono">DB_URL</td><td>Users-mirror table for display/audit (Keycloak remains the source of truth for identity)</td></tr>
+        </tbody>
+      </table>
+      <p>Local development ships a realm export (<code class="mono">docker/keycloak/realm-export.json</code>) with all five roles and one seed user per role, per Technical Design Spec §3 — this is what Sprint 1's acceptance criterion "each seed role logs in" runs against.</p>
+    </section>
+
+    <section class="doc-section" id="testing">
+      <h2><span class="num">11</span> Testing requirements</h2>
+      <p class="lede">Directly from Implementation Roadmap, Sprint 1 acceptance criteria and the standing Definition of Done.</p>
+      <ul class="plain">
+        <li>Each of the five seed roles can log in against the local Keycloak realm.</li>
+        <li>Viewer receives 403 on <code class="mono">POST /companies</code> (and every other mutating endpoint) — tested, not assumed.</li>
+        <li>Every sprint that introduces a new mutating endpoint adds a corresponding 403 test for the roles excluded from it, per the matrix in §3.</li>
+        <li>Integration tests (Testcontainers) exercise real JWTs issued by a test Keycloak realm — not a mocked <code class="mono">Authentication</code> object standing in for the whole filter chain.</li>
+      </ul>
+    </section>
+
+    <section class="doc-section" id="open">
+      <h2><span class="num">12</span> Open items</h2>
+      <p class="lede">Carried forward from PRD §13 and Developer Guide §46 — not resolved by this document.</p>
+      <table>
+        <thead><tr><th>Item</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Production Keycloak realm/client/audience configuration, confirmed with the team operating Keycloak</td><td><span class="badge open">OPEN</span></td></tr>
+          <tr><td>Idempotency contract for the future <code class="mono">/companies/from-source</code> service-credentials endpoint</td><td><span class="badge open">DEFERRED</span></td></tr>
+          <tr><td>Formal branch/PR/release governance (unrelated to auth, but gates when this design ships)</td><td><span class="badge open">NOT DOCUMENTED</span></td></tr>
+        </tbody>
+      </table>
+      <div class="callout danger">
+        <span class="label">Do not assume</span>
+        Architecture supporting a future capability is not authorization to build it (Developer Guide §47). The service-credentials grant exists in the identity design; it is not implemented until a real programmatic source exists.
+      </div>
+    </section>
+
+    <footer class="doc-footer">
+      ProspectSoul — Access Control &amp; Authentication Design · derived from PRD v1.1 §2, §9 · Technical Design Spec v1.0 §3 · Domain Model v1.0 §5 · Implementation Roadmap v1.0 Sprint 1 · Developer Guide §15–16
+    </footer>
+  </main>
+</div>
+</body>
+</html>

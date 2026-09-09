@@ -1,0 +1,366 @@
+/* ======================================
+   DESIGN TOKENS — from 10-Auth-Login-Template.html
+   ====================================== */
+:root {
+  /* Brand */
+  --ps-navy:       #162032;
+  --ps-navy-mid:   #1e2d44;
+  --ps-navy-light: #263a56;
+  --ps-copper:     #c27a3e;
+  --ps-copper-glow:#d4944f;
+  --ps-copper-soft:#f8ead5;
+
+  /* Neutrals */
+  --ps-white:      #ffffff;
+  --ps-off-white:  #f7f8f6;
+  --ps-gray-100:   #f0f1ef;
+  --ps-gray-200:   #e2e4df;
+  --ps-gray-400:   #9ea2a0;
+  --ps-gray-600:   #5e6360;
+  --ps-gray-800:   #2c302e;
+  --ps-black:      #111413;
+
+  /* Semantic */
+  --ps-success:    #2d8a5e;
+  --ps-error:      #c93b3b;
+  --ps-error-soft: #fce8e8;
+  --ps-success-soft:#e8f5ee;
+  --ps-focus:      rgba(194,122,62,0.4);
+
+  /* Type */
+  --font-display: 'Fraunces', serif;
+  --font-body:    'Inter', sans-serif;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* Shadows */
+  --shadow-field: 0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px var(--ps-gray-200);
+  --shadow-field-focus: 0 0 0 3px var(--ps-focus), 0 0 0 1px var(--ps-copper);
+  --shadow-btn: 0 1px 3px rgba(0,0,0,0.1), 0 2px 8px rgba(194,122,62,0.15);
+}
+
+/* ======================================
+   LAYOUT — full viewport split
+   ====================================== */
+.login-shell {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+  font-family: var(--font-body);
+  color: var(--ps-gray-800);
+  background: var(--ps-off-white);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ======================================
+   LEFT PANEL — brand
+   ====================================== */
+.brand-panel {
+  background: var(--ps-navy);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 48px;
+  position: relative;
+  overflow: hidden;
+}
+.brand-panel::after {
+  content: '';
+  position: absolute;
+  bottom: -140px;
+  right: -100px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--ps-navy-light) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.logo-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--ps-copper) 0%, var(--ps-copper-glow) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.logo-mark svg { width: 22px; height: 22px; }
+.logo-text {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ps-white);
+  letter-spacing: -0.02em;
+}
+
+.brand-hero {
+  max-width: 380px;
+}
+.brand-hero h1 {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--ps-white);
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+}
+.brand-hero p {
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--ps-gray-400);
+  max-width: 340px;
+}
+
+.brand-stats {
+  display: flex;
+  gap: 40px;
+}
+.stat-item .stat-num {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--ps-copper);
+}
+.stat-item .stat-label {
+  font-size: 13px;
+  color: var(--ps-gray-400);
+  margin-top: 2px;
+}
+
+/* ======================================
+   RIGHT PANEL — form
+   ====================================== */
+.form-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+}
+.form-container {
+  width: 100%;
+  max-width: 400px;
+}
+
+.form-header {
+  margin-bottom: 40px;
+}
+.form-header h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--ps-black);
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+.form-header p {
+  color: var(--ps-gray-600);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Fields */
+.field-group {
+  margin-bottom: 22px;
+}
+.field-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ps-gray-800);
+  margin-bottom: 7px;
+}
+.field-group input[type="text"],
+.field-group input[type="email"],
+.field-group input[type="password"] {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--ps-black);
+  background: var(--ps-white);
+  border: none;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-field);
+  transition: box-shadow 0.15s ease;
+  outline: none;
+}
+.field-group input:focus {
+  box-shadow: var(--shadow-field-focus);
+}
+.field-group input::placeholder {
+  color: var(--ps-gray-400);
+}
+.field-group input:disabled {
+  opacity: 0.6;
+}
+
+/* Password field with toggle */
+.password-wrap {
+  position: relative;
+}
+.password-wrap input {
+  padding-right: 48px;
+}
+.password-toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ps-gray-400);
+  display: flex;
+  padding: 4px;
+}
+.password-toggle:hover { color: var(--ps-gray-600); }
+
+/* Inline error banner */
+.login-error {
+  background: var(--ps-error-soft);
+  border: 1px solid rgba(201,59,59,0.2);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--ps-error);
+}
+.login-error svg { flex-shrink: 0; }
+
+/* Options row */
+.options-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ps-gray-600);
+}
+.remember-me input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  accent-color: var(--ps-copper);
+  cursor: pointer;
+}
+.forgot-link {
+  font-size: 14px;
+  font-family: var(--font-body);
+  color: var(--ps-copper);
+  text-decoration: none;
+  font-weight: 500;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.forgot-link:hover {
+  color: var(--ps-copper-glow);
+  text-decoration: underline;
+}
+
+/* Submit button */
+.btn-login {
+  width: 100%;
+  height: 50px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ps-white);
+  background: linear-gradient(135deg, var(--ps-copper) 0%, var(--ps-copper-glow) 100%);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  box-shadow: var(--shadow-btn);
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+}
+.btn-login:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 12px rgba(194,122,62,0.3);
+}
+.btn-login:active {
+  transform: translateY(0);
+}
+.btn-login:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Loading spinner in button */
+.btn-login .spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Footer */
+.form-footer {
+  margin-top: 36px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ps-gray-400);
+}
+
+/* ======================================
+   RESPONSIVE — mobile
+   ====================================== */
+@media (max-width: 960px) {
+  .login-shell {
+    grid-template-columns: 1fr;
+  }
+  .brand-panel {
+    display: none;
+  }
+  .form-panel {
+    padding: 32px 24px;
+  }
+  .form-container {
+    max-width: 420px;
+  }
+  .mobile-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+  .mobile-brand .logo-mark { width: 36px; height: 36px; }
+  .logo-text-dark {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ps-black);
+    letter-spacing: -0.02em;
+  }
+}
+@media (min-width: 961px) {
+  .mobile-brand { display: none; }
+}

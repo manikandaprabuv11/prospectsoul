@@ -43,8 +43,10 @@ export interface RequestOptions extends Omit<RequestInit, 'body' | 'method'> {
 }
 
 type TokenProvider = () => string | undefined | Promise<string | undefined>
+type UnauthorizedHandler = () => void
 
 let tokenProvider: TokenProvider = () => undefined
+let onUnauthorized: UnauthorizedHandler | undefined
 
 /**
  * Registers how the client obtains the bearer token. The auth layer calls this
@@ -54,11 +56,26 @@ export function setAuthTokenProvider(provider: TokenProvider): void {
   tokenProvider = provider
 }
 
+export function setOnUnauthorized(handler: UnauthorizedHandler): void {
+  onUnauthorized = handler
+}
+
 function buildUrl(path: string, query: RequestOptions['query']): string {
-  const url = new URL(
-    path.replace(/^\//, ''),
-    env.apiBaseUrl.endsWith('/') ? env.apiBaseUrl : `${env.apiBaseUrl}/`,
-  )
+  const baseUrl = new URL(env.apiBaseUrl.endsWith('/') ? env.apiBaseUrl : `${env.apiBaseUrl}/`)
+  const basePath = baseUrl.pathname.replace(/\/$/, '')
+  let requestPath = path.replace(/^\/+/, '')
+
+  // Support services that pass either `/companies` or `/api/v1/companies`.
+  const basePathWithoutLeadingSlash = basePath.replace(/^\//, '')
+  if (
+    basePathWithoutLeadingSlash &&
+    (requestPath === basePathWithoutLeadingSlash ||
+      requestPath.startsWith(`${basePathWithoutLeadingSlash}/`))
+  ) {
+    requestPath = requestPath.slice(basePathWithoutLeadingSlash.length).replace(/^\/+/, '')
+  }
+
+  const url = new URL(requestPath, baseUrl)
 
   for (const [key, value] of Object.entries(query ?? {})) {
     if (value !== undefined && value !== null) {
@@ -133,6 +150,9 @@ async function request<T>(
   }
 
   if (!response.ok) {
+    if (response.status === 401 && token && onUnauthorized) {
+      onUnauthorized()
+    }
     throw await toApiError(response)
   }
 

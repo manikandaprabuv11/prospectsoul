@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProspectSoul — User &amp; Role Management Design Template</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,700&display=swap" rel="stylesheet">
+<style>
+/* ======================================
+   DESIGN TOKENS — shared with login/auth
+   ====================================== */
+:root {
+  --ps-navy:        #162032;
+  --ps-copper:      #c27a3e;
+  --ps-copper-glow: #d4944f;
+  --ps-copper-soft: #f8ead5;
+  --ps-white:       #ffffff;
+  --ps-off-white:   #f7f8f6;
+  --ps-gray-50:     #fafaf9;
+  --ps-gray-100:    #f0f1ef;
+  --ps-gray-200:    #e2e4df;
+  --ps-gray-300:    #d0d3cc;
+  --ps-gray-400:    #9ea2a0;
+  --ps-gray-500:    #787d7a;
+  --ps-gray-600:    #5e6360;
+  --ps-gray-800:    #2c302e;
+  --ps-black:       #111413;
+
+  --ps-success:     #2d8a5e;
+  --ps-success-soft:#e8f5ee;
+  --ps-error:       #c93b3b;
+  --ps-error-soft:  #fce8e8;
+  --ps-info:        #3b7cc9;
+  --ps-info-soft:   #e8f0fc;
+  --ps-warn:        #b5880a;
+  --ps-warn-soft:   #faf3dd;
+
+  --font-display:   'Fraunces', serif;
+  --font-body:      'Inter', sans-serif;
+
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+
+  --shadow-sm:   0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md:   0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg:   0 8px 32px rgba(0,0,0,0.12);
+  --shadow-field: 0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px var(--ps-gray-200);
+  --shadow-field-focus: 0 0 0 3px rgba(194,122,62,0.25), 0 0 0 1px var(--ps-copper);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-body);
+  color: var(--ps-gray-800);
+  background: var(--ps-gray-100);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+/* ======================================
+   APP SHELL (simplified for template)
+   ====================================== */
+.app-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  background: var(--ps-navy);
+  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  margin-bottom: 32px;
+}
+.sidebar-logo .mark {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--ps-copper) 0%, var(--ps-copper-glow) 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.sidebar-logo .mark svg { width: 16px; height: 16px; }
+.sidebar-logo span {
+  font-family: var(--font-display); font-weight: 700; font-size: 17px;
+  color: var(--ps-white); letter-spacing: -0.02em;
+}
+
+.sidebar nav { flex: 1; }
+.nav-section {
+  font-size: 11px; font-weight: 600; color: var(--ps-gray-500);
+  padding: 16px 20px 6px; letter-spacing: 0.04em;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 20px; font-size: 14px; color: rgba(255,255,255,0.55);
+  text-decoration: none; transition: all 0.12s;
+}
+.nav-item:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.05); }
+.nav-item.active {
+  color: var(--ps-white); background: rgba(255,255,255,0.08);
+  border-right: 2px solid var(--ps-copper);
+}
+.nav-item svg { width: 18px; height: 18px; opacity: 0.7; }
+.nav-item.active svg { opacity: 1; }
+.nav-badge {
+  margin-left: auto; font-size: 11px; font-weight: 600;
+  background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.7);
+  padding: 1px 7px; border-radius: 10px;
+}
+
+.sidebar-user {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.06);
+  margin-top: auto;
+}
+.sidebar-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--ps-copper); color: var(--ps-white);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600;
+}
+.sidebar-user-info .name { font-size: 13px; color: var(--ps-white); font-weight: 500; }
+.sidebar-user-info .role-tag {
+  font-size: 11px; color: var(--ps-copper-glow);
+}
+
+/* ======================================
+   MAIN CONTENT
+   ====================================== */
+.main-content {
+  padding: 0;
+  overflow-y: auto;
+}
+
+/* Top bar */
+.top-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 32px;
+  background: var(--ps-white);
+  border-bottom: 1px solid var(--ps-gray-200);
+}
+.breadcrumb {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 14px; color: var(--ps-gray-500);
+}
+.breadcrumb a { color: var(--ps-gray-500); text-decoration: none; }
+.breadcrumb a:hover { color: var(--ps-gray-800); }
+.breadcrumb .sep { color: var(--ps-gray-300); }
+.breadcrumb .current { color: var(--ps-gray-800); font-weight: 500; }
+
+.top-actions { display: flex; align-items: center; gap: 12px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 38px; padding: 0 18px;
+  font-family: var(--font-body); font-size: 14px; font-weight: 500;
+  border-radius: var(--radius-sm); cursor: pointer; border: none;
+  transition: all 0.12s;
+}
+.btn-primary-sm {
+  color: var(--ps-white);
+  background: var(--ps-copper);
+}
+.btn-primary-sm:hover { background: var(--ps-copper-glow); }
+.btn-primary-sm svg { width: 16px; height: 16px; }
+
+.btn-ghost {
+  color: var(--ps-gray-600); background: transparent; border: 1px solid var(--ps-gray-200);
+}
+.btn-ghost:hover { background: var(--ps-gray-100); }
+
+/* Page content */
+.page { padding: 28px 32px; }
+
+/* Tabs */
+.tabs {
+  display: flex; gap: 0; border-bottom: 1px solid var(--ps-gray-200);
+  margin-bottom: 28px;
+}
+.tab {
+  padding: 10px 20px; font-size: 14px; font-weight: 500;
+  color: var(--ps-gray-500); cursor: pointer; border: none; background: none;
+  border-bottom: 2px solid transparent; transition: all 0.12s;
+}
+.tab:hover { color: var(--ps-gray-800); }
+.tab.active { color: var(--ps-black); border-bottom-color: var(--ps-copper); }
+.tab .count {
+  display: inline-block; margin-left: 6px;
+  font-size: 12px; background: var(--ps-gray-100);
+  color: var(--ps-gray-500); padding: 0 6px; border-radius: 10px;
+}
+.tab.active .count { background: var(--ps-copper-soft); color: var(--ps-copper); }
+
+/* Toolbar */
+.toolbar {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px;
+}
+.search-box {
+  position: relative; flex: 1; max-width: 360px;
+}
+.search-box input {
+  width: 100%; height: 40px; padding: 0 16px 0 38px;
+  font-family: var(--font-body); font-size: 14px; color: var(--ps-black);
+  background: var(--ps-white); border: none; border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-field); outline: none;
+}
+.search-box input:focus { box-shadow: var(--shadow-field-focus); }
+.search-box input::placeholder { color: var(--ps-gray-400); }
+.search-box svg {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  width: 16px; height: 16px; color: var(--ps-gray-400);
+}
+
+.filter-group { display: flex; gap: 8px; }
+.filter-btn {
+  height: 36px; padding: 0 14px;
+  font-family: var(--font-body); font-size: 13px; font-weight: 500;
+  color: var(--ps-gray-600); background: var(--ps-white);
+  border: 1px solid var(--ps-gray-200); border-radius: var(--radius-sm);
+  cursor: pointer; display: flex; align-items: center; gap: 5px;
+}
+.filter-btn:hover { background: var(--ps-gray-50); }
+.filter-btn.active { border-color: var(--ps-copper); color: var(--ps-copper); background: var(--ps-copper-soft); }
+.filter-btn svg { width: 14px; height: 14px; }
+
+/* ======================================
+   USERS TABLE
+   ====================================== */
+.data-card {
+  background: var(--ps-white);
+  border: 1px solid var(--ps-gray-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+table {
+  width: 100%; border-collapse: collapse;
+}
+thead th {
+  text-align: left; padding: 12px 16px; font-size: 12px; font-weight: 600;
+  color: var(--ps-gray-500); background: var(--ps-gray-50);
+  border-bottom: 1px solid var(--ps-gray-200);
+}
+tbody td {
+  padding: 14px 16px; font-size: 14px;
+  border-bottom: 1px solid var(--ps-gray-100);
+  vertical-align: middle;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--ps-gray-50); }
+
+/* User row */
+.user-cell {
+  display: flex; align-items: center; gap: 12px;
+}
+.user-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; color: var(--ps-white);
+  flex-shrink: 0;
+}
+.avatar-analyst   { background: #4a7fb5; }
+.avatar-saleslead { background: #6a5fb5; }
+.avatar-admin     { background: var(--ps-copper); }
+.avatar-viewer    { background: #5fb59e; }
+.avatar-coo       { background: #b55f6a; }
+.user-name { font-weight: 500; color: var(--ps-black); }
+.user-email { font-size: 13px; color: var(--ps-gray-500); }
+
+/* Role badge */
+.role-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+}
+.role-analyst   { background: #e8f0fc; color: #2d5fa3; }
+.role-saleslead { background: #ede8fc; color: #5a44a3; }
+.role-admin     { background: var(--ps-copper-soft); color: #96592b; }
+.role-viewer    { background: var(--ps-success-soft); color: #1e6b44; }
+.role-coo       { background: #fce8ed; color: #963b4a; }
+
+/* Status */
+.status-active {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 13px; color: var(--ps-success); font-weight: 500;
+}
+.status-active::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--ps-success);
+}
+.status-inactive {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 13px; color: var(--ps-gray-400); font-weight: 500;
+}
+.status-inactive::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--ps-gray-300);
+}
+
+/* Action buttons */
+.row-actions { display: flex; gap: 4px; }
+.action-btn {
+  width: 32px; height: 32px; border-radius: 6px;
+  background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ps-gray-400); transition: all 0.12s;
+}
+.action-btn:hover { background: var(--ps-gray-100); color: var(--ps-gray-800); }
+
+/* Pagination */
+.pagination {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px;
+  border-top: 1px solid var(--ps-gray-100);
+  font-size: 13px; color: var(--ps-gray-500);
+}
+.page-btns { display: flex; gap: 4px; }
+.page-btn {
+  width: 32px; height: 32px; border-radius: 6px;
+  background: none; border: 1px solid var(--ps-gray-200);
+  font-size: 13px; color: var(--ps-gray-600);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.page-btn:hover { background: var(--ps-gray-100); }
+.page-btn.active { background: var(--ps-copper); color: var(--ps-white); border-color: var(--ps-copper); }
+
+/* ======================================
+   ROLES TAB — card layout
+   ====================================== */
+.roles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+.role-card {
+  background: var(--ps-white);
+  border: 1px solid var(--ps-gray-200);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.role-card:hover {
+  border-color: var(--ps-copper);
+  box-shadow: 0 2px 12px rgba(194,122,62,0.1);
+}
+.role-card-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 12px;
+}
+.role-card-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+}
+.role-card-icon.analyst   { background: #e8f0fc; color: #2d5fa3; }
+.role-card-icon.saleslead { background: #ede8fc; color: #5a44a3; }
+.role-card-icon.admin     { background: var(--ps-copper-soft); color: var(--ps-copper); }
+.role-card-icon.viewer    { background: var(--ps-success-soft); color: var(--ps-success); }
+.role-card-icon.coo       { background: #fce8ed; color: #963b4a; }
+.role-card-icon svg { width: 20px; height: 20px; }
+.user-count {
+  font-size: 13px; color: var(--ps-gray-500);
+  display: flex; align-items: center; gap: 4px;
+}
+.user-count svg { width: 14px; height: 14px; }
+.role-card h3 {
+  font-size: 16px; font-weight: 600; color: var(--ps-black); margin-bottom: 6px;
+}
+.role-card p {
+  font-size: 13px; color: var(--ps-gray-500); line-height: 1.5;
+  margin-bottom: 14px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.perm-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.perm-tag {
+  font-size: 11px; font-weight: 500;
+  padding: 2px 8px; border-radius: 4px;
+  background: var(--ps-gray-100); color: var(--ps-gray-600);
+}
+
+/* ======================================
+   CREATE/EDIT USER MODAL
+   ====================================== */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+}
+.modal {
+  background: var(--ps-white);
+  border-radius: var(--radius-lg);
+  width: 100%; max-width: 480px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 22px 24px; border-bottom: 1px solid var(--ps-gray-100);
+}
+.modal-header h3 {
+  font-family: var(--font-display); font-size: 20px; font-weight: 700;
+  color: var(--ps-black);
+}
+.modal-close {
+  width: 32px; height: 32px; border-radius: 6px;
+  background: none; border: none; cursor: pointer;
+  color: var(--ps-gray-400); display: flex; align-items: center; justify-content: center;
+}
+.modal-close:hover { background: var(--ps-gray-100); color: var(--ps-gray-800); }
+
+.modal-body { padding: 24px; }
+.modal-field { margin-bottom: 20px; }
+.modal-field label {
+  display: block; font-size: 14px; font-weight: 500;
+  color: var(--ps-gray-800); margin-bottom: 6px;
+}
+.modal-field input,
+.modal-field select {
+  width: 100%; height: 44px; padding: 0 14px;
+  font-family: var(--font-body); font-size: 14px; color: var(--ps-black);
+  background: var(--ps-white); border: none; border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-field); outline: none;
+}
+.modal-field input:focus,
+.modal-field select:focus { box-shadow: var(--shadow-field-focus); }
+.modal-field .hint { font-size: 12px; color: var(--ps-gray-400); margin-top: 4px; }
+
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 16px 24px; border-top: 1px solid var(--ps-gray-100);
+}
+.btn-cancel {
+  height: 40px; padding: 0 20px;
+  font-family: var(--font-body); font-size: 14px; font-weight: 500;
+  color: var(--ps-gray-600); background: var(--ps-white);
+  border: 1px solid var(--ps-gray-200); border-radius: var(--radius-sm); cursor: pointer;
+}
+.btn-cancel:hover { background: var(--ps-gray-100); }
+.btn-save {
+  height: 40px; padding: 0 24px;
+  font-family: var(--font-body); font-size: 14px; font-weight: 600;
+  color: var(--ps-white); background: var(--ps-copper);
+  border: none; border-radius: var(--radius-sm); cursor: pointer;
+}
+.btn-save:hover { background: var(--ps-copper-glow); }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span>ProspectSoul</span>
+    </div>
+
+    <nav>
+      <a class="nav-item" href="/">
+        <svg viewBox="0 0 18 18" fill="none"><path d="M2 9l7-7 7 7M4 7.5V15a1 1 0 001 1h3v-4h2v4h3a1 1 0 001-1V7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Dashboard
+      </a>
+      <a class="nav-item" href="/companies">
+        <svg viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="2" y="10" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
+        Companies
+      </a>
+      <a class="nav-item" href="/imports">
+        <svg viewBox="0 0 18 18" fill="none"><path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Imports
+      </a>
+
+      <div class="nav-section">Administration</div>
+      <a class="nav-item active" href="/settings/users">
+        <svg viewBox="0 0 18 18" fill="none"><circle cx="9" cy="6" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 16c0-3 2.9-5.5 6.5-5.5s6.5 2.5 6.5 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Users &amp; Roles
+      </a>
+      <a class="nav-item" href="/settings">
+        <svg viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.5v2M9 14.5v2M1.5 9h2M14.5 9h2M3.4 3.4l1.4 1.4M13.2 13.2l1.4 1.4M3.4 14.6l1.4-1.4M13.2 4.8l1.4-1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Settings
+      </a>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="sidebar-avatar">RC</div>
+      <div class="sidebar-user-info">
+        <div class="name">Ravi Chandran</div>
+        <div class="role-tag">Administrator</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="top-bar">
+      <div class="breadcrumb">
+        <a href="/settings">Settings</a>
+        <span class="sep">/</span>
+        <span class="current">Users &amp; Roles</span>
+      </div>
+      <div class="top-actions">
+        <button class="btn btn-primary-sm">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Add user
+        </button>
+      </div>
+    </div>
+
+    <div class="page">
+      <!-- TABS: Users | Roles -->
+      <div class="tabs">
+        <button class="tab active">Users <span class="count">7</span></button>
+        <button class="tab">Roles <span class="count">5</span></button>
+      </div>
+
+      <!-- ===== USERS TAB ===== -->
+      <div class="users-tab">
+        <div class="toolbar">
+          <div class="search-box">
+            <svg viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <input type="text" placeholder="Search users by name or email…">
+          </div>
+          <div class="filter-group">
+            <button class="filter-btn active">All roles</button>
+            <button class="filter-btn">Active</button>
+            <button class="filter-btn">Inactive</button>
+          </div>
+        </div>
+
+        <div class="data-card">
+          <table>
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Last login</th>
+                <th>Created</th>
+                <th style="width:80px;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar avatar-analyst">PS</div>
+                    <div><div class="user-name">Priya Sharma</div><div class="user-email">priya@vyoog.com</div></div>
+                  </div>
+                </td>
+                <td><span class="role-badge role-analyst">Analyst</span></td>
+                <td><span class="status-active">Active</span></td>
+                <td style="font-size:13px;color:var(--ps-gray-500);">2 hours ago</td>
+                <td style="font-size:13px;color:var(--ps-gray-500);">1 Jul 2026</td>
+                <td>
+                  <div class="row-actions">
+                    <button class="action-btn" title="Edit"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2L5 13H3v-2l8.5-8.5z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    <button class="action-btn" title="More"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="4" r="1" fill="currentColor"/><circle cx="8" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="12" r="1" fill="currentColor"/></svg></button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar avatar-analyst">DK</div>
+                    <div><div class="user-name">Deepa Krishnan</div><div class="user-email">deepa@vyoog.com</div></div>
+                  </div>
+                </td>
+                <td><span class="role-badge role-analyst">Analyst</span></td>
+                <td><span class="status-active">Active</span></td>
+                <td style="font-size:13px;color:var(--ps-gray-500);">1 day ago</td>
+                <td style="font-size:13px;color:var(--ps-gray-500);">1 Jul 2026</td>
+                <td>
+                  <div class="row-actions">
+                    <button class="action-btn" title="Edit"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2L5 13H3v-2l8.5-8.5z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    <button class="action-btn" title="More"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="4" r="1" fill="currentColor"/><circle cx="8" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="12" r="1" fill="currentColor"/></svg></button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar avatar-saleslead">KR</div>
+                    <div><div class="user-name">Kumar Rajan</div><div class="user-email">kumar@vyoog.com</div></div>
+                  </div>
+                </td>
+                <td><span class="role-badge role-saleslead">Sales Lead</span></td>
+                <td><span class="status-active">Active</span></td>
+                <td style="font-size:13px;color:var(--ps-gray-500);">5 hours ago</td>
+                <td style="font-size:13px;color:var(--ps-gray-500);">1 Jul 2026</td>
+                <td>
+                  <div class="row-actions">
+                    <button class="action-btn" title="Edit"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2L5 13H3v-2l8.5-8.5z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    <button class="action-btn" title="More"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="4" r="1" fill="currentColor"/><circle cx="8" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="12" r="1" fill="currentColor"/></svg></button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar avatar-admin">RC</div>
+                    <div><div class="user-name">Ravi Chandran</div><div class="user-email">ravi@vyoog.com</div></div>
+                  </div>
+                </td>
+                <td><span class="role-badge role-admin">Admin</span></td>
+                <td><span class="status-active">Active</span></td>
+                <td style="font-size:13px;color:var(--ps-gray-500);">Just now</td>
+                <td style="font-size:13px;color:var(--ps-gray-500);">1 Jul 2026</td>
+                <td>
+                  <div class="row-actions">
+                    <button class="action-btn" title="Edit"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2L5 13H3v-2l8.5-8.5z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    <button class="action-btn" title="More"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="4" r="1" fill="currentColor"/><circle cx="8" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="12" r="1" fill="currentColor"/></svg></button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar avatar-coo">SK</div>
+                    <div><div class="user-name">Senthil Kumar</div><div class="user-email">senthil@vyoog.com</div></div>
+                  </div>
+                </td>
+                <td><span class="role-badge role-coo">COO</span></td>
+                <td><span class="status-active">Active</span></td>
+                <td style="font-size:13px;color:var(--ps-gray-500);">3 days ago</td>
+                <td style="font-size:13px;color:var(--ps-gray-500);">1 Jul 2026</td>
+                <td>
+                  <div class="row-actions">
+                    <button class="action-btn" title="Edit"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2L5 13H3v-2l8.5-8.5z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    <button class="action-btn" title="More"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="4" r="1" fill="currentColor"/><circle cx="8" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="12" r="1" fill="currentColor"/></svg></button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="pagination">
+            <span>Showing 1–7 of 7 users</span>
+            <div class="page-btns">
+              <button class="page-btn active">1</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ROLES TAB (toggled) ===== -->
+      <div class="roles-tab" style="display:none;">
+        <div class="roles-grid">
+          <div class="role-card">
+            <div class="role-card-header">
+              <div class="role-card-icon analyst"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="6" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M3 17c0-3 3-5 7-5s7 2 7 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+              <div class="user-count"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M2.5 14c0-2.5 2.5-4 5.5-4s5.5 1.5 5.5 4" stroke="currentColor" stroke-width="1.2"/></svg>2 users</div>
+            </div>
+            <h3>Research Analyst</h3>
+            <p>Imports files, resolves duplicates, runs AI research batches, verifies evidence, confirms qualifications.</p>
+            <div class="perm-tags">
+              <span class="perm-tag">import</span>
+              <span class="perm-tag">triage</span>
+              <span class="perm-tag">research</span>
+              <span class="perm-tag">verify</span>
+              <span class="perm-tag">qualify</span>
+              <span class="perm-tag">read</span>
+            </div>
+          </div>
+
+          <div class="role-card">
+            <div class="role-card-header">
+              <div class="role-card-icon saleslead"><svg viewBox="0 0 20 20" fill="none"><path d="M10 2l2 6h6l-5 3.5 2 6.5-5-4-5 4 2-6.5L2 8h6l2-6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+              <div class="user-count"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M2.5 14c0-2.5 2.5-4 5.5-4s5.5 1.5 5.5 4" stroke="currentColor" stroke-width="1.2"/></svg>1 user</div>
+            </div>
+            <h3>Sales Lead</h3>
+            <p>Reviews qualified pool, approves exports, overrides tiers with reason, requests re-research.</p>
+            <div class="perm-tags">
+              <span class="perm-tag">export</span>
+              <span class="perm-tag">override</span>
+              <span class="perm-tag">qualify</span>
+              <span class="perm-tag">read</span>
+            </div>
+          </div>
+
+          <div class="role-card">
+            <div class="role-card-header">
+              <div class="role-card-icon admin"><svg viewBox="0 0 20 20" fill="none"><path d="M10 1l2.5 5H18l-4.5 3.5 1.8 5.5L10 12l-5.3 3 1.8-5.5L2 6h5.5L10 1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+              <div class="user-count"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M2.5 14c0-2.5 2.5-4 5.5-4s5.5 1.5 5.5 4" stroke="currentColor" stroke-width="1.2"/></svg>1 user</div>
+            </div>
+            <h3>Administrator</h3>
+            <p>Full system access. Configures ICP profiles, templates, reasons, caps, manages users and roles.</p>
+            <div class="perm-tags">
+              <span class="perm-tag">configure</span>
+              <span class="perm-tag">manage_users</span>
+              <span class="perm-tag">export</span>
+              <span class="perm-tag">all</span>
+            </div>
+          </div>
+
+          <div class="role-card">
+            <div class="role-card-header">
+              <div class="role-card-icon viewer"><svg viewBox="0 0 20 20" fill="none"><path d="M1.5 10s3.5-6 8.5-6 8.5 6 8.5 6-3.5 6-8.5 6-8.5-6-8.5-6z" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/></svg></div>
+              <div class="user-count"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M2.5 14c0-2.5 2.5-4 5.5-4s5.5 1.5 5.5 4" stroke="currentColor" stroke-width="1.2"/></svg>2 users</div>
+            </div>
+            <h3>Viewer</h3>
+            <p>Read-only access to search, timelines, and reports. No editing or workflow actions.</p>
+            <div class="perm-tags">
+              <span class="perm-tag">read</span>
+              <span class="perm-tag">search</span>
+              <span class="perm-tag">reports</span>
+            </div>
+          </div>
+
+          <div class="role-card">
+            <div class="role-card-header">
+              <div class="role-card-icon coo"><svg viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6 8h8M6 12h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+              <div class="user-count"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M2.5 14c0-2.5 2.5-4 5.5-4s5.5 1.5 5.5 4" stroke="currentColor" stroke-width="1.2"/></svg>1 user</div>
+            </div>
+            <h3>COO</h3>
+            <p>Weekly operational dashboard — pipeline throughput, source analytics, data quality.</p>
+            <div class="perm-tags">
+              <span class="perm-tag">dashboard</span>
+              <span class="perm-tag">reports</span>
+              <span class="perm-tag">read</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CREATE USER MODAL ===== -->
+<div class="modal-overlay" style="display:flex;">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add new user</h3>
+      <button class="modal-close"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <label>Full name</label>
+        <input type="text" placeholder="Kavitha Sundaram">
+      </div>
+      <div class="modal-field">
+        <label>Email address</label>
+        <input type="email" placeholder="kavitha@vyoog.com">
+      </div>
+      <div class="modal-field">
+        <label>Username</label>
+        <input type="text" placeholder="kavitha">
+        <div class="hint">Used for login. Cannot be changed later.</div>
+      </div>
+      <div class="modal-field">
+        <label>Temporary password</label>
+        <input type="password" placeholder="Minimum 8 characters">
+        <div class="hint">User will be prompted to change on first login.</div>
+      </div>
+      <div class="modal-field">
+        <label>Role</label>
+        <select>
+          <option value="">Select a role…</option>
+          <option value="PS_ANALYST">Research Analyst</option>
+          <option value="PS_SALES_LEAD">Sales Lead</option>
+          <option value="PS_ADMIN">Administrator</option>
+          <option value="PS_VIEWER">Viewer</option>
+          <option value="PS_COO">COO</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel">Cancel</button>
+      <button class="btn-save">Create user</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
