@@ -24,3 +24,26 @@ keycloak:
     username: admin
     password: admin
   target-realm: vyoog
+
+prospectsoul:
+  verification:
+    # The scheduled poll is off in tests: the worker is driven explicitly with
+    # runOnce() so each assertion happens at a known point, instead of racing a
+    # background thread.
+    worker-enabled: false
+    poll-interval-ms: 3600000
+    batch-size: 10
+    max-retries: 3
+    # The real provider bean is wired (so every test context has a
+    # PhoneVerificationProvider), but no TWILIO_* credentials are set here, so
+    # TwilioPhoneVerificationProvider short-circuits to
+    # PROVIDER_NOT_CONFIGURED before it opens a connection. No test can reach
+    # Twilio. Verification tests additionally override the bean with
+    # StubPhoneVerificationProvider via VerificationTestConfiguration.
+    provider: twilio
+    twilio:
+      account-sid: ""
+      auth-token: ""
+      lookup-base-url: http://localhost:1/unused
+    default-country-code: "+91"
+    stale-item-timeout-ms: 1000

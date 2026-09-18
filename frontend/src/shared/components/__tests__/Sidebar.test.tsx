@@ -30,13 +30,26 @@ describe('Sidebar', () => {
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
     expect(screen.getByText('Companies')).toBeInTheDocument()
     expect(screen.getByText('Imports')).toBeInTheDocument()
+    expect(screen.getByText('Verify')).toBeInTheDocument()
     expect(screen.getByText('Users & Roles')).toBeInTheDocument()
   })
+
+  // Verify is a read capability: every role that can read the pipeline can
+  // open it. Starting a verification is gated inside the page, and enforced
+  // by the backend.
+  it.each([['PS_ANALYST'], ['PS_SALES_LEAD'], ['PS_ADMIN'], ['PS_VIEWER'], ['PS_COO']])(
+    'shows Verify for %s',
+    (role) => {
+      renderWithRole([role])
+      expect(screen.getByText('Verify')).toBeInTheDocument()
+    },
+  )
 
   it('hides admin items for viewer', () => {
     renderWithRole(['PS_VIEWER'])
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
     expect(screen.getByText('Companies')).toBeInTheDocument()
+    expect(screen.getByText('Verify')).toBeInTheDocument()
     expect(screen.queryByText('Imports')).not.toBeInTheDocument()
     expect(screen.queryByText('Users & Roles')).not.toBeInTheDocument()
   })

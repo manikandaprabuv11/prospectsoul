@@ -259,6 +259,38 @@ Errors return `application/problem+json` (RFC 7807).
 | POST   | `/api/v1/admin/roles/{id}/users`           | Assign user to role          |
 | DELETE | `/api/v1/admin/roles/{id}/users/{userId}`  | Unassign user from role      |
 
+### Verifications (`/api/v1/verifications`)
+
+Company phone verification through Twilio Lookup v2 Line Type Intelligence.
+Starting a batch returns `202 Accepted` immediately; a DB-backed worker does the
+provider calls in the background.
+
+| Method | Path                                          | Authorization | Description                                        |
+| ------ | --------------------------------------------- | ------------- | -------------------------------------------------- |
+| POST   | `/api/v1/verifications`                       | HAS_MUTATE    | Start a batch (**202**; body: `company_ids`, `added_by`, `date_from`, `date_to`) |
+| GET    | `/api/v1/verifications/active`                | HAS_READ      | The running batch, or **204** when nothing is running |
+| GET    | `/api/v1/verifications`                       | HAS_READ      | Previous jobs (`status`, `requested_by`, `from`, `to`, paginated) |
+| GET    | `/api/v1/verifications/{id}`                  | HAS_READ      | Job detail with counters and progress              |
+| GET    | `/api/v1/verifications/{id}/items`            | HAS_READ      | Per-company results (`status`, `q`, paginated)     |
+| GET    | `/api/v1/verifications/eligible`              | HAS_READ      | Selection candidates — **never** a VERIFIED company (`added_by`, `date_from`, `date_to`, `verification_status`, `q`) |
+| GET    | `/api/v1/verifications/companies`             | HAS_READ      | Verified companies **only** (`q`, `verified_by`, `verified_from`, `verified_to`, `added_by`) |
+| GET    | `/api/v1/verifications/added-by-options`      | HAS_READ      | Options for the Added By filter                    |
+
+Verify-specific status codes, on top of the table below:
+
+| Status | When                                                                        |
+| ------ | --------------------------------------------------------------------------- |
+| 202    | Batch accepted; queue rows committed, no provider call made yet             |
+| 204    | `GET /active` — no batch is running (a normal state, not an error)           |
+| 400    | `date_from` after `date_to`; unknown status filter; `verification_status=VERIFIED` on `/eligible` |
+| 409    | A selected company is already queued or processing in another batch          |
+| 422    | No eligible company in the selection, or more companies than the configured cap |
+
+**What verification proves.** A successful lookup means the number is valid and
+on a **mobile** line. It does not prove ownership and does not mean anyone
+answered. Successful items set `companies.verification_status = VERIFIED`; every
+other outcome records the reason on the item and leaves the company unverified.
+
 ### Error responses
 
 All errors use `application/problem+json`:
@@ -293,6 +325,8 @@ All errors use `application/problem+json`:
 | `/imports`         | ImportListPage     | MUTATE_ROLES     | Import batch list          |
 | `/imports/new`     | ImportWizardPage   | MUTATE_ROLES     | New import wizard          |
 | `/imports/:id`     | ImportDetailPage   | MUTATE_ROLES     | Import batch detail        |
+| `/verify`          | VerifyPage         | authenticated    | Verify workspace           |
+| `/verify/:id`      | VerificationDetailPage | authenticated | Verification job detail  |
 | `/settings/users`  | UsersPage          | ADMIN_ROLES      | User management            |
 | `/settings/roles`  | RolesPage          | ADMIN_ROLES      | Role management            |
 
@@ -309,6 +343,8 @@ live in `backend/src/main/resources/db/migration/`.
 | V4      | Auth tables (users, roles, user_roles) |
 | V5      | Seed 5 roles             |
 | V6      | Seed 7 users + 7 role assignments |
+| V7      | Create activities table (PRD v1.1 §10; VERIFICATION activities compose into the Company Timeline) |
+| V8      | Create verification_batches + verification_batch_items (the DB-backed verification queue) |
 
 ## Design template integration
 
@@ -379,6 +415,17 @@ Infrastructure and backend variables live in the root `.env` (see
 | `MINIO_BUCKET`          | `prospectsoul`                                   |
 | `CORS_ALLOWED_ORIGINS`  | `http://localhost:5173`                          |
 | `OPENAI_API_KEY`        | `not-configured` (placeholder, see below)        |
+| `TWILIO_ACCOUNT_SID`    | empty (see "Twilio setup" below)                 |
+| `TWILIO_AUTH_TOKEN`     | empty (see "Twilio setup" below)                 |
+| `TWILIO_LOOKUP_BASE_URL`| `https://lookups.twilio.com`                     |
+| `VERIFICATION_WORKER_ENABLED` | `true`                                     |
+| `VERIFICATION_POLL_INTERVAL_MS` | `5000`                                   |
+| `VERIFICATION_BATCH_SIZE` | `10` (items claimed per worker pass)           |
+| `VERIFICATION_MAX_RETRIES` | `3` (attempts per item)                       |
+| `VERIFICATION_PROVIDER` | `twilio`                                         |
+| `VERIFICATION_MAX_BATCH_COMPANIES` | `1000`                                |
+| `VERIFICATION_STALE_ITEM_TIMEOUT_MS` | `300000` (abandoned-item recovery)  |
+| `VERIFICATION_DEFAULT_COUNTRY_CODE` | `+91`                                |
 
 ### Frontend — `frontend/.env.local`
 
@@ -418,9 +465,122 @@ classpath and refuses to start without a credential, so `OPENAI_API_KEY`
 defaults to the placeholder `not-configured`. No AI feature is wired up; set a
 real key only when that work begins.
 
+## Verify module (company phone verification)
+
+The Verify workspace at `/verify` selects unverified companies, checks their
+phone numbers through Twilio Lookup, and maintains each company's record-level
+verification state. It is a background-processing feature, so the interesting
+parts are operational.
+
+### How a batch runs
+
+```text
+/verify → filter (Added By, date range) → select → confirm → POST /verifications (202)
+        → verification_batch_items rows committed
+        → worker claims with FOR UPDATE SKIP LOCKED
+        → Twilio Lookup v2 (Line Type Intelligence)
+        → item result persisted, company updated, VERIFICATION activity + audit row
+        → batch counters recomputed → COMPLETED / COMPLETED_WITH_ERRORS
+```
+
+There is no message broker. The queue is the `verification_batch_items` table,
+the same DB-backed pattern the import pipeline uses. That is what makes progress
+survive a browser refresh and a backend restart: the only place work-in-progress
+is recorded is PostgreSQL, and the UI reads it back from
+`GET /api/v1/verifications/active`.
+
+### Twilio setup
+
+The **backend** calls Twilio. Never copy these values into
+`frontend/.env.local` or any `VITE_` variable — everything shipped to the
+browser is public.
+
+1. In the Twilio console, take the **Account SID** and **Auth Token**.
+2. Put them in the root `.env`:
+
+   ```bash
+   TWILIO_ACCOUNT_SID=AC...
+   TWILIO_AUTH_TOKEN=...
+   TWILIO_LOOKUP_BASE_URL=https://lookups.twilio.com
+   ```
+
+3. Restart the backend.
+
+**Working without credentials.** Leave them empty and the whole module still
+works end to end — selection, the queue, live progress, history, per-item
+reasons. Every item simply fails permanently with `PROVIDER_NOT_CONFIGURED`,
+which is visible on the item in the UI rather than buried in a log. No test
+makes a live Twilio call.
+
+**Credential hygiene.** Any credential that has been pasted into a chat, a
+ticket, a code sample or an AI-assistant session must be treated as
+**compromised** and rotated before production use. Credentials are never logged,
+never returned in a DTO and never sent to the frontend.
+
+### Result rules
+
+| Provider result                 | Item     | Company            |
+| ------------------------------- | -------- | ------------------ |
+| valid **and** line type mobile  | VERIFIED | VERIFIED           |
+| valid but not a mobile line     | FAILED   | unchanged          |
+| not a valid number              | FAILED   | unchanged          |
+| timeout / 429 / temporary 5xx   | retried, then FAILED as `MAX_ATTEMPTS_EXCEEDED` | unchanged |
+| auth or configuration failure   | FAILED   | unchanged          |
+| no usable phone                 | SKIPPED (`NO_PHONE`) | unchanged |
+| already verified                | SKIPPED (`ALREADY_VERIFIED`) | unchanged |
+| outside the selected filters    | SKIPPED (`FILTER_MISMATCH`) | unchanged |
+
+One company's failure never stops the batch. Each item is processed in its own
+transaction, and the provider call happens with no transaction open.
+
+### Actor recording
+
+`companies.verified_by` records the **user who requested the batch** — the
+person accountable for the decision to verify. The fact that the check itself
+was performed automatically by a provider is recorded separately:
+
+- the `VERIFICATION` activity content carries `automated: true`, the provider,
+  the provider reference, the line type, `proves: PHONE_VALIDITY_AND_LINE_TYPE`
+  and `ownership_verified: false`;
+- the audit action is `VERIFY_AUTOMATED`, distinct from the `VERIFY` action the
+  manual `POST /api/v1/companies/{id}/verify` writes.
+
+### Troubleshooting
+
+| Symptom | Cause and fix |
+| ------- | ------------- |
+| Every item fails with `PROVIDER_NOT_CONFIGURED` | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` are unset or still a placeholder. Set them in the root `.env` and restart. |
+| Every item fails with `PROVIDER_AUTH_ERROR` | Twilio rejected the credentials (HTTP 401/403). The token was rotated or the SID belongs to another account. |
+| Items stay `QUEUED` and the progress bar never moves | The worker is off. Check `VERIFICATION_WORKER_ENABLED=true` and that the backend is running. Nothing is lost — the rows are still in the queue and are picked up when it starts. |
+| A batch is stuck at 99% with one item `PROCESSING` | The JVM died mid-item. The worker re-queues it once `VERIFICATION_STALE_ITEM_TIMEOUT_MS` has passed (5 min by default) and the attempt budget still applies. |
+| `409` when starting a batch | One of the selected companies already has a queued or processing item in another batch. The selection table marks those rows "Being verified" and makes them unselectable. |
+| `422 No eligible companies` | Everything selected is already verified, has no usable phone, or falls outside the Added By / date filters. |
+| A verified company shows an empty line type and carrier | It was verified through the manual `POST /api/v1/companies/{id}/verify`, which performs no provider lookup. |
+| Items fail with `NO_PHONE` although a phone is visible | The stored number does not normalise to 10 digits. `PhoneNormalizer` is the single source of truth; the Verify module only prefixes `VERIFICATION_DEFAULT_COUNTRY_CODE` to build the E.164 form Lookup requires. |
+| Rate limiting under a large batch | Lower `VERIFICATION_BATCH_SIZE` or raise `VERIFICATION_POLL_INTERVAL_MS`. `RATE_LIMITED` is retryable, so items are re-queued rather than lost. |
+
+### Reading a batch straight from the database
+
+```sql
+-- current state of a batch
+SELECT status, total_count, queued_count, processing_count,
+       verified_count, failed_count, skipped_count
+FROM verification_batches ORDER BY created_at DESC LIMIT 1;
+
+-- why individual companies failed
+SELECT c.canonical_name, i.status, i.line_type, i.failure_code, i.attempt_count
+FROM verification_batch_items i
+JOIN companies c ON c.id = i.company_id
+WHERE i.batch_id = '<batch-uuid>' AND i.status <> 'VERIFIED';
+```
+
 ## Not yet configured
 
 - **Springdoc / Swagger UI** is not installed. The latest release (2.8.6)
   targets Spring Boot 3.x; no version compatible with Spring Boot 4.1.1 has
   been published. Security annotations are documented in the API endpoints table
   above. Add Springdoc once a compatible version is available.
+- **Verify module OpenAPI** — for the same reason there is no generated
+  specification for `/api/v1/verifications`. Its request/response shapes,
+  authorization and status codes are documented in the API endpoints table
+  above, and pinned by `VerificationControllerIntegrationTest`.

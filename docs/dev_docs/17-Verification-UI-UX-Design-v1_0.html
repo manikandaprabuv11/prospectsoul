@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ProspectSoul — Verification Module Design</title>
+<style>
+:root{--ink:#171b21;--muted:#5b6169;--paper:#f5f6f4;--raised:#fff;--line:#dcded8;--indigo:#2c3e6b;--indigo-soft:#e7ebf3;--teal:#2f7d74;--teal-soft:#e4f0ee;--amber:#a86a10;--amber-soft:#faf1de;--rust:#a33a2c;--rust-soft:#f7e9e6}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.65 Arial,sans-serif}
+.shell{max-width:1180px;margin:auto;padding:56px 32px 120px;display:grid;grid-template-columns:230px 1fr;gap:60px}
+nav{position:sticky;top:30px;align-self:start}nav a{display:block;padding:7px 10px;color:var(--muted);text-decoration:none;border-left:2px solid var(--line)}nav a:hover{color:var(--ink);border-left-color:var(--indigo)}
+header h1{font-size:42px;line-height:1.1;margin:0 0 12px}header p{color:var(--muted);font-size:18px}
+.meta{padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+section{margin-top:60px}h2{font-size:27px;margin-bottom:8px}h3{font-size:19px;margin-top:30px}
+.card{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:22px;margin:18px 0}
+.callout{padding:15px 18px;border-left:3px solid var(--indigo);background:var(--indigo-soft);margin:20px 0}.success{border-left-color:var(--teal);background:var(--teal-soft)}.warn{border-left-color:var(--amber);background:var(--amber-soft)}
+table{width:100%;border-collapse:collapse;margin:18px 0 28px;font-size:14px}th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}th{font-size:12px;color:var(--muted);border-bottom-color:var(--ink)}
+.mock{background:#f8f9f7;border:1px solid var(--line);border-radius:8px;padding:20px;margin:20px 0}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.btn{border:1px solid #aaa;background:#fff;border-radius:5px;padding:9px 14px;font-weight:600}.primary{background:var(--indigo);color:#fff;border-color:var(--indigo)}.input{border:1px solid #bbb;background:#fff;padding:9px 12px;border-radius:5px;min-width:130px}.progress{height:12px;background:#e5e7e4;border-radius:8px;overflow:hidden}.bar{width:68%;height:100%;background:var(--teal)}
+.badge{display:inline-block;padding:3px 8px;border-radius:4px;background:var(--teal-soft);color:var(--teal);font-size:12px;font-weight:600}
+@media(max-width:850px){.shell{grid-template-columns:1fr;padding:30px 18px}.nav{position:static}}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav>
+<strong>Contents</strong>
+<a href="#overview">1. Overview</a>
+<a href="#navigation">2. Navigation</a>
+<a href="#selection">3. Selection</a>
+<a href="#progress">4. Progress</a>
+<a href="#history">5. History</a>
+<a href="#verified">6. Verified list</a>
+<a href="#states">7. UI states</a>
+<a href="#responsive">8. Interaction rules</a>
+</nav>
+<main>
+<header>
+<div style="color:var(--indigo);font-size:13px">ProspectSoul · UI/UX Technical Companion</div>
+<h1>Company Verification Module</h1>
+<p>A dense, queue-oriented workspace for selecting unverified companies, running Twilio-backed verification in the background, and reviewing durable results.</p>
+<div class="meta">Version <b>1.0</b> · Module <b>Verify</b> · Status <b>Ready for implementation</b> · Doc index <b>17</b> of the <code>docs/dev_docs</code> set — companion to 13 (Requirements), 14 (Technical Specification), 15 (Implementation Plan), 16 (Kickoff Prompt)</div>
+</header>
+
+<section id="overview"><h2>1. Overview</h2>
+<p>The Verify experience must feel like an operational queue, not a generic CRUD screen. The active job is persistent and can be resumed after navigation.</p>
+<div class="callout success"><b>Core invariant:</b> the verified-company table contains verified companies only. Unverified companies appear in the selection workflow.</div>
+</section>
+
+<section id="navigation"><h2>2. Navigation</h2>
+<div class="card"><b>Sidebar</b><pre>Dashboard
+Companies
+Imports
+Triage
+Research
+Verify       ← active
+Qualification
+Ready Pool
+Reports
+Settings</pre></div>
+</section>
+
+<section id="selection"><h2>3. Selection</h2>
+<div class="mock">
+<div class="toolbar"><h3 style="margin:0;flex:1">Verify Companies</h3><button class="btn primary">Verify New Companies</button></div>
+<div class="toolbar" style="margin-top:20px">
+<select class="input"><option>Added By: All</option><option>Mani</option><option>Kumar</option></select>
+<input class="input" placeholder="Date From">
+<input class="input" placeholder="Date To">
+<select class="input"><option>Unverified</option></select>
+<button class="btn">Apply</button><button class="btn">Reset</button>
+</div>
+<table><thead><tr><th>☐</th><th>Company</th><th>Added By</th><th>Added Date</th><th>Phone</th><th>Status</th></tr></thead>
+<tbody><tr><td>☐</td><td>ABC Pumps</td><td>Mani</td><td>09 Sep 2026</td><td>+91 81312 81281</td><td>Unverified</td></tr>
+<tr><td>☐</td><td>XYZ Engineering</td><td>Mani</td><td>09 Sep 2026</td><td>+91 98765 43210</td><td>Unverified</td></tr></tbody></table>
+<div class="toolbar"><span><b>2</b> companies selected</span><button class="btn primary">Start Verification</button></div>
+</div>
+<p>The confirmation dialog must state that verification continues in the background and the user can leave the page.</p>
+</section>
+
+<section id="progress"><h2>4. Current Verification</h2>
+<div class="mock">
+<div class="toolbar"><h3 style="margin:0;flex:1">Current Verification</h3><span class="badge">PROCESSING</span></div>
+<p><b>68 / 100</b> companies processed</p><div class="progress"><div class="bar"></div></div>
+<div class="toolbar" style="margin-top:18px"><span>Verified <b>65</b></span><span>Processing <b>1</b></span><span>Queued <b>31</b></span><span>Failed <b>2</b></span></div>
+<div class="card"><b>Currently verifying</b><br>ABC Pumps Pvt Ltd<br><small>+91 81312 81281 · Twilio Lookup · Mobile</small></div>
+<p style="color:var(--muted)">Started 09 Sep 2026, 16:42 · Elapsed 03:21</p>
+</div>
+<div class="callout"><b>Persistence:</b> if the user navigates away and returns, this card must reconstruct itself from <code>/api/v1/verifications/active</code>.</div>
+</section>
+
+<section id="history"><h2>5. Previous Verification Jobs</h2>
+<table><thead><tr><th>Started</th><th>Requested By</th><th>Filter</th><th>Total</th><th>Verified</th><th>Failed</th><th>Status</th></tr></thead>
+<tbody><tr><td>09 Sep 16:42</td><td>Mani</td><td>Mani · Sep 9</td><td>100</td><td>98</td><td>2</td><td><span class="badge">Completed with errors</span></td></tr>
+<tr><td>08 Sep 15:10</td><td>Mani</td><td>All · Sep 8</td><td>75</td><td>75</td><td>0</td><td><span class="badge">Completed</span></td></tr></tbody></table>
+</section>
+
+<section id="verified"><h2>6. Verified Companies</h2>
+<div class="mock">
+<div class="toolbar"><h3 style="margin:0;flex:1">Verified Companies</h3><input class="input" placeholder="Search company"></div>
+<table><thead><tr><th>Company</th><th>Verified By</th><th>Verified At</th><th>Added By</th><th>Phone</th><th>Line Type</th><th>Carrier</th></tr></thead>
+<tbody><tr><td>ABC Pumps</td><td>Mani</td><td>09 Sep 16:50</td><td>Mani</td><td>+91...</td><td>Mobile</td><td>Airtel</td></tr></tbody></table>
+</div>
+</section>
+
+<section id="states"><h2>7. UI States</h2>
+<table><thead><tr><th>State</th><th>UI behavior</th></tr></thead><tbody>
+<tr><td>No active job</td><td>Show empty current-verification state and CTA.</td></tr>
+<tr><td>Queued</td><td>Show queued status and zero/partial progress.</td></tr>
+<tr><td>Processing</td><td>Show live polling progress and current company.</td></tr>
+<tr><td>Completed</td><td>Show final statistics and move job to history.</td></tr>
+<tr><td>Completed with errors</td><td>Show verified/failed/skipped counts and inspectable failures.</td></tr>
+<tr><td>Provider failure</td><td>Show item-level failure; continue remaining items.</td></tr>
+<tr><td>No eligible companies</td><td>Explain that no unverified companies match filters.</td></tr>
+</tbody></table>
+</section>
+
+<section id="responsive"><h2>8. Interaction Rules</h2>
+<ul>
+<li>Do not disable the whole page while a batch is running.</li>
+<li>Do not cancel a background job merely because the route changes.</li>
+<li>Poll only while an active batch is non-terminal.</li>
+<li>Use the existing design system and table/pagination components.</li>
+<li>Show clear role-based action visibility, but enforce authorization in the backend.</li>
+<li>Use accessible labels, keyboard navigation and visible focus states.</li>
+</ul>
+</section>
+</main>
+</div>
+</body>
+</html>

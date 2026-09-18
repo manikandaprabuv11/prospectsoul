@@ -84,6 +84,35 @@ prospectsoul:
     secret-key: ${MINIO_SECRET_KEY:prospectsoul}
     bucket: ${MINIO_BUCKET:prospectsoul}
 
+  # Company phone verification (docs/dev_docs/14 §16). The worker is a
+  # DB-backed queue over verification_batch_items; no message broker.
+  verification:
+    worker-enabled: ${VERIFICATION_WORKER_ENABLED:true}
+    poll-interval-ms: ${VERIFICATION_POLL_INTERVAL_MS:5000}
+    batch-size: ${VERIFICATION_BATCH_SIZE:10}
+    max-retries: ${VERIFICATION_MAX_RETRIES:3}
+    provider: ${VERIFICATION_PROVIDER:twilio}
+    max-batch-companies: ${VERIFICATION_MAX_BATCH_COMPANIES:1000}
+    # How long an item may sit in PROCESSING before the worker treats it as
+    # abandoned by a dead JVM and returns it to the queue.
+    stale-item-timeout-ms: ${VERIFICATION_STALE_ITEM_TIMEOUT_MS:300000}
+    # Dialling code prefixed to a normalized 10-digit national number to build
+    # the E.164 form Twilio Lookup requires.
+    default-country-code: ${VERIFICATION_DEFAULT_COUNTRY_CODE:+91}
+
+    # Twilio Lookup v2 credentials. Environment only — never commit a real
+    # value, never expose one to the frontend, and treat any credential that
+    # has been pasted into a conversation or a sample as compromised and
+    # rotate it before production use. With no credentials configured, every
+    # item fails permanently with PROVIDER_NOT_CONFIGURED, which is visible on
+    # the item rather than hidden in a log.
+    twilio:
+      account-sid: ${TWILIO_ACCOUNT_SID:}
+      auth-token: ${TWILIO_AUTH_TOKEN:}
+      lookup-base-url: ${TWILIO_LOOKUP_BASE_URL:https://lookups.twilio.com}
+      connect-timeout-ms: ${TWILIO_CONNECT_TIMEOUT_MS:5000}
+      read-timeout-ms: ${TWILIO_READ_TIMEOUT_MS:10000}
+
 logging:
   level:
     org.springframework.security: ${LOG_LEVEL_SECURITY:INFO}

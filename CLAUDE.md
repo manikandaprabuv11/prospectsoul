@@ -140,8 +140,8 @@ Re-check the README and the tree rather than trusting this paragraph.
 ### 3.1 Architecture (`Backend-File-Structure.md`)
 
 - **Feature-first, technical layer second.** Each business capability (`company/`, `contact/`,
-  `imports/`, `triage/`, `activity/`, `evidence/`, `research/`, `icp/`, `qualification/`,
-  `export/`, `report/`, `admin/`, `ai/`) owns its own `controller/`, `service/`, `repository/`,
+  `imports/`, `triage/`, `activity/`, `verification/`, `evidence/`, `research/`, `icp/`,
+  `qualification/`, `export/`, `report/`, `admin/`, `ai/`) owns its own `controller/`, `service/`, `repository/`,
   `entity/`, `dto/{request,response}/`, `mapper/`, `specification/`. Never build one global
   `controller/`/`service/`/`repository/` for the whole app.
 - `config/` holds app-wide Spring config only. `common/` holds genuinely shared infrastructure

@@ -9,6 +9,8 @@ import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { ImportDetailPage } from '@/features/imports/pages/ImportDetailPage'
 import { ImportListPage } from '@/features/imports/pages/ImportListPage'
 import { ImportWizardPage } from '@/features/imports/pages/ImportWizardPage'
+import { VerificationDetailPage } from '@/features/verification/pages/VerificationDetailPage'
+import { VerifyPage } from '@/features/verification/pages/VerifyPage'
 import { AppLayout } from '@/layouts/AppLayout'
 import { createBrowserRouter } from 'react-router'
 
@@ -62,6 +64,11 @@ export const router = createBrowserRouter([
           </RequireRole>
         ),
       },
+      // Verify is readable by every role that can read (Analyst, Sales Lead,
+      // Admin, Viewer, COO); starting a verification is gated inside the page
+      // and, decisively, by @PreAuthorize on the backend.
+      { path: '/verify', element: <VerifyPage /> },
+      { path: '/verify/:id', element: <VerificationDetailPage /> },
       {
         path: '/settings/users',
         element: (
