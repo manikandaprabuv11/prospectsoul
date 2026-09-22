@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProspectSoul — Sales Intelligence Extension · Docs 19–24</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #F5F1E8;
+    --paper-2: #EEEAE0;
+    --paper-raised: #FBF8F0;
+    --ink: #1F2933;
+    --ink-2: #3E4C59;
+    --muted: #7B8794;
+    --rule: #D9D3C4;
+    --rule-2: #E8E3D6;
+    --accent: #315B4A;        /* deep forest — not terracotta */
+    --accent-2: #4B7A66;
+    --accent-wash: #DFEBE4;
+    --warn: #A45C2F;          /* burnt sienna, used sparingly */
+    --warn-wash: #F0DDCC;
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Inter', -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#1A1D22; --paper-2:#22262C; --paper-raised:#252A31;
+      --ink:#E8E4D8; --ink-2:#B8B3A2; --muted:#8A857A;
+      --rule:#3A3E45; --rule-2:#2E3239;
+      --accent:#7FB097; --accent-2:#96C5AE; --accent-wash:#1F3329;
+      --warn:#D68D5F; --warn-wash:#3A2418;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#1A1D22; --paper-2:#22262C; --paper-raised:#252A31;
+    --ink:#E8E4D8; --ink-2:#B8B3A2; --muted:#8A857A;
+    --rule:#3A3E45; --rule-2:#2E3239;
+    --accent:#7FB097; --accent-2:#96C5AE; --accent-wash:#1F3329;
+    --warn:#D68D5F; --warn-wash:#3A2418;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--sans); font-size:15.5px; line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* -------- Cover / Hero -------- */
+  .cover{
+    padding:72px 40px 56px; border-bottom:1px solid var(--rule);
+    background:
+      radial-gradient(circle at 15% 10%, var(--accent-wash) 0%, transparent 45%),
+      var(--paper);
+  }
+  .cover-inner{max-width:1180px; margin:0 auto;}
+  .cover-meta{
+    font-family:var(--mono); font-size:12px; color:var(--ink-2);
+    display:flex; gap:20px; margin-bottom:32px; flex-wrap:wrap;
+  }
+  .cover-meta span::before{content:"·"; margin-right:20px; color:var(--rule);}
+  .cover-meta span:first-child::before{content:""; margin:0;}
+  h1.title{
+    font-family:var(--serif); font-weight:500; font-size:clamp(46px, 6.5vw, 92px);
+    line-height:1.02; letter-spacing:-0.02em; margin:0 0 8px; max-width:14ch;
+    color:var(--ink);
+  }
+  h1.title em{font-style:italic; color:var(--accent); font-weight:500;}
+  .subtitle{
+    font-family:var(--serif); font-size:22px; font-style:italic; font-weight:500;
+    color:var(--ink-2); max-width:52ch; margin:0 0 44px; letter-spacing:-0.01em;
+  }
+  .cover-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    gap:0; border-top:1px solid var(--rule); padding-top:28px;
+  }
+  .cover-grid > div{padding-right:22px;}
+  .cover-grid dt{
+    font-family:var(--mono); font-size:11px; color:var(--muted); text-transform:none;
+    margin-bottom:6px;
+  }
+  .cover-grid dd{
+    margin:0; font-size:14px; color:var(--ink); font-weight:500;
+  }
+  .cover-grid dd span{color:var(--muted); font-weight:400; display:block; font-size:12.5px;}
+
+  /* -------- Layout -------- */
+  .layout{max-width:1180px; margin:0 auto; display:flex; gap:0; align-items:flex-start;}
+  nav.toc{
+    width:260px; flex-shrink:0; position:sticky; top:0; align-self:flex-start;
+    padding:40px 24px 40px 40px; height:100vh; overflow-y:auto;
+    border-right:1px solid var(--rule);
+  }
+  nav.toc h4{
+    font-family:var(--mono); font-size:10.5px; font-weight:500; color:var(--muted);
+    margin:24px 0 8px; letter-spacing:0.08em; text-transform:uppercase;
+  }
+  nav.toc h4:first-child{margin-top:0;}
+  nav.toc a{
+    display:block; text-decoration:none; color:var(--ink-2);
+    font-size:13.5px; padding:5px 10px 5px 12px; border-left:2px solid transparent;
+    margin-left:-12px; line-height:1.4;
+  }
+  nav.toc a:hover{color:var(--ink); background:var(--paper-2);}
+  nav.toc a.active{color:var(--accent); border-left-color:var(--accent); font-weight:500;}
+  nav.toc a .n{
+    font-family:var(--mono); font-size:11px; color:var(--muted); margin-right:8px;
+  }
+  nav.toc a.active .n{color:var(--accent);}
+  main{flex:1; min-width:0; padding:48px 48px 120px;}
+  .toggle-theme{
+    font-family:var(--mono); font-size:11px; background:transparent; border:1px solid var(--rule);
+    color:var(--muted); padding:6px 10px; border-radius:2px; cursor:pointer; margin-top:32px;
+  }
+
+  /* -------- Doc sections -------- */
+  .doc{max-width:780px; margin:0 auto 96px; padding-top:20px;}
+  .doc:first-child{padding-top:0;}
+  .doc-num{
+    font-family:var(--mono); font-size:11px; color:var(--muted);
+    letter-spacing:0.05em; margin-bottom:6px; display:block;
+  }
+  h2.doc-title{
+    font-family:var(--serif); font-weight:500; font-size:44px; line-height:1.08;
+    letter-spacing:-0.02em; margin:0 0 12px; color:var(--ink);
+  }
+  h2.doc-title em{font-style:italic; color:var(--accent-2);}
+  .doc-lead{
+    font-family:var(--serif); font-size:18px; font-style:italic; color:var(--ink-2);
+    margin:0 0 40px; max-width:56ch; line-height:1.5;
+  }
+  h3{
+    font-family:var(--serif); font-weight:500; font-size:24px; letter-spacing:-0.01em;
+    margin:44px 0 10px; color:var(--ink);
+  }
+  h4{
+    font-family:var(--sans); font-weight:600; font-size:14.5px;
+    margin:28px 0 8px; color:var(--ink);
+  }
+  h5{
+    font-family:var(--mono); font-weight:500; font-size:11.5px;
+    letter-spacing:0.06em; color:var(--muted); text-transform:uppercase;
+    margin:24px 0 6px;
+  }
+  p{margin:0 0 14px; max-width:68ch;}
+  strong{color:var(--ink); font-weight:600;}
+  em{color:var(--ink-2); font-style:italic;}
+  a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent-wash);}
+  a:hover{border-bottom-color:var(--accent);}
+
+  ul, ol{padding-left:24px; margin:0 0 18px;}
+  li{margin-bottom:7px;}
+  li::marker{color:var(--muted);}
+
+  code{font-family:var(--mono); font-size:12.5px; background:var(--paper-2); padding:1.5px 5px; border-radius:2px; color:var(--ink-2);}
+  pre{
+    background:var(--paper-raised); border:1px solid var(--rule-2); border-left:3px solid var(--accent);
+    padding:18px 22px; border-radius:2px; overflow-x:auto;
+    font-family:var(--mono); font-size:12.5px; line-height:1.65; margin:16px 0 22px;
+    color:var(--ink);
+  }
+  pre code{background:transparent; padding:0; font-size:inherit;}
+  pre .k{color:var(--accent); font-weight:500;}
+  pre .s{color:var(--warn);}
+  pre .c{color:var(--muted); font-style:italic;}
+
+  table{
+    border-collapse:collapse; width:100%; margin:16px 0 24px; font-size:13.5px;
+    border-top:1px solid var(--rule);
+  }
+  th, td{
+    text-align:left; padding:11px 14px 11px 0; vertical-align:top;
+    border-bottom:1px solid var(--rule-2);
+  }
+  th{
+    font-family:var(--mono); font-weight:500; font-size:11px; color:var(--muted);
+    letter-spacing:0.04em; border-bottom:1px solid var(--rule);
+  }
+  td code{background:var(--paper-2); padding:1px 5px; font-size:12px;}
+
+  blockquote{
+    margin:22px 0; padding:2px 0 2px 20px; border-left:3px solid var(--accent);
+    font-family:var(--serif); font-style:italic; font-size:17px; color:var(--ink-2);
+    max-width:60ch;
+  }
+
+  .status{
+    display:inline-block; font-family:var(--mono); font-size:10.5px; font-weight:500;
+    padding:2px 8px; border-radius:2px; letter-spacing:0.05em; margin-right:6px;
+  }
+  .status.new{background:var(--accent-wash); color:var(--accent);}
+  .status.ext{background:var(--paper-2); color:var(--ink-2); border:1px solid var(--rule);}
+  .status.rewk{background:var(--warn-wash); color:var(--warn);}
+  .status.defer{background:var(--paper-2); color:var(--muted);}
+
+  .callout{
+    background:var(--paper-raised); border:1px solid var(--rule-2);
+    padding:18px 22px; margin:20px 0; border-radius:2px;
+  }
+  .callout h5{margin-top:0;}
+
+  /* Diagram / ASCII */
+  .diagram{
+    background:var(--paper-raised); border:1px solid var(--rule-2);
+    padding:22px 24px; border-radius:2px; overflow-x:auto;
+    font-family:var(--mono); font-size:12px; line-height:1.75; margin:18px 0 24px;
+    color:var(--ink-2); white-space:pre;
+  }
+  .diagram b{color:var(--ink); font-weight:600;}
+  .diagram .a{color:var(--accent); font-weight:500;}
+  .diagram .m{color:var(--warn);}
+
+  /* NIC ladder visual */
+  .nic-ladder{
+    display:flex; align-items:stretch; gap:0; margin:24px 0 32px;
+    background:var(--paper-raised); border:1px solid var(--rule-2); padding:22px;
+    overflow-x:auto; border-radius:2px;
+  }
+  .nic-ladder .step{
+    flex:1; min-width:130px; padding:0 20px; border-right:1px solid var(--rule-2);
+    display:flex; flex-direction:column; gap:6px;
+  }
+  .nic-ladder .step:last-child{border-right:none;}
+  .nic-ladder .step:first-child{padding-left:0;}
+  .nic-ladder .step .lvl{
+    font-family:var(--mono); font-size:10.5px; color:var(--muted); letter-spacing:0.06em;
+  }
+  .nic-ladder .step .code{
+    font-family:var(--serif); font-weight:500; font-size:32px; color:var(--accent);
+    line-height:1;
+  }
+  .nic-ladder .step .desc{
+    font-size:12.5px; color:var(--ink-2); line-height:1.4;
+  }
+
+  /* Mock UI */
+  .mock{
+    border:1px solid var(--rule); border-radius:3px; overflow:hidden;
+    margin:20px 0 28px; background:var(--paper-raised);
+    box-shadow:0 1px 0 rgba(0,0,0,0.02);
+  }
+  .mock .titlebar{
+    background:var(--paper-2); border-bottom:1px solid var(--rule);
+    padding:8px 14px; display:flex; justify-content:space-between; align-items:center;
+    font-family:var(--mono); font-size:11px; color:var(--muted);
+  }
+  .mock .titlebar b{color:var(--ink-2); font-weight:500;}
+  .mock .body{padding:18px 20px;}
+  .mrow{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;}
+  .mfield{
+    flex:1; min-width:140px; padding:8px 12px;
+    border:1px solid var(--rule); border-radius:2px; background:var(--paper);
+    font-size:12.5px; color:var(--ink-2);
+  }
+  .mfield .lb{
+    font-family:var(--mono); font-size:10px; color:var(--muted);
+    display:block; margin-bottom:3px; letter-spacing:0.04em;
+  }
+  .mfield .v{color:var(--ink); font-weight:500;}
+  .mfield.chk{
+    background:transparent; border:1px dashed var(--rule);
+    display:flex; align-items:center; gap:8px;
+  }
+
+  .mtable{width:100%; font-size:12px; border-collapse:collapse; margin-top:8px;}
+  .mtable th{
+    text-align:left; padding:8px 10px; font-family:var(--mono); font-size:10.5px;
+    color:var(--muted); border-bottom:1px solid var(--rule); font-weight:500;
+  }
+  .mtable td{
+    padding:9px 10px; border-bottom:1px solid var(--rule-2); color:var(--ink-2);
+  }
+  .mtable td .pill{
+    display:inline-block; padding:1px 7px; border-radius:2px;
+    font-family:var(--mono); font-size:10px; margin-right:4px;
+  }
+  .mtable td .pill.a{background:var(--accent-wash); color:var(--accent);}
+  .mtable td .pill.b{background:var(--warn-wash); color:var(--warn);}
+  .mtable td .pill.g{background:var(--paper-2); color:var(--muted); border:1px solid var(--rule);}
+  .mtable td .pri{color:var(--warn); font-weight:600;}
+
+  /* Map mock */
+  .mapmock{
+    height:200px; position:relative; margin:12px 0; border-radius:2px; overflow:hidden;
+    background:
+      linear-gradient(135deg, var(--paper-2) 0%, var(--paper-raised) 100%),
+      radial-gradient(circle at 30% 40%, var(--accent-wash) 0%, transparent 30%);
+    border:1px solid var(--rule);
+  }
+  .mapmock::before{
+    content:""; position:absolute; inset:0;
+    background:
+      repeating-linear-gradient(0deg, transparent 0, transparent 22px, var(--rule-2) 22px, var(--rule-2) 23px),
+      repeating-linear-gradient(90deg, transparent 0, transparent 22px, var(--rule-2) 22px, var(--rule-2) 23px);
+    opacity:0.5;
+  }
+  .mapmock .road{
+    position:absolute; background:var(--rule); height:3px; transform-origin:left center;
+  }
+  .pin{
+    position:absolute; width:12px; height:12px; border-radius:50%;
+    transform:translate(-50%,-50%); z-index:2;
+  }
+  .pin.own{background:var(--accent); box-shadow:0 0 0 2px var(--paper-raised);}
+  .pin.ext{
+    background:transparent; border:2px dashed var(--warn);
+    box-shadow:0 0 0 1px var(--paper-raised);
+  }
+  .legend{
+    display:flex; gap:22px; font-size:12px; color:var(--ink-2); margin:4px 0 10px;
+    font-family:var(--mono);
+  }
+  .legend .dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:7px; vertical-align:baseline;}
+  .legend .dot.own{background:var(--accent);}
+  .legend .dot.ext{background:transparent; border:1.5px dashed var(--warn);}
+
+  .rescard{
+    padding:10px 14px; margin:6px 0; font-size:12.5px;
+    display:flex; justify-content:space-between; align-items:center;
+    border-radius:2px;
+  }
+  .rescard.own{background:var(--paper); border:1px solid var(--rule);}
+  .rescard.ext{background:var(--paper); border:1px dashed var(--warn); color:var(--ink-2);}
+  .rescard button{
+    font-family:var(--sans); font-size:11.5px; font-weight:500;
+    background:var(--accent); color:var(--paper-raised); border:none;
+    padding:6px 12px; border-radius:2px; cursor:pointer;
+  }
+  .rescard.own a{color:var(--muted); border:none; font-family:var(--mono); font-size:11px;}
+
+  /* Contact / NIC pill lists */
+  .contact-card{
+    padding:14px 16px; margin:8px 0; background:var(--paper);
+    border:1px solid var(--rule); border-radius:2px;
+  }
+  .contact-card .top{display:flex; justify-content:space-between; align-items:baseline;}
+  .contact-card .name{font-weight:600; color:var(--ink);}
+  .contact-card .role{
+    font-family:var(--mono); font-size:10.5px; color:var(--accent);
+    background:var(--accent-wash); padding:1px 7px; border-radius:2px;
+  }
+  .contact-card .primary-star{color:var(--warn); font-size:14px;}
+  .contact-card .details{font-size:12px; color:var(--muted); margin-top:4px;}
+
+  /* Cover ADR list */
+  .adr-list{list-style:none; padding:0;}
+  .adr-list li{
+    padding:14px 0; border-bottom:1px solid var(--rule-2);
+    display:flex; gap:16px; align-items:baseline;
+  }
+  .adr-list li:last-child{border-bottom:none;}
+  .adr-list .id{
+    font-family:var(--mono); font-size:11.5px; color:var(--muted);
+    letter-spacing:0.04em; flex-shrink:0; width:78px;
+  }
+  .adr-list .t{
+    font-family:var(--serif); font-size:17px; color:var(--ink); font-weight:500;
+    line-height:1.35;
+  }
+  .adr-list .t em{color:var(--ink-2); font-size:13.5px; font-family:var(--sans); font-style:normal; display:block; margin-top:3px;}
+
+  .section-rule{
+    border:none; border-top:1px solid var(--rule); margin:44px 0;
+  }
+
+  footer{
+    max-width:780px; margin:0 auto; padding:32px 0 80px; border-top:1px solid var(--rule);
+    color:var(--muted); font-size:12px; font-family:var(--mono);
+    display:flex; justify-content:space-between;
+  }
+
+  @media (max-width: 900px){
+    .layout{flex-direction:column;}
+    nav.toc{position:relative; width:100%; height:auto; padding:22px 24px;
+            border-right:none; border-bottom:1px solid var(--rule);}
+    nav.toc h4{margin:16px 0 4px;}
+    nav.toc a{padding:4px 8px; font-size:13px;}
+    main{padding:32px 24px 80px;}
+    .cover{padding:48px 24px 36px;}
+    h1.title{font-size:52px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<section class="cover">
+  <div class="cover-inner">
+    <div class="cover-meta">
+      <span>ProspectSoul</span>
+      <span>Sales Intelligence Extension</span>
+      <span>Addendum v1.0</span>
+      <span>Docs 19 – 24 · plus ADR 0001–0005</span>
+    </div>
+    <h1 class="title">Filter by <em>industry</em>. Locate by <em>pincode</em>. Track <em>every</em> contact.</h1>
+    <p class="subtitle">The specification set for extending ProspectSoul with NIC classification, twelve new company fields, multi-contact with role tags, a Google-Maps pincode module, and a filter-scoped list download — designed against 123,659 rows of real registry data.</p>
+    <dl class="cover-grid">
+      <div><dt>Companion to</dt><dd>PRD v1.1 <span>+ docs 01–18</span></dd></div>
+      <div><dt>Status</dt><dd>Proposed <span>pending sign-off</span></dd></div>
+      <div><dt>Scope</dt><dd>Five tracks<span>C1 → C5, sequential</span></dd></div>
+      <div><dt>Source file analyzed</dt><dd>Kanchipuram MSME<span>123,659 rows · 1,162 NIC codes</span></dd></div>
+    </dl>
+  </div>
+</section>
+
+<div class="layout">
+  <nav class="toc" id="toc">
+    <h4>Specification</h4>
+    <a href="#d19" data-t><span class="n">19</span>PRD Addendum</a>
+    <a href="#d20" data-t><span class="n">20</span>Domain Model</a>
+    <a href="#d21" data-t><span class="n">21</span>Technical Design</a>
+    <a href="#d22" data-t><span class="n">22</span>UI / UX</a>
+    <a href="#d23" data-t><span class="n">23</span>Implementation Plan</a>
+    <a href="#d24" data-t><span class="n">24</span>Claude Kickoff</a>
+    <h4>Decisions</h4>
+    <a href="#adr" data-t><span class="n">/adr</span>ADR-0001 to 0005</a>
+    <button class="toggle-theme" id="themeBtn">toggle theme</button>
+  </nav>
+
+  <main>
+
+  <!-- DOC 19 -->
+  <section class="doc" id="d19">
+    <span class="doc-num">19 · Product Requirements</span>
+    <h2 class="doc-title">The <em>five</em> additions Sales asked for.</h2>
+    <p class="doc-lead">What this addendum adds, what stays out, and the ten decisions that hold everything together.</p>
+
+    <h3>Changelog summary</h3>
+    <table>
+      <tr><th style="width:100px">Status</th><th>Item</th></tr>
+      <tr><td><span class="status new">NEW</span></td><td>NIC Master module — CRUD, hierarchical, importable, primary flag</td></tr>
+      <tr><td><span class="status ext">EXTEND</span></td><td><code>companies</code> gains 12 nullable columns</td></tr>
+      <tr><td><span class="status rewk">REWORK</span></td><td><code>contacts</code> extended for multi-contact with role tags</td></tr>
+      <tr><td><span class="status new">NEW</span></td><td><code>company_nic_codes</code> join table for multi-NIC per company</td></tr>
+      <tr><td><span class="status new">NEW</span></td><td>Hierarchical NIC-based filter on Companies List</td></tr>
+      <tr><td><span class="status new">NEW</span></td><td>Company Map (Google Maps) with owned + external results</td></tr>
+      <tr><td><span class="status new">NEW</span></td><td>Companies List Download (filter-scoped, no state change)</td></tr>
+      <tr><td><span class="status ext">CONV.</span></td><td>ADR folder convention for behavior-changing decisions</td></tr>
+      <tr><td><span class="status defer">DEFER</span></td><td>NIC auto-reclassification · GST registry validation · scheduled sweeps · Udyam-number as identity · person-entity model</td></tr>
+    </table>
+
+    <h3>Why now — two realities the source file surfaces</h3>
+    <blockquote>Seven of the twelve ICP fields are empty on registry import. A single company routinely carries multiple NIC codes. The maximum observed in one file: 91.</blockquote>
+    <p>Analysis of the Kanchipuram MSME registry (<code>Kanchipuram_data.xlsx</code>, 123,659 rows) found that <strong>21% of rows carry more than one NIC code</strong>, and that phone, website, GST, turnover, and headcount are entirely absent from that source. That's not a flaw in the file — it's registry data, not sales data — but it settles two design questions: NIC must be many-per-company, and completeness scoring must accommodate registry-shaped records.</p>
+
+    <h3>What this is not</h3>
+    <ul>
+      <li><strong>Not a change to ICP Qualification</strong> (PRD §3.3). NIC filtering is a search facet — no tier, no version, no qualification record.</li>
+      <li><strong>Not an automated scraping engine.</strong> The Places lookup is human-triggered, session-scoped, never persisted.</li>
+      <li><strong>Not a second creation path.</strong> External results and "+ Add" both route through the existing manual-entry flow — one door in.</li>
+      <li><strong>Not a rewrite of the existing <code>contacts</code> table.</strong> ADR-0001 records what changes and why.</li>
+    </ul>
+
+    <h3>Ten design decisions</h3>
+    <table>
+      <tr><th style="width:30px">#</th><th>Decision</th><th style="width:80px">ADR</th></tr>
+      <tr><td>1</td><td>Contact <strong>role</strong> becomes a first-class enum, not free-text <code>designation</code></td><td>0001</td></tr>
+      <tr><td>2</td><td>NIC codes attach via <strong>join table</strong>, not a scalar column — 91-activity companies would otherwise silently lose 90</td><td>0002</td></tr>
+      <tr><td>3</td><td>New company fields are <strong>additive</strong>; the table is not recreated</td><td>0003</td></tr>
+      <tr><td>4</td><td>Dedup rules are <strong>extended for registry sources</strong> — existing rules would swamp the Triage Queue with 15,002 falsely-flagged proprietor names</td><td>0004</td></tr>
+      <tr><td>5</td><td>Companies List <strong>Download</strong> is distinct from pipeline <strong>Export</strong> — overloading would silently push state to <code>EXPORTED</code></td><td>0005</td></tr>
+      <tr><td>6</td><td>External Places results are <strong>never persisted automatically</strong></td><td>—</td></tr>
+      <tr><td>7</td><td>NIC parent links resolved at import by <strong>longest existing prefix</strong> — some branches skip levels, so length-based truncation fails</td><td>—</td></tr>
+      <tr><td>8</td><td>NIC master import is <strong>reference-data import</strong> — separate from <code>import_batches</code></td><td>—</td></tr>
+      <tr><td>9</td><td>"ICP fields" in sales terminology refers to the 12 filters; <strong>"ICP Qualification"</strong> stays reserved for the Tier engine</td><td>—</td></tr>
+      <tr><td>10</td><td>NIC master is admin-editable with a <strong>primary/featured flag</strong> per node</td><td>—</td></tr>
+    </table>
+
+    <h3>Open items before build</h3>
+    <ol>
+      <li>Turnover: exact <code>NUMERIC</code> or a band like <code>size_band</code>?</li>
+      <li>Employee count: exact integer, or is <code>size_band</code> sufficient?</li>
+      <li>GST validation depth: regex only or check-digit validation?</li>
+      <li>Region taxonomy: free text or an admin-editable list?</li>
+      <li>Google Cloud billing owner — who sets <code>PLACES_DAILY_QUOTA</code>?</li>
+      <li>Unmatched NIC on import: NULL + flag, or auto-create placeholder for review?</li>
+      <li>Contact role list ownership: admin-configurable (recommended) or fixed enum?</li>
+      <li>Low-completeness registry imports: same <code>TRIAGE</code> as prospects, or a separate holding state so 100k+ don't swamp reports?</li>
+      <li>Multi-NIC filter behavior: one row per company or one row per matching NIC in grouped view?</li>
+    </ol>
+  </section>
+
+  <!-- DOC 20 -->
+  <section class="doc" id="d20">
+    <span class="doc-num">20 · Domain Model</span>
+    <h2 class="doc-title">Two new relationships, one <em>extended</em>.</h2>
+    <p class="doc-lead">Business concepts only. Where the entity map grows and the vocabulary must stay disciplined.</p>
+
+    <h3>Extended entity map</h3>
+    <div class="diagram">                        <b>COMPANY</b>  <span class="a">← unchanged anchor</span>
+                           |
+     +----------+----------+---------+----------+----------+
+     v          v          v         v          v          v
+  <b>CONTACTS</b>   ACTIVITIES  QUALIFICATIONS  <b>NIC CODES</b>  EXPORTS   ALIASES
+  <span class="a">(multi,</span>                              <span class="a">(many,</span>
+   <span class="a">role-tagged)</span>                          <span class="a">primary flag)</span>
+       |
+       v
+  <b>CONTACT ROLES</b>
+  <span class="a">(MD / HR / Purchase / …</span>
+   <span class="a">admin-editable list)</span>
+
+  <b>NIC MASTER</b>  <span class="a">— reference data, hierarchical, admin-editable</span>
+     Section → Division → Group → Class → Sub-class
+     Each node carries an <span class="m">is_primary</span> flag surfacing it in pickers.</div>
+
+    <h3>The NIC hierarchy</h3>
+    <p>Level is derived from code length. Parent is resolved and stored at import time — not derived at query time, because some branches skip levels.</p>
+    <div class="nic-ladder">
+      <div class="step"><span class="lvl">Section · 1 digit</span><span class="code">1</span><span class="desc">Crop and animal production</span></div>
+      <div class="step"><span class="lvl">Division · 2</span><span class="code">14</span><span class="desc">Animal production</span></div>
+      <div class="step"><span class="lvl">Group · 3</span><span class="code">141</span><span class="desc">Raising of cattle and buffaloes</span></div>
+      <div class="step"><span class="lvl">Class · 4</span><span class="code">1411</span><span class="desc">Raising and breeding of cattle</span></div>
+      <div class="step"><span class="lvl">Sub-class · 5</span><span class="code">14111</span><span class="desc">(example)</span></div>
+    </div>
+
+    <h3>Contact — what changes</h3>
+    <table>
+      <tr><th>Before</th><th>After</th></tr>
+      <tr>
+        <td>One primary contact per company. <code>is_primary</code>, <code>is_md_owner</code>, <code>designation</code> as free text.</td>
+        <td>Zero-to-many contacts. <code>is_primary</code> remains the default-display marker. A first-class <code>role</code> tag replaces free-text designation as the filter dimension. <code>is_md_owner</code> retained for backward compatibility.</td>
+      </tr>
+    </table>
+    <h4>Starter role list (admin-editable)</h4>
+    <p>MD / Owner · Director · CEO · COO · CFO · HR Head · Purchase Head · Sales Head · Plant Head · Accounts · Admin · IT · Other</p>
+
+    <h3>Eight new invariants</h3>
+    <p>Extending the numbered invariants in Domain Model v1.0 §5:</p>
+    <ol start="10">
+      <li><strong>NIC classification never blocks company creation.</strong></li>
+      <li><strong>NIC codes are reference data,</strong> not per-record free text.</li>
+      <li>Every company has <strong>zero or one primary NIC.</strong> Setting a new primary demotes the previous atomically.</li>
+      <li>Every company has <strong>zero or one primary contact.</strong> Same atomic rule.</li>
+      <li><strong>Contact role is a controlled vocabulary.</strong></li>
+      <li><strong>External location results are transient</strong> — no id, no persistence, until a human explicitly adds one.</li>
+      <li><strong>Region ≠ State ≠ Cluster ≠ District.</strong> Four distinct facets.</li>
+      <li><strong>Companies List download does not change pipeline state.</strong> Only pipeline Export does.</li>
+    </ol>
+
+    <h3>Vocabulary</h3>
+    <table>
+      <tr><th>Term</th><th>Means</th><th>Never means</th></tr>
+      <tr><td>NIC Code</td><td>A node in the classification tree</td><td>An ICP criterion or a cluster</td></tr>
+      <tr><td>NIC Filter</td><td>A taxonomy filter on the list</td><td>ICP Qualification</td></tr>
+      <tr><td>Primary NIC</td><td>Default NIC for a company</td><td>The only NIC</td></tr>
+      <tr><td>Contact Role</td><td>First-class tag: what the contact is</td><td><code>designation</code></td></tr>
+      <tr><td>Primary Contact</td><td>Default-display contact</td><td>The only contact</td></tr>
+      <tr><td>External Result</td><td>Live external record, not yet in system</td><td>A Company record</td></tr>
+      <tr><td>Region</td><td>Sales-territory grouping</td><td>State / district / cluster</td></tr>
+      <tr><td>Download</td><td>Filter-scoped file, no state change</td><td>Pipeline Export</td></tr>
+      <tr><td>Export</td><td>Pipeline Stage 5, state → <code>EXPORTED</code></td><td>Casual download</td></tr>
+    </table>
+  </section>
+
+  <!-- DOC 21 -->
+  <section class="doc" id="d21">
+    <span class="doc-num">21 · Technical Design</span>
+    <h2 class="doc-title">Migrations, modules, <em>contracts</em>.</h2>
+    <p class="doc-lead">Additive-only schema. Two new modules, two extended. All contracts specified so Claude Code cannot silently invent them.</p>
+
+    <h3>New backend modules</h3>
+    <pre>com.vyoog.prospectsoul/
+  <span class="k">nic/</span>                              <span class="c">-- NEW</span>
+    controller/   NicCodeController, NicImportController
+    service/      NicCodeService, NicImportService, NicTreeService
+    repository/   NicCodeRepository
+    entity/       NicCodeEntity
+    dto/          NicCodeDto, NicImportResultDto, NicTreeNodeDto
+  <span class="k">location/</span>                         <span class="c">-- NEW</span>
+    controller/   MapController, PlacesLookupController
+    service/      CompanyMapService, PlacesLookupService, PincodeCentroidService
+    dto/          MapCompanyDto, ExternalPlaceDto, PincodeCentroidDto</pre>
+
+    <h3>Migrations — additive only</h3>
+    <h5>V&lt;next&gt;__nic_master.sql</h5>
+    <pre><span class="k">CREATE TABLE</span> nic_codes (
+  id              UUID <span class="k">PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  nic_data_id     INTEGER,
+  code            VARCHAR(6) <span class="k">NOT NULL UNIQUE</span>,
+  description     TEXT <span class="k">NOT NULL</span>,
+  industry_type   VARCHAR(20) <span class="k">NOT NULL</span>,     <span class="c">-- 'Service' | 'Manufacturing'</span>
+  level           SMALLINT <span class="k">NOT NULL</span>,         <span class="c">-- 1..5</span>
+  parent_id       UUID <span class="k">REFERENCES</span> nic_codes(id),
+  is_primary      BOOLEAN <span class="k">NOT NULL DEFAULT</span> false,
+  active          BOOLEAN <span class="k">NOT NULL DEFAULT</span> true,
+  created_by      UUID, created_at TIMESTAMPTZ <span class="k">NOT NULL DEFAULT</span> now(),
+  updated_by      UUID, updated_at TIMESTAMPTZ <span class="k">NOT NULL DEFAULT</span> now()
+);</pre>
+
+    <h5>V&lt;next+1&gt;__company_sales_fields.sql</h5>
+    <pre><span class="c">-- companies table NOT recreated</span>
+<span class="k">ALTER TABLE</span> companies
+  <span class="k">ADD COLUMN</span> pincode              VARCHAR(6),
+  <span class="k">ADD COLUMN</span> district             VARCHAR(120),
+  <span class="k">ADD COLUMN</span> address_line         TEXT,
+  <span class="k">ADD COLUMN</span> region               VARCHAR(120),
+  <span class="k">ADD COLUMN</span> products             TEXT,
+  <span class="k">ADD COLUMN</span> turnover             NUMERIC(18,2),
+  <span class="k">ADD COLUMN</span> gst_number           VARCHAR(15),
+  <span class="k">ADD COLUMN</span> employee_count       INTEGER,
+  <span class="k">ADD COLUMN</span> registration_date    DATE,
+  <span class="k">ADD COLUMN</span> source_reference     VARCHAR(120),
+  <span class="k">ADD COLUMN</span> lg_state_code        SMALLINT,
+  <span class="k">ADD COLUMN</span> lg_district_code     INTEGER,
+  <span class="k">ADD COLUMN</span> primary_nic_code_id  UUID <span class="k">REFERENCES</span> nic_codes(id);
+
+<span class="k">ALTER TYPE</span> import_source <span class="k">ADD VALUE</span> <span class="s">'GOOGLE_PLACES'</span>;
+<span class="k">ALTER TYPE</span> import_source <span class="k">ADD VALUE</span> <span class="s">'UDYAM_MSME_REGISTRY'</span>;</pre>
+
+    <h5>V&lt;next+2&gt;__contact_roles.sql (+ backfill)</h5>
+    <pre><span class="k">CREATE TABLE</span> contact_roles (
+  id UUID <span class="k">PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  key VARCHAR(40) <span class="k">NOT NULL UNIQUE</span>,
+  label VARCHAR(80) <span class="k">NOT NULL</span>,
+  sort_order SMALLINT <span class="k">NOT NULL DEFAULT</span> 100,
+  active BOOLEAN <span class="k">NOT NULL DEFAULT</span> true,
+  created_at TIMESTAMPTZ <span class="k">NOT NULL DEFAULT</span> now(),
+  updated_at TIMESTAMPTZ <span class="k">NOT NULL DEFAULT</span> now()
+);
+
+<span class="k">ALTER TABLE</span> contacts <span class="k">ADD COLUMN</span> role_id UUID <span class="k">REFERENCES</span> contact_roles(id);
+
+<span class="c">-- Backfill from existing is_md_owner</span>
+<span class="k">UPDATE</span> contacts <span class="k">SET</span> role_id = (<span class="k">SELECT</span> id <span class="k">FROM</span> contact_roles <span class="k">WHERE</span> key = <span class="s">'MD_OWNER'</span>)
+  <span class="k">WHERE</span> is_md_owner = true <span class="k">AND</span> role_id <span class="k">IS NULL</span>;</pre>
+
+    <h5>V&lt;next+3&gt;__company_nic_codes.sql</h5>
+    <pre><span class="k">CREATE TABLE</span> company_nic_codes (
+  id               UUID <span class="k">PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  company_id       UUID <span class="k">NOT NULL REFERENCES</span> companies(id) <span class="k">ON DELETE CASCADE</span>,
+  nic_code_id      UUID <span class="k">REFERENCES</span> nic_codes(id),      <span class="c">-- NULL when raw unmatched</span>
+  nic_code_raw     VARCHAR(6) <span class="k">NOT NULL</span>,
+  description_raw  TEXT,
+  is_primary       BOOLEAN <span class="k">NOT NULL DEFAULT</span> false,
+  sequence_no      SMALLINT <span class="k">NOT NULL</span>,
+  <span class="k">UNIQUE</span> (company_id, nic_code_raw)
+);
+
+<span class="c">-- Enforce Invariant 12 at the DB level</span>
+<span class="k">CREATE UNIQUE INDEX</span> idx_cnc_one_primary_per_company
+  <span class="k">ON</span> company_nic_codes(company_id) <span class="k">WHERE</span> is_primary = true;</pre>
+
+    <h3>Recursive descendant expansion</h3>
+    <pre><span class="k">WITH RECURSIVE</span> subtree <span class="k">AS</span> (
+  <span class="k">SELECT</span> id <span class="k">FROM</span> nic_codes <span class="k">WHERE</span> id = :parent
+  <span class="k">UNION ALL</span>
+  <span class="k">SELECT</span> n.id <span class="k">FROM</span> nic_codes n <span class="k">JOIN</span> subtree s <span class="k">ON</span> n.parent_id = s.id
+)
+<span class="k">SELECT DISTINCT</span> c.* <span class="k">FROM</span> companies c
+<span class="k">JOIN</span> company_nic_codes cnc <span class="k">ON</span> cnc.company_id = c.id
+<span class="k">WHERE</span> cnc.nic_code_id <span class="k">IN</span> (<span class="k">SELECT</span> id <span class="k">FROM</span> subtree);</pre>
+
+    <h3>Kanchipuram import contract</h3>
+    <p>Field mapping for <code>UDYAM_MSME_REGISTRY</code>:</p>
+    <table>
+      <tr><th>Source column</th><th>Target field</th></tr>
+      <tr><td><code>EnterpriseName</code></td><td><code>canonical_name</code></td></tr>
+      <tr><td><code>CommunicationAddress</code></td><td><code>address_line</code></td></tr>
+      <tr><td><code>Pincode</code> / <code>District</code> / <code>State</code></td><td><code>pincode</code> / <code>district</code> / <code>state</code></td></tr>
+      <tr><td><code>RegistrationDate</code></td><td><code>registration_date</code> (parse dd/MM/yyyy — string, not Excel date)</td></tr>
+      <tr><td><code>LG_ST_Code</code> / <code>LG_DT_Code</code></td><td><code>lg_state_code</code> / <code>lg_district_code</code></td></tr>
+      <tr><td><code>Activities</code> (JSON)</td><td>parse → many rows in <code>company_nic_codes</code></td></tr>
+    </table>
+
+    <h4>Observed data-quality issues (real file, 123,659 rows)</h4>
+    <table>
+      <tr><th>Issue</th><th>Rows</th><th>Handling</th></tr>
+      <tr><td>Malformed Activities (literal <code>"NA"</code>)</td><td>10</td><td>Persist, flag</td></tr>
+      <tr><td>Empty activities array</td><td>106</td><td>Create company, zero NIC rows</td></tr>
+      <tr><td>Blank <code>EnterpriseName</code></td><td>6</td><td>Reject — required</td></tr>
+      <tr><td>Companies with &gt;1 activity</td><td>25,514 (21%)</td><td>Multi-row via join</td></tr>
+      <tr><td>Max activities on one company</td><td>91</td><td>No upper limit</td></tr>
+      <tr><td>Distinct NIC codes appearing</td><td>1,162</td><td>Unmatched → NULL <code>nic_code_id</code>, raw kept</td></tr>
+      <tr><td>Duplicate proprietor names</td><td>15,002</td><td>Handled via dedup rule ⓪ — ADR-0004</td></tr>
+    </table>
+
+    <h3>Two verbs — Download vs Export</h3>
+    <div class="callout">
+      <h5>POST /api/v1/exports</h5>
+      <p style="margin:0 0 12px"><strong>Pipeline Export.</strong> State → <code>EXPORTED</code>. Logged in <code>exports</code>. Sales Lead+. Unchanged behavior.</p>
+      <h5>POST /api/v1/companies/download</h5>
+      <p style="margin:0"><strong>Filter-scoped file.</strong> No state change. No <code>exports</code> row. Audit only. Any read role. CSV or XLSX. Optional one-row-per-contact mode.</p>
+    </div>
+  </section>
+
+  <!-- DOC 22 -->
+  <section class="doc" id="d22">
+    <span class="doc-num">22 · UI / UX</span>
+    <h2 class="doc-title">Named screens, <em>not</em> generic CRUD.</h2>
+    <p class="doc-lead">Two new second-level nav items. Two extended screens. A map. A download modal. Build these, not defaults.</p>
+
+    <h3>NIC Master · /settings/nic-codes</h3>
+    <div class="mock">
+      <div class="titlebar"><b>/settings/nic-codes</b><span>Admin only</span></div>
+      <div class="body">
+        <div class="mrow">
+          <div class="mfield chk"><span>[ + Add code ]</span><span>[ ↑ Import Excel ]</span></div>
+          <div class="mfield"><span class="lb">Last import</span><span class="v">2,034 codes · 12 Sep</span></div>
+          <div class="mfield"><span class="lb">Unresolved parents</span><span class="v">0</span></div>
+        </div>
+        <div class="mrow">
+          <div class="mfield" style="flex:2"><span class="lb">Search</span><span class="v">pumps</span></div>
+          <div class="mfield"><span class="lb">Level</span><span class="v">any</span></div>
+          <div class="mfield chk">☐ Primary only</div>
+        </div>
+        <table class="mtable">
+          <tr><th>Code</th><th>Description</th><th>Level</th><th>Parent</th><th>Primary</th></tr>
+          <tr><td><code>28</code></td><td>Manufacture of machinery and equipment</td><td>Div</td><td>—</td><td><span class="pri">★</span></td></tr>
+          <tr><td><code>281</code></td><td>Manufacture of general-purpose machinery</td><td>Grp</td><td>28</td><td><span class="pri">★</span></td></tr>
+          <tr><td><code>2813</code></td><td>Other pumps, compressors, taps and valves</td><td>Cls</td><td>281</td><td>—</td></tr>
+          <tr><td><code>28131</code></td><td>Manufacture of hand pumps</td><td>Sub</td><td>2813</td><td>—</td></tr>
+          <tr><td><code>28132</code></td><td>Other pumps, compressors, taps and valves</td><td>Sub</td><td>2813</td><td><span class="pri">★</span></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <h3>Companies List — extended filters</h3>
+    <div class="mock">
+      <div class="titlebar"><b>/companies</b><span>Analyst · Sales Lead</span></div>
+      <div class="body">
+        <div class="mrow">
+          <div class="mfield" style="flex:2"><span class="lb">Search</span><span class="v">name / phone / email / domain / contact…</span></div>
+          <div class="mfield chk">[ Download ]</div>
+        </div>
+        <div class="mrow">
+          <div class="mfield"><span class="lb">NIC (parent or sub)</span><span class="v">22 · Rubber and plastics</span></div>
+          <div class="mfield chk">☑ include all sub-codes</div>
+          <div class="mfield"><span class="lb">Region</span><span class="v">South — TN</span></div>
+          <div class="mfield"><span class="lb">Pincode</span><span class="v">641001</span></div>
+        </div>
+        <div class="mrow">
+          <div class="mfield"><span class="lb">Turnover</span><span class="v">1Cr – 10Cr</span></div>
+          <div class="mfield"><span class="lb">Employees</span><span class="v">10 – 100</span></div>
+          <div class="mfield"><span class="lb">GST</span><span class="v">Present</span></div>
+          <div class="mfield"><span class="lb">Contact role</span><span class="v">Has MD contact</span></div>
+        </div>
+        <div class="mrow">
+          <div class="mfield chk">View: (•) Flat table  ( ) Grouped by NIC</div>
+        </div>
+      </div>
+    </div>
+
+    <h4>Grouped view — 22 · Rubber and plastics (47)</h4>
+    <div class="diagram">▾ <b>22</b>   Manufacture of rubber and plastics products         47 companies
+   ▾ <b>221</b>  Manufacture of rubber products                    18
+        <span class="a">ABC Rubber Industries</span>          Coimbatore   TN   Tier A
+        <span class="a">SRK Polymers</span>                   Chennai      TN   Tier B
+        ...  [ show 16 more ]
+   ▾ <b>222</b>  Manufacture of plastics products                  29
+        [ expand ]
+   ▸ Directly tagged to 22 (no sub-code)                     0</div>
+
+    <h3>Company Map · /companies/map</h3>
+    <div class="mock">
+      <div class="titlebar"><b>/companies/map</b><span>pincode: 641001 · Coimbatore, TN</span></div>
+      <div class="body">
+        <div class="mrow">
+          <div class="mfield" style="flex:2"><span class="lb">Search pincode</span><span class="v">641001 — Coimbatore, Tamil Nadu</span></div>
+          <div class="mfield"><span class="lb">Radius</span><span class="v">5 km</span></div>
+        </div>
+        <div class="mrow">
+          <div class="mfield chk"><b style="color:var(--accent)">[ In ProspectSoul (12) ]</b></div>
+          <div class="mfield chk">[ Found on Google (7) ]</div>
+        </div>
+        <div class="legend">
+          <span><i class="dot own"></i> In ProspectSoul</span>
+          <span><i class="dot ext"></i> Found externally, not added</span>
+        </div>
+        <div class="mapmock">
+          <div class="road" style="top:70px; left:20px; width:280px; transform:rotate(15deg);"></div>
+          <div class="road" style="top:130px; left:60px; width:220px; transform:rotate(-20deg);"></div>
+          <div class="pin own" style="top:60px; left:80px;"></div>
+          <div class="pin own" style="top:100px; left:180px;"></div>
+          <div class="pin own" style="top:150px; left:230px;"></div>
+          <div class="pin ext" style="top:90px; left:130px;"></div>
+          <div class="pin ext" style="top:130px; left:100px;"></div>
+          <div class="pin ext" style="top:65px; left:220px;"></div>
+          <div class="pin own" style="top:170px; left:80px;"></div>
+        </div>
+        <div class="rescard own"><span>ABC Pumps Pvt Ltd — READY · Tier A</span><a>view →</a></div>
+        <div class="rescard own"><span>XYZ Bearings — RESEARCH</span><a>view →</a></div>
+        <div class="rescard ext"><span>Coimbatore Precision Castings — <em>not yet in ProspectSoul</em></span><button>+ Add</button></div>
+        <div class="rescard ext"><span>SRK Foundry Works — <em>not yet in ProspectSoul</em></span><button>+ Add</button></div>
+      </div>
+    </div>
+
+    <h3>Company detail — Contacts tab</h3>
+    <div class="mock">
+      <div class="titlebar"><b>/companies/{id}</b><span>Contacts (3)</span></div>
+      <div class="body">
+        <div class="contact-card">
+          <div class="top">
+            <span><span class="primary-star">★</span> <span class="name">R. Kumar</span></span>
+            <span class="role">MD / Owner</span>
+          </div>
+          <div class="details">+91 98430 12345 · rkumar@abcpumps.in · <em>Primary contact</em></div>
+        </div>
+        <div class="contact-card">
+          <div class="top">
+            <span class="name">S. Raj</span>
+            <span class="role">Purchase Head</span>
+          </div>
+          <div class="details">+91 98450 22334 · purchase@abcpumps.in</div>
+        </div>
+        <div class="contact-card">
+          <div class="top">
+            <span class="name">P. Kumar</span>
+            <span class="role">HR Head</span>
+          </div>
+          <div class="details">+91 98450 44556</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Download modal</h3>
+    <div class="mock">
+      <div class="titlebar"><b>Download Companies</b><span>340 matches</span></div>
+      <div class="body">
+        <div class="mrow">
+          <div class="mfield chk">Format: ( ) CSV  (•) Excel (.xlsx)</div>
+        </div>
+        <div class="mrow">
+          <div class="mfield chk">☑ Name</div>
+          <div class="mfield chk">☑ Primary NIC</div>
+          <div class="mfield chk">☑ Region</div>
+          <div class="mfield chk">☑ Phone</div>
+        </div>
+        <div class="mrow">
+          <div class="mfield chk">☑ Email</div>
+          <div class="mfield chk">☑ Website</div>
+          <div class="mfield chk">☑ City</div>
+          <div class="mfield chk">☑ Pincode</div>
+        </div>
+        <div class="mrow">
+          <div class="mfield chk">☑ Primary contact (name + role)</div>
+          <div class="mfield chk">☐ All contacts (one row per contact)</div>
+        </div>
+        <div class="callout" style="margin:12px 0 0; font-size:12.5px;">
+          <strong>Note:</strong> This download does not export the pipeline. Companies stay in their current state.
+        </div>
+      </div>
+    </div>
+
+    <h3>UX rules — additions</h3>
+    <ol start="7">
+      <li>External results are always visually distinct from owned records. Dashed border, different pin style, "not yet in ProspectSoul" label.</li>
+      <li>A pincode search never writes anything. Only "+ Add" creates a record, always via the manual-entry review form.</li>
+      <li>NIC is never a required field on any form.</li>
+      <li>Contact role is required on new contacts. Existing contacts without a role display as "Other".</li>
+      <li><strong>"Export" and "Download" are distinct words.</strong> Not interchangeable in labels, tooltips, or errors.</li>
+      <li>Quota-exceeded on external search surfaces the problem+json <code>detail</code> verbatim with reset window.</li>
+      <li>Primary star (★) means "default display" — not "the only one" and not "the correct one".</li>
+      <li>Grouped-by-NIC view is opt-in. Flat list stays default.</li>
+    </ol>
+  </section>
+
+  <!-- DOC 23 -->
+  <section class="doc" id="d23">
+    <span class="doc-num">23 · Implementation Plan</span>
+    <h2 class="doc-title">Five tracks. <em>Never</em> overlap.</h2>
+    <p class="doc-lead">One vertical slice per track. Never start N+1 until N's acceptance criteria all pass, verified against the seed and the Kanchipuram file.</p>
+
+    <div class="diagram">Docs 01–18 slice <span class="a">(already implemented)</span>
+        ↓  release gate passes
+<b>C1</b> — NIC Master module
+        ↓
+<b>C2</b> — Company fields + Contact roles + Multi-NIC join
+        ↓
+<b>C3</b> — Hierarchical NIC filter + Grouped view
+        ↓
+<b>C4</b> — Location Intelligence (Google Maps + Places)
+        ↓
+<b>C5</b> — Companies List Download</div>
+
+    <h3>Track C1 — NIC Master</h3>
+    <p><strong>Goal:</strong> Tree exists, admin-editable, imports from master Excel, queryable at any level.</p>
+    <ul>
+      <li>Real NIC Excel imports with <strong>zero unresolved parents</strong></li>
+      <li>Re-import is idempotent by <code>code</code></li>
+      <li>Unit tests cover level detection and prefix resolution including <strong>skipped-level branches</strong></li>
+      <li>Non-admin gets 403 on all mutations</li>
+      <li>Full-tree endpoint cached in-memory, invalidated on mutation</li>
+    </ul>
+
+    <h3>Track C2 — Company fields + Contact roles + Multi-NIC</h3>
+    <p><strong>Goal:</strong> All Sales fields exist; contacts carry roles; multi-NIC works.</p>
+    <ul>
+      <li>Existing <code>companies</code> and <code>contacts</code> rows and migrations untouched</li>
+      <li>Kanchipuram Excel: <strong>123,653 created · 6 rejected · 10 flagged · 175,861 NIC join rows</strong></li>
+      <li><code>is_md_owner=true</code> contacts migrate to <code>role='MD_OWNER'</code>, no data loss</li>
+      <li>Primary-flag transitions are atomic (partial unique index enforces at DB)</li>
+      <li>Dedup rule ⓪ on <code>source_reference</code> — <strong>zero false candidates</strong> on re-import</li>
+    </ul>
+
+    <h3>Track C3 — Hierarchical filter + Grouped view</h3>
+    <p><strong>Goal:</strong> Filter by any node and descendants; view results grouped by hierarchy.</p>
+    <ul>
+      <li>Recursive descendant expansion — exact counts verified</li>
+      <li>Grouped view returns tree + counts in &lt;500ms for 200-node subtree</li>
+      <li>Lazy-load per group on expand</li>
+      <li>"Directly tagged to parent" bucket appears with correct count</li>
+    </ul>
+
+    <h3>Track C4 — Location Intelligence</h3>
+    <p><strong>Goal:</strong> Pincode search shows owned + external, add-to-system routes through manual entry.</p>
+    <ul>
+      <li>Places search writes <strong>zero rows</strong> to any table (integration-asserted)</li>
+      <li>Quota exceeded → 429/422 with clear detail</li>
+      <li>Provider unavailable → 502 — never a silently empty list</li>
+      <li>API key never in frontend bundle; Maps JS key origin-restricted at Google Cloud Console</li>
+      <li>Pincode centroid lookup is offline (seeded reference table)</li>
+    </ul>
+
+    <h3>Track C5 — Companies List Download</h3>
+    <p><strong>Goal:</strong> Filter-scoped download, no state change.</p>
+    <ul>
+      <li>Does NOT change pipeline state (integration-asserted)</li>
+      <li>Does NOT create an <code>exports</code> row</li>
+      <li>10k-row CSV streams within 15s</li>
+      <li>UI copy says "Download" — the word "Export" never appears in this modal</li>
+    </ul>
+  </section>
+
+  <!-- DOC 24 -->
+  <section class="doc" id="d24">
+    <span class="doc-num">24 · Claude Kickoff</span>
+    <h2 class="doc-title">Twelve constraints, <em>none</em> negotiable.</h2>
+    <p class="doc-lead">Before Claude Code writes a line of code, it reads twelve documents and produces a gap assessment. These are the rules that don't bend.</p>
+
+    <h3>The twelve constraints</h3>
+    <ol>
+      <li>Do not recreate <code>companies</code> or <code>contacts</code>. Additive <code>ALTER TABLE</code> only.</li>
+      <li>NIC is optional everywhere. Absent → no rows in <code>company_nic_codes</code>. No error.</li>
+      <li>A company can carry multiple NIC codes and multiple contacts. <strong>Scalar-column shortcuts are forbidden.</strong> The Kanchipuram file has one row with 91 NIC codes.</li>
+      <li>Contact role is required on new contacts, from <code>contact_roles</code>. <code>is_md_owner</code> preserved and kept in sync.</li>
+      <li>Resolve NIC parents by <strong>longest existing prefix</strong>, not fixed-length truncation. Real data skips levels.</li>
+      <li>NIC master import must NOT create <code>import_batches</code> rows.</li>
+      <li>Pincode external search must not fetch from <code>companies</code>. External results are <strong>never persisted automatically</strong>.</li>
+      <li>"+ Add" routes through the existing manual-entry endpoint. No second creation path.</li>
+      <li>Places API key server-side only. Maps JS key separate, origin-restricted.</li>
+      <li>Do not rename or repurpose "ICP". NIC filtering ≠ ICP Qualification.</li>
+      <li><strong>"Download" ≠ "Export".</strong> Two endpoints, two verbs, one meaning each.</li>
+      <li>Every behavior change to existing code requires an ADR. New code following specs does not.</li>
+    </ol>
+
+    <div class="callout">
+      <h5>Definition of done</h5>
+      <p>Do not claim completion until every criterion in doc 23's Release Gate passes, with evidence per criterion. Claude Code reports PASS/FAIL/BLOCKED per criterion per track, not summary claims.</p>
+    </div>
+  </section>
+
+  <!-- ADR -->
+  <section class="doc" id="adr">
+    <span class="doc-num">/adr · Architecture Decision Records</span>
+    <h2 class="doc-title">Five decisions worth <em>remembering</em>.</h2>
+    <p class="doc-lead">Written the moment they were made, so the next person doesn't have to re-derive them from code six months later.</p>
+
+    <ul class="adr-list">
+      <li>
+        <span class="id">ADR-0001</span>
+        <span class="t">Contact role becomes a first-class field
+          <em>Free-text designation can't be filtered or reported on. A configured role list can, and existing <code>is_md_owner</code> data migrates cleanly.</em></span>
+      </li>
+      <li>
+        <span class="id">ADR-0002</span>
+        <span class="t">Multi-NIC via join table, not scalar column
+          <em>21% of Kanchipuram rows carry more than one NIC. Max: 91. A scalar column silently loses 90 of them.</em></span>
+      </li>
+      <li>
+        <span class="id">ADR-0003</span>
+        <span class="t">Additive company field extension, not table recreation
+          <em>Preserve every existing row and applied migration. Extend, don't replace.</em></span>
+      </li>
+      <li>
+        <span class="id">ADR-0004</span>
+        <span class="t">Extended dedup rules for registry sources
+          <em>Registry data has no phone, no website, and repeated proprietor names. Existing rules would generate tens of thousands of false candidates.</em></span>
+      </li>
+      <li>
+        <span class="id">ADR-0005</span>
+        <span class="t">Download and Export are distinct operations
+          <em>Overloading the pipeline Export endpoint would silently move companies to EXPORTED on every casual download.</em></span>
+      </li>
+    </ul>
+
+    <div class="callout">
+      <h5>When to write one</h5>
+      <p><strong>Required</strong> when you change existing code or behavior, or deviate from docs 01–24. <strong>Not required</strong> for new code that follows the specs as written.</p>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+  <footer>
+    <span>ProspectSoul · Sales Intelligence Extension · Docs 19–24 + /adr</span>
+    <span>Vyoog Information Private Limited</span>
+  </footer>
+
+  </main>
+</div>
+
+<script>
+  document.getElementById('themeBtn').addEventListener('click', function(){
+    var root = document.documentElement;
+    var cur = root.getAttribute('data-theme');
+    root.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  });
+  // TOC active-state on scroll
+  var links = document.querySelectorAll('nav.toc a[data-t]');
+  var secs = [];
+  links.forEach(function(l){
+    var id = l.getAttribute('href').substring(1);
+    var el = document.getElementById(id);
+    if (el) secs.push({link: l, el: el});
+  });
+  function onScroll(){
+    var pos = window.scrollY + 140;
+    var active = null;
+    secs.forEach(function(s){
+      if (s.el.offsetTop <= pos) active = s;
+    });
+    links.forEach(function(l){ l.classList.remove('active'); });
+    if (active) active.link.classList.add('active');
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+</script>
+</body>
+</html>

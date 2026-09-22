@@ -1,6 +1,6 @@
 import { usePermissions } from '@/auth/usePermissions'
 import { cn } from '@/lib/utils'
-import { Building2, FileUp, LayoutDashboard, ShieldCheck, Users } from 'lucide-react'
+import { Building2, FileUp, LayoutDashboard, ListTree, MapPin, ShieldCheck, UserSquare2, Users } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router'
 
@@ -14,9 +14,12 @@ interface NavItem {
 const navItems: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, visible: () => true },
   { to: '/companies', label: 'Companies', icon: Building2, visible: ({ canRead }) => canRead },
+  { to: '/companies/map', label: 'Map', icon: MapPin, visible: ({ canRead }) => canRead },
   { to: '/imports', label: 'Imports', icon: FileUp, visible: ({ canMutate }) => canMutate },
   { to: '/verify', label: 'Verify', icon: ShieldCheck, visible: ({ canRead }) => canRead },
   { to: '/settings/users', label: 'Users & Roles', icon: Users, visible: ({ canConfigure }) => canConfigure },
+  { to: '/settings/nic-codes', label: 'NIC Codes', icon: ListTree, visible: ({ canConfigure }) => canConfigure },
+  { to: '/settings/contact-roles', label: 'Contact Roles', icon: UserSquare2, visible: ({ canConfigure }) => canConfigure },
 ]
 
 export function Sidebar() {

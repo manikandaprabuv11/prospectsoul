@@ -1,7 +1,9 @@
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Plus } from 'lucide-react'
+import { Download, Plus } from 'lucide-react'
 import { useState } from 'react'
+import { useAuth } from '@/auth/useAuth'
+import { DownloadModal } from '../components/DownloadModal'
 import { Link } from 'react-router'
 import { CompanyFilters } from '../components/CompanyFilters'
 import { CompanyTable } from '../components/CompanyTable'
@@ -17,6 +19,8 @@ export function CompanyListPage() {
   })
 
   const { data, isLoading, isError, error } = useCompanies(filters)
+  const [downloadOpen, setDownloadOpen] = useState(false)
+  const auth = useAuth()
 
   const handleSort = (field: string) => {
     setFilters((prev) => ({
@@ -36,6 +40,9 @@ export function CompanyListPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setDownloadOpen(true)}>
+            <Download className="size-4" /> Download
+          </Button>
           <Button variant="outline" asChild>
             <Link to="/imports/new">Import</Link>
           </Button>
@@ -92,6 +99,13 @@ export function CompanyListPage() {
           )}
         </>
       ) : null}
+      <DownloadModal
+        open={downloadOpen}
+        onOpenChange={setDownloadOpen}
+        filters={filters}
+        matchesCount={data?.total_elements}
+        authHeader={auth.token ? `Bearer ${auth.token}` : undefined}
+      />
     </div>
   )
 }

@@ -40,7 +40,7 @@ class ColumnAliasRegistryTest {
             "'Location',            'city'",
             "'State',               'state'",
             "'Province',            'state'",
-            "'Region',              'state'",
+            "'Region',              'region'",
             "'Industry',            'industry'",
             "'Business Type',       'industry'",
             "'Sector',              'industry'",

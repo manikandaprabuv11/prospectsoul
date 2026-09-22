@@ -22,4 +22,10 @@ public interface CompanyRepository extends JpaRepository<Company, UUID>, JpaSpec
     List<Company> findByPrimaryPhoneNormalizedIn(List<String> phones);
 
     List<Company> findByWebsiteDomainIn(List<String> domains);
+
+    Optional<Company> findBySourceAndSourceReference(String source, String sourceReference);
+
+    @Query("SELECT c FROM Company c WHERE c.normalizedName = :name AND c.pincode = :pincode")
+    Optional<Company> findByNormalizedNameAndPincode(@Param("name") String normalizedName,
+                                                     @Param("pincode") String pincode);
 }

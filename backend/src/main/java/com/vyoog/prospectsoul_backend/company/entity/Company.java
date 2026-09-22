@@ -1,6 +1,8 @@
 package com.vyoog.prospectsoul_backend.company.entity;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -103,6 +105,52 @@ public class Company {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+
+    @Column(length = 6)
+    private String pincode;
+
+    @Column(length = 120)
+    private String district;
+
+    @Column(name = "address_line", columnDefinition = "text")
+    private String addressLine;
+
+    @Column(length = 120)
+    private String region;
+
+    @Column(columnDefinition = "text")
+    private String products;
+
+    @Column(precision = 18, scale = 2)
+    private BigDecimal turnover;
+
+    @Column(name = "gst_number", length = 15)
+    private String gstNumber;
+
+    @Column(name = "employee_count")
+    private Integer employeeCount;
+
+    @Column(name = "registration_date")
+    private LocalDate registrationDate;
+
+    @Column(name = "source_reference", length = 120)
+    private String sourceReference;
+
+    @Column(name = "lg_state_code")
+    private Short lgStateCode;
+
+    @Column(name = "lg_district_code")
+    private Integer lgDistrictCode;
+
+    @Column(name = "primary_nic_code_id")
+    private UUID primaryNicCodeId;
+
+    @Column(precision = 9, scale = 6)
+    private BigDecimal latitude;
+
+    @Column(precision = 9, scale = 6)
+    private BigDecimal longitude;
 
     @PrePersist
     void prePersist() {

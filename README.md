@@ -259,6 +259,88 @@ Errors return `application/problem+json` (RFC 7807).
 | POST   | `/api/v1/admin/roles/{id}/users`           | Assign user to role          |
 | DELETE | `/api/v1/admin/roles/{id}/users/{userId}`  | Unassign user from role      |
 
+### NIC Master (`/api/v1/nic-codes`) — Sales-Intelligence
+
+| Method | Path                                       | Authorization   | Description                                   |
+| ------ | ------------------------------------------ | --------------- | --------------------------------------------- |
+| GET    | `/api/v1/nic-codes`                        | HAS_READ        | Paginated NIC listing (search/level/type)     |
+| GET    | `/api/v1/nic-codes/{id}`                   | HAS_READ        | Get one NIC code                              |
+| GET    | `/api/v1/nic-codes/{id}/children`          | HAS_READ        | Direct children                               |
+| GET    | `/api/v1/nic-codes/tree?root_id=&depth=`   | HAS_READ        | Subtree (in-memory cached at root)            |
+| GET    | `/api/v1/nic-codes/primary`                | HAS_READ        | Primary-flagged codes only                    |
+| POST   | `/api/v1/nic-codes`                        | HAS_CONFIGURE   | Create code — parent must be a prefix         |
+| PATCH  | `/api/v1/nic-codes/{id}`                   | HAS_CONFIGURE   | Update / deactivate (422 if in use)           |
+| POST   | `/api/v1/nic-codes/{id}/toggle-primary`    | HAS_CONFIGURE   | Toggle primary flag                           |
+| POST   | `/api/v1/admin/nic-codes/import`           | HAS_CONFIGURE   | Reference-data import (no `import_batches`)   |
+
+### Contact Roles (`/api/v1/contact-roles`) — Sales-Intelligence
+
+| Method | Path                                       | Authorization   | Description                                   |
+| ------ | ------------------------------------------ | --------------- | --------------------------------------------- |
+| GET    | `/api/v1/contact-roles`                    | HAS_READ        | List roles (`include_inactive=true` optional) |
+| POST   | `/api/v1/contact-roles`                    | HAS_CONFIGURE   | Create role                                   |
+| PATCH  | `/api/v1/contact-roles/{id}`               | HAS_CONFIGURE   | Update / deactivate (never delete)            |
+
+### Contacts (multi-per-company) — Sales-Intelligence
+
+| Method | Path                                                | Authorization   | Description                                   |
+| ------ | --------------------------------------------------- | --------------- | --------------------------------------------- |
+| GET    | `/api/v1/companies/{companyId}/contacts`            | HAS_READ        | List contacts                                 |
+| POST   | `/api/v1/companies/{companyId}/contacts`            | HAS_MUTATE      | Create contact (role_id required)             |
+| PATCH  | `/api/v1/contacts/{contactId}`                      | HAS_MUTATE      | Update contact                                |
+| POST   | `/api/v1/contacts/{contactId}/make-primary`         | HAS_MUTATE      | Promote to primary (atomic; DB-enforced)      |
+
+### Multi-NIC per company — Sales-Intelligence
+
+| Method | Path                                                       | Authorization   | Description                              |
+| ------ | ---------------------------------------------------------- | --------------- | ---------------------------------------- |
+| GET    | `/api/v1/companies/{companyId}/nic-codes`                  | HAS_READ        | List join rows                           |
+| POST   | `/api/v1/companies/{companyId}/nic-codes`                  | HAS_MUTATE      | Attach a NIC code (raw or resolved)      |
+| POST   | `/api/v1/companies/{companyId}/nic-codes/{rowId}/make-primary` | HAS_MUTATE | Swap primary (atomic; DB-enforced)       |
+| DELETE | `/api/v1/companies/{companyId}/nic-codes/{rowId}`          | HAS_MUTATE      | Detach one row                           |
+
+### Location Intelligence (`/api/v1/map`, `/api/v1/external`) — Sales-Intelligence
+
+| Method | Path                                        | Authorization   | Description                                                  |
+| ------ | ------------------------------------------- | --------------- | ------------------------------------------------------------ |
+| GET    | `/api/v1/map/pincode/{pincode}`             | HAS_READ        | Offline pincode centroid (no Google call)                    |
+| GET    | `/api/v1/map/companies?pincode=&radius_km=` | HAS_READ        | Owned companies inside the radius (haversine)                |
+| GET    | `/api/v1/external/places-search?pincode=`   | HAS_READ        | Live Places lookup — never persisted, quota-tracked          |
+
+### Companies List — Download (`/api/v1/companies/download`) — Sales-Intelligence
+
+| Method | Path                                | Authorization   | Description                                                              |
+| ------ | ----------------------------------- | --------------- | ------------------------------------------------------------------------ |
+| POST   | `/api/v1/companies/download`        | HAS_READ        | Filter-scoped CSV/XLSX. **Does NOT** change pipeline state (ADR-0005).   |
+
+### Companies List — extended filters (Sales-Intelligence)
+
+`GET /api/v1/companies` now accepts:
+
+| Query param                     | Meaning                                                          |
+| ------------------------------- | ---------------------------------------------------------------- |
+| `region`, `district`, `pincode` | Sales-Intelligence facets                                        |
+| `turnover_min`, `turnover_max`  | Range filter on `turnover`                                       |
+| `employee_min`, `employee_max`  | Range filter on `employee_count`                                 |
+| `gst_present=true|false`        | GST presence facet                                               |
+| `nic_code_id=<uuid>`            | Exact NIC classification match                                   |
+| `nic_parent_id=<uuid>`          | Descendant expansion via recursive CTE (default on)              |
+| `nic_include_descendants`       | Turn descendant expansion off                                    |
+| `has_contact_role_id=<uuid>`    | Companies that have at least one contact with the given role     |
+| `view=grouped_by_nic`           | Returns `{root_node, groups[], total_companies}` (needs `nic_parent_id`) |
+
+## Sales-Intelligence extension
+
+Docs 19–24 (`docs/dev_docs/19-*` … `docs/dev_docs/24-*`) describe the Sales-Intelligence extension.
+Implementation ships in five tracks (C1–C5) — see [`docs/dev_docs/23-Sales-Intelligence-Implementation-Plan-v1_0.md`](docs/dev_docs/23-Sales-Intelligence-Implementation-Plan-v1_0.md).
+Behaviour changes to existing code are recorded as ADRs in [`docs/dev_docs/adr/`](docs/dev_docs/adr/) — ADR-0006 through ADR-0009 apply to this build.
+
+Notable operating notes:
+
+- **NIC master import is reference-data**: `POST /api/v1/admin/nic-codes/import` does NOT create `import_batches` / `import_rows` (Kickoff constraint 6).
+- **Places API key is server-side only**: set `prospectsoul.places.daily-quota` and provide a Google Places client bean to swap out the built-in stub. Never put the key in `frontend/.env.local` or a `VITE_*` variable.
+- **Download vs Export**: `POST /api/v1/companies/download` is a filter-scoped file dump; it does not change any company's `pipeline_state`. The pipeline `POST /api/v1/exports` is unimplemented in this scope (deferred until the qualification module lands).
+
 ### Verifications (`/api/v1/verifications`)
 
 Company phone verification through Twilio Lookup v2 Line Type Intelligence.

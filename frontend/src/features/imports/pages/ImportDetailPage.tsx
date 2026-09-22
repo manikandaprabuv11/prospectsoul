@@ -21,7 +21,8 @@ export function ImportDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { data: batch, isLoading } = useImportBatch(id)
   const [rowPage, setRowPage] = useState(0)
-  const { data: rows } = useImportRows(id, rowPage)
+  const isLive = batch?.status === 'PROCESSING'
+  const { data: rows } = useImportRows(id, rowPage, 25, isLive)
 
   if (isLoading) {
     return <div className="space-y-4"><Skeleton className="h-8 w-64" /><Skeleton className="h-48 w-full" /></div>
@@ -62,6 +63,33 @@ export function ImportDetailPage() {
           <CardContent><p className="text-2xl font-bold text-red-600">{batch.rejected_rows}</p></CardContent>
         </Card>
       </div>
+
+      {batch.status === 'PROCESSING' && (
+        <div className="rounded-lg border bg-card p-4 space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <div>
+              <span className="font-medium">Processing…</span>{' '}
+              <span className="text-muted-foreground">
+                {batch.processed_rows} of {batch.total_rows} rows
+              </span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Runs on the server — safe to close this tab.
+            </div>
+          </div>
+          <div className="h-2 w-full rounded bg-muted overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-300"
+              style={{
+                width:
+                  batch.total_rows > 0
+                    ? `${Math.min(100, Math.round((batch.processed_rows / batch.total_rows) * 100))}%`
+                    : '0%',
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {batch.error_message && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">

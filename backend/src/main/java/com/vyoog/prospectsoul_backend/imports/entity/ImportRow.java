@@ -66,6 +66,9 @@ public class ImportRow {
     @Column(name = "duplicate_of_company_id")
     private UUID duplicateOfCompanyId;
 
+    @Column(name = "outcome_reason", length = 100)
+    private String outcomeReason;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

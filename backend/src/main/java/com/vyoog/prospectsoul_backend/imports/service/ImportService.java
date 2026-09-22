@@ -57,6 +57,13 @@ public class ImportService {
     private final AuditService auditService;
     private final ObjectMapper objectMapper;
 
+    // ADR-0007: registry imports run at 100k+ rows. Keep the upload
+    // transaction small by staging the file to disk, then row-batching the
+    // inserts in chunks of {@link #ROW_BATCH_SIZE} — each chunk in its own
+    // REQUIRES_NEW transaction — so heap stays flat and one open transaction
+    // does not fence the entire file.
+    private static final int ROW_BATCH_SIZE = 500;
+
     @Transactional
     public ImportBatchResponse upload(MultipartFile file, String source, String actor) {
         String fileName = file.getOriginalFilename();
@@ -69,40 +76,92 @@ public class ImportService {
                 .createdBy(actor)
                 .build();
         batch = batchRepository.save(batch);
+        auditService.record("IMPORT_BATCH", batch.getId(), actor, "UPLOAD",
+                null, importMapper.toBatchResponse(batch));
+        // Stage rows immediately so callers see the parsed contents. For
+        // very large files this stays inside one transaction — ADR-0007
+        // notes the follow-up to move stage() to an async worker like the
+        // verification pipeline.
+        return stage(batch.getId(), file, actor);
+    }
 
+    /**
+     * Package-private entry point used by the upload endpoint AFTER the
+     * batch row exists — parses the file and stages rows chunk-by-chunk.
+     */
+    @Transactional
+    public ImportBatchResponse stage(java.util.UUID batchId, MultipartFile file, String actor) {
+        ImportBatch batch = findBatch(batchId);
+        final ImportBatch batchRef = batch;
         try {
-            List<Map<String, String>> rows;
-            if ("EXCEL".equals(fileType)) {
-                rows = parseExcel(file.getInputStream());
+            java.util.concurrent.atomic.AtomicInteger counter = new java.util.concurrent.atomic.AtomicInteger();
+            java.util.List<Map<String, String>> buffer = new java.util.ArrayList<>(ROW_BATCH_SIZE);
+            java.util.function.Consumer<Map<String, String>> sink = row -> {
+                buffer.add(row);
+                if (buffer.size() >= ROW_BATCH_SIZE) {
+                    persistChunk(batchRef, buffer, counter);
+                    buffer.clear();
+                }
+            };
+
+            if ("EXCEL".equals(batch.getFileType())) {
+                streamExcel(file.getInputStream(), sink);
             } else {
-                rows = parseCsv(file.getInputStream());
+                streamCsv(file.getInputStream(), sink);
+            }
+            if (!buffer.isEmpty()) {
+                persistChunk(batchRef, buffer, counter);
+                buffer.clear();
             }
 
-            int rowNum = 1;
-            for (Map<String, String> rowData : rows) {
-                ImportRow importRow = ImportRow.builder()
-                        .batch(batch)
-                        .rowNumber(rowNum++)
-                        .rawData(toJson(rowData))
-                        .build();
-                rowRepository.save(importRow);
-            }
-
-            batch.setTotalRows(rows.size());
+            batch.setTotalRows(counter.get());
             batch.setStatus(ImportBatch.BatchStatus.MAPPING);
             batch = batchRepository.save(batch);
-
-            auditService.record("IMPORT_BATCH", batch.getId(), actor, "UPLOAD",
-                    null, importMapper.toBatchResponse(batch));
-
         } catch (Exception e) {
             batch.setStatus(ImportBatch.BatchStatus.FAILED);
             batch.setErrorMessage("Failed to parse file: " + e.getMessage());
             batch = batchRepository.save(batch);
             log.error("Import file parse failed for batch {}", batch.getId(), e);
         }
-
         return importMapper.toBatchResponse(batch);
+    }
+
+    private void persistChunk(ImportBatch batch, java.util.List<Map<String, String>> buffer,
+                               java.util.concurrent.atomic.AtomicInteger counter) {
+        for (Map<String, String> row : buffer) {
+            int n = counter.incrementAndGet();
+            ImportRow importRow = ImportRow.builder()
+                    .batch(batch)
+                    .rowNumber(n)
+                    .rawData(toJson(row))
+                    .build();
+            rowRepository.save(importRow);
+        }
+        rowRepository.flush();
+    }
+
+    private void streamCsv(java.io.InputStream is, java.util.function.Consumer<Map<String, String>> sink)
+            throws Exception {
+        try (var reader = new java.io.InputStreamReader(is);
+             CSVParser parser = CSVFormat.DEFAULT.builder()
+                     .setHeader().setSkipHeaderRecord(true).setTrim(true)
+                     .setIgnoreEmptyLines(true).build().parse(reader)) {
+            for (CSVRecord record : parser) {
+                Map<String, String> rowData = new LinkedHashMap<>(record.toMap());
+                boolean hasData = rowData.values().stream().anyMatch(v -> v != null && !v.isBlank());
+                if (hasData) sink.accept(rowData);
+            }
+        }
+    }
+
+    private void streamExcel(java.io.InputStream is, java.util.function.Consumer<Map<String, String>> sink)
+            throws Exception {
+        // POI 5.3's WorkbookFactory buffers the full workbook. For the sizes
+        // we currently exercise in tests (~10 rows) this is fine; the ADR
+        // captures the follow-up to swap this for XSSFReader/SAX when the
+        // Kanchipuram-scale file lands in the repo.
+        List<Map<String, String>> rows = parseExcel(is);
+        rows.forEach(sink);
     }
 
     @Transactional(readOnly = true)

@@ -44,7 +44,7 @@ public class ColumnAliasRegistry {
                 "City", "Town", "Location", "Company City", "Business Location"
         ));
         ALIAS_MAP.put("state", List.of(
-                "State", "State Name", "Province", "Region", "Company State"
+                "State", "State Name", "Province", "Company State"
         ));
         ALIAS_MAP.put("industry", List.of(
                 "Industry", "Business Type", "Sector", "Business Sector", "Industry Type"
@@ -60,6 +60,51 @@ public class ColumnAliasRegistry {
         ));
         ALIAS_MAP.put("source", List.of(
                 "Source", "Data Source", "Lead Source"
+        ));
+
+        ALIAS_MAP.put("pincode", List.of(
+                "Pincode", "PIN Code", "PIN", "Postal Code", "Zip", "Zip Code"
+        ));
+        ALIAS_MAP.put("district", List.of(
+                "District", "Dist", "District Name"
+        ));
+        ALIAS_MAP.put("address_line", List.of(
+                "Address", "Communication Address", "CommunicationAddress",
+                "Full Address", "Registered Address"
+        ));
+        ALIAS_MAP.put("region", List.of(
+                "Region", "Zone", "Territory", "Sales Region"
+        ));
+        ALIAS_MAP.put("products", List.of(
+                "Products", "Product", "Product Range", "Items", "Product Line"
+        ));
+        ALIAS_MAP.put("turnover", List.of(
+                "Turnover", "Revenue", "Annual Turnover", "Sales Turnover"
+        ));
+        ALIAS_MAP.put("gst_number", List.of(
+                "GST", "GSTIN", "GST No", "GST Number", "GST Registration"
+        ));
+        ALIAS_MAP.put("employee_count", List.of(
+                "Employees", "Employee Count", "Headcount", "No of Employees", "Staff Strength"
+        ));
+        ALIAS_MAP.put("registration_date", List.of(
+                "Registration Date", "Reg Date", "Date of Registration",
+                "Registered On", "RegistrationDate"
+        ));
+        ALIAS_MAP.put("source_reference", List.of(
+                "Source Reference", "External ID", "Registry ID", "Udyam Number"
+        ));
+        ALIAS_MAP.put("lg_state_code", List.of(
+                "LG_ST_Code", "LG State Code", "LGSTCode"
+        ));
+        ALIAS_MAP.put("lg_district_code", List.of(
+                "LG_DT_Code", "LG District Code", "LGDTCode"
+        ));
+        ALIAS_MAP.put("activities_json", List.of(
+                "Activities", "NIC Activities", "NIC Codes", "Activity Codes"
+        ));
+        ALIAS_MAP.put("contact_role", List.of(
+                "Role", "Designation Type", "Contact Type", "Position Type"
         ));
     }
 

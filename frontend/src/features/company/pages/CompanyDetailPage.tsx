@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowLeft, CheckCircle, Pencil } from 'lucide-react'
 import { Link, useParams } from 'react-router'
+import { ContactsPanel } from '@/features/contact/components/ContactsPanel'
+import { CompanyNicSection } from '@/features/company/components/CompanyNicSection'
 import { useCompany, useVerifyCompany } from '../hooks'
 
 export function CompanyDetailPage() {
@@ -117,6 +119,33 @@ export function CompanyDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader><CardTitle>Sales Intelligence</CardTitle></CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-[160px_1fr] gap-x-4 gap-y-2 text-sm md:grid-cols-[160px_1fr_160px_1fr]">
+            <dt className="text-muted-foreground">Pincode</dt><dd>{company.pincode ?? '—'}</dd>
+            <dt className="text-muted-foreground">District</dt><dd>{company.district ?? '—'}</dd>
+            <dt className="text-muted-foreground">Region</dt><dd>{company.region ?? '—'}</dd>
+            <dt className="text-muted-foreground">Turnover</dt><dd>{company.turnover ?? '—'}</dd>
+            <dt className="text-muted-foreground">Employees</dt><dd>{company.employee_count ?? '—'}</dd>
+            <dt className="text-muted-foreground">GST</dt><dd>{company.gst_number ?? '—'}</dd>
+            <dt className="text-muted-foreground">Registration</dt><dd>{company.registration_date ?? '—'}</dd>
+            <dt className="text-muted-foreground">Source ref</dt><dd className="font-mono text-xs">{company.source_reference ?? '—'}</dd>
+            <dt className="text-muted-foreground">Address</dt><dd className="col-span-3">{company.address_line ?? '—'}</dd>
+            <dt className="text-muted-foreground">Products</dt><dd className="col-span-3">{company.products ?? '—'}</dd>
+          </dl>
+        </CardContent>
+      </Card>
+
+      <CompanyNicSection companyId={id!} />
+
+      <Card>
+        <CardHeader><CardTitle>Contacts</CardTitle></CardHeader>
+        <CardContent>
+          <ContactsPanel companyId={id!} />
+        </CardContent>
+      </Card>
 
       {company.tags && company.tags.length > 0 && (
         <Card>

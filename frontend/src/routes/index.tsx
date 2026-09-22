@@ -9,6 +9,9 @@ import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { ImportDetailPage } from '@/features/imports/pages/ImportDetailPage'
 import { ImportListPage } from '@/features/imports/pages/ImportListPage'
 import { ImportWizardPage } from '@/features/imports/pages/ImportWizardPage'
+import { NicCodesPage } from '@/features/nic/pages/NicCodesPage'
+import { CompanyMapPage } from '@/features/location/pages/CompanyMapPage'
+import { ContactRolesPage } from '@/features/contactrole/pages/ContactRolesPage'
 import { VerificationDetailPage } from '@/features/verification/pages/VerificationDetailPage'
 import { VerifyPage } from '@/features/verification/pages/VerifyPage'
 import { AppLayout } from '@/layouts/AppLayout'
@@ -31,6 +34,7 @@ export const router = createBrowserRouter([
           </RequireRole>
         ),
       },
+      { path: '/companies/map', element: <CompanyMapPage /> },
       { path: '/companies/:id', element: <CompanyDetailPage /> },
       {
         path: '/companies/:id/edit',
@@ -69,6 +73,22 @@ export const router = createBrowserRouter([
       // and, decisively, by @PreAuthorize on the backend.
       { path: '/verify', element: <VerifyPage /> },
       { path: '/verify/:id', element: <VerificationDetailPage /> },
+      {
+        path: '/settings/contact-roles',
+        element: (
+          <RequireRole roles={ADMIN_ROLES}>
+            <ContactRolesPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: '/settings/nic-codes',
+        element: (
+          <RequireRole roles={ADMIN_ROLES}>
+            <NicCodesPage />
+          </RequireRole>
+        ),
+      },
       {
         path: '/settings/users',
         element: (

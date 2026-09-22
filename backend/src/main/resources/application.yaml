@@ -5,6 +5,11 @@ spring:
   application:
     name: prospectsoul-backend
 
+  servlet:
+    multipart:
+      max-file-size: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:50MB}
+      max-request-size: ${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:50MB}
+
   # Load the repository-root .env when running from backend/ (mvn spring-boot:run)
   # or from the repository root, so the ports and credentials Docker Compose
   # uses apply without exporting anything by hand. Optional: real environment
@@ -78,6 +83,33 @@ prospectsoul:
   cors:
     # Comma-separated list; never widen this to "*" outside development.
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+  # External places lookup for the map screen (docs 21 §7). By default the
+  # backend uses the free OpenStreetMap Overpass API — no key required.
+  # Set GOOGLE_PLACES_API_KEY in the environment to switch to Google
+  # Places automatically (the frontend never sees this key). Set
+  # `prospectsoul.places.provider=stub` to force the deterministic stub
+  # provider used in tests.
+
+  # Pincode resolver — cache-first (pincode_centroids), external geocoder
+  # on miss (India Post + OpenStreetMap Nominatim by default). Override
+  # `geocoder` to disable the network path in a locked-down environment.
+  pincode:
+    geocoder: ${PINCODE_GEOCODER:india_post_nominatim}
+    postalpincode-url: ${POSTALPINCODE_URL:https://api.postalpincode.in/pincode}
+    nominatim-url: ${NOMINATIM_URL:https://nominatim.openstreetmap.org/search}
+    timeout-seconds: ${PINCODE_TIMEOUT_SECONDS:15}
+    user-agent: ${PINCODE_USER_AGENT:ProspectSoul/1.0 (contact@vyoog.com)}
+
+  places:
+    provider: ${PLACES_PROVIDER:overpass}
+    google-api-key: ${GOOGLE_PLACES_API_KEY:}
+    overpass-url: ${OVERPASS_URL:https://overpass-api.de/api/interpreter}
+    overpass-timeout-seconds: ${OVERPASS_TIMEOUT_SECONDS:20}
+    max-results: ${PLACES_MAX_RESULTS:30}
+    daily-quota: ${PLACES_DAILY_QUOTA:5000}
+    default-radius-m: ${PLACES_DEFAULT_RADIUS_M:3000}
+
   storage:
     endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
     access-key: ${MINIO_ACCESS_KEY:prospectsoul}

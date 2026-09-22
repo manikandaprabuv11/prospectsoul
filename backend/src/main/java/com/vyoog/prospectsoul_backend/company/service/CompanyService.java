@@ -16,7 +16,11 @@ import com.vyoog.prospectsoul_backend.company.dto.response.CompanyResponse;
 import com.vyoog.prospectsoul_backend.company.entity.Company;
 import com.vyoog.prospectsoul_backend.company.mapper.CompanyMapper;
 import com.vyoog.prospectsoul_backend.company.repository.CompanyRepository;
+import com.vyoog.prospectsoul_backend.company.dto.response.CompanyGroupedByNicResponse;
 import com.vyoog.prospectsoul_backend.company.specification.CompanySpecification;
+import com.vyoog.prospectsoul_backend.nic.entity.NicCode;
+import com.vyoog.prospectsoul_backend.nic.repository.NicCodeRepository;
+import java.math.BigDecimal;
 import com.vyoog.prospectsoul_backend.imports.normalization.CompanyNameNormalizer;
 import com.vyoog.prospectsoul_backend.imports.normalization.PhoneNormalizer;
 import com.vyoog.prospectsoul_backend.imports.normalization.WebsiteNormalizer;
@@ -47,6 +51,7 @@ public class CompanyService {
     private final CompanyRepository companyRepository;
     private final CompanyMapper companyMapper;
     private final AuditService auditService;
+    private final NicCodeRepository nicCodeRepository;
     private final CompanyNameNormalizer nameNormalizer;
     private final PhoneNormalizer phoneNormalizer;
     private final WebsiteNormalizer websiteNormalizer;
@@ -66,6 +71,21 @@ public class CompanyService {
                 .sizeBand(trimOrNull(request.sizeBand()))
                 .tags(request.tags())
                 .source(request.source() != null ? request.source() : "MANUAL_ENTRY")
+                .pincode(trimOrNull(request.pincode()))
+                .district(trimOrNull(request.district()))
+                .addressLine(trimOrNull(request.addressLine()))
+                .region(trimOrNull(request.region()))
+                .products(trimOrNull(request.products()))
+                .turnover(request.turnover())
+                .gstNumber(trimOrNull(request.gstNumber()))
+                .employeeCount(request.employeeCount())
+                .registrationDate(request.registrationDate())
+                .sourceReference(trimOrNull(request.sourceReference()))
+                .lgStateCode(request.lgStateCode())
+                .lgDistrictCode(request.lgDistrictCode())
+                .primaryNicCodeId(request.primaryNicCodeId())
+                .latitude(request.latitude())
+                .longitude(request.longitude())
                 .createdBy(actor)
                 .updatedBy(actor)
                 .build();
@@ -153,6 +173,22 @@ public class CompanyService {
             company.setSource(request.source());
         }
 
+        if (request.pincode() != null) company.setPincode(trimOrNull(request.pincode()));
+        if (request.district() != null) company.setDistrict(trimOrNull(request.district()));
+        if (request.addressLine() != null) company.setAddressLine(trimOrNull(request.addressLine()));
+        if (request.region() != null) company.setRegion(trimOrNull(request.region()));
+        if (request.products() != null) company.setProducts(trimOrNull(request.products()));
+        if (request.turnover() != null) company.setTurnover(request.turnover());
+        if (request.gstNumber() != null) company.setGstNumber(trimOrNull(request.gstNumber()));
+        if (request.employeeCount() != null) company.setEmployeeCount(request.employeeCount());
+        if (request.registrationDate() != null) company.setRegistrationDate(request.registrationDate());
+        if (request.sourceReference() != null) company.setSourceReference(trimOrNull(request.sourceReference()));
+        if (request.lgStateCode() != null) company.setLgStateCode(request.lgStateCode());
+        if (request.lgDistrictCode() != null) company.setLgDistrictCode(request.lgDistrictCode());
+        if (request.primaryNicCodeId() != null) company.setPrimaryNicCodeId(request.primaryNicCodeId());
+        if (request.latitude() != null) company.setLatitude(request.latitude());
+        if (request.longitude() != null) company.setLongitude(request.longitude());
+
         if (coreFieldChanged && company.getVerificationStatus() == Company.VerificationStatus.VERIFIED) {
             company.setVerificationStatus(Company.VerificationStatus.INVALIDATED);
             company.setVerifiedBy(null);
@@ -228,6 +264,79 @@ public class CompanyService {
     private String normalizeWebsite(String website) {
         if (website == null || website.isBlank()) return null;
         return websiteNormalizer.normalize(website);
+    }
+
+
+
+    @Transactional(readOnly = true)
+    public PageResponse<CompanyResponse> listWithFilters(CompanySpecification.Filters filters,
+                                                          int page, int size, String sortField, String sortDir) {
+        size = Math.min(size, MAX_PAGE_SIZE);
+        String resolvedSortField = ALLOWED_SORT_FIELDS.contains(sortField) ? sortField : "createdAt";
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, resolvedSortField));
+        Page<Company> result = companyRepository.findAll(CompanySpecification.withFilters(filters), pageable);
+        return PageResponse.from(result.map(companyMapper::toResponse));
+    }
+
+    /**
+     * Grouped-by-NIC view for a given parent node (docs 21 §4.3). Returns
+     * one row per direct child that has at least one company under it (or
+     * its own descendants), plus a synthetic "directly tagged to parent"
+     * bucket, plus a total count.
+     */
+    @Transactional(readOnly = true)
+    public CompanyGroupedByNicResponse groupedByNic(java.util.UUID nicParentId,
+                                                     CompanySpecification.Filters facets) {
+        NicCode root = nicCodeRepository.findById(nicParentId)
+                .orElseThrow(() -> new ResourceNotFoundException("NicCode", nicParentId));
+
+        List<NicCode> directChildren = nicCodeRepository.findByParentIdOrderByCodeAsc(nicParentId);
+        List<CompanyGroupedByNicResponse.Group> groups = new java.util.ArrayList<>();
+        long total = 0;
+
+        for (NicCode child : directChildren) {
+            List<java.util.UUID> subtree = nicCodeRepository.findDescendantIds(child.getId());
+            CompanySpecification.Filters merged = mergeNicIds(facets, subtree);
+            long count = companyRepository.count(CompanySpecification.withFilters(merged));
+            total += count;
+            groups.add(new CompanyGroupedByNicResponse.Group(
+                    new CompanyGroupedByNicResponse.NodeRef(child.getId(), child.getCode(), child.getDescription()),
+                    child.getCode() + " " + child.getDescription(), count));
+        }
+
+        // "Directly tagged to parent" — companies whose join row points at
+        // exactly {@code nicParentId} and no other descendant.
+        long directCount = companyRepository.count(CompanySpecification.withFilters(
+                mergeNicIds(facets, List.of(nicParentId))));
+        total += directCount;
+        groups.add(new CompanyGroupedByNicResponse.Group(null,
+                "Directly tagged to " + root.getCode() + " (no sub-code)",
+                directCount));
+
+        return new CompanyGroupedByNicResponse(
+                "grouped_by_nic",
+                new CompanyGroupedByNicResponse.NodeRef(root.getId(), root.getCode(), root.getDescription()),
+                groups,
+                total
+        );
+    }
+
+    private CompanySpecification.Filters mergeNicIds(CompanySpecification.Filters base,
+                                                      List<java.util.UUID> nicIds) {
+        return new CompanySpecification.Filters(
+                base.search(), base.city(), base.state(),
+                base.industry(), base.cluster(), base.source(),
+                base.pipelineState(), base.verificationStatus(),
+                base.region(), base.district(), base.pincode(),
+                base.turnoverMin(), base.turnoverMax(),
+                base.employeeMin(), base.employeeMax(), base.gstPresent(),
+                null, nicIds, base.hasContactRoleId()
+        );
+    }
+
+    public java.util.List<java.util.UUID> expandNicSubtree(java.util.UUID parentId) {
+        return nicCodeRepository.findDescendantIds(parentId);
     }
 
     private String trimOrNull(String value) {
