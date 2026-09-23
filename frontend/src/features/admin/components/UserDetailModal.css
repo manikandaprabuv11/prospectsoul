@@ -82,7 +82,7 @@
 }
 .um-modal-field input:focus,
 .um-modal-field select:focus {
-  box-shadow: 0 0 0 3px rgba(194,122,62,0.25), 0 0 0 1px #c27a3e;
+  box-shadow: 0 0 0 3px rgba(194,122,62,0.25), 0 0 0 1px oklch(0.53 0.19 265);
 }
 .um-modal-field input:disabled,
 .um-modal-field select:disabled {
@@ -123,7 +123,7 @@
   font-size: 14px;
   font-weight: 600;
   color: #fff;
-  background: #c27a3e;
+  background: oklch(0.53 0.19 265);
   border: none;
   border-radius: 6px;
   cursor: pointer;

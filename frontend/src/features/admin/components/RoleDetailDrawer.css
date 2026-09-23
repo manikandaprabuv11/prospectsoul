@@ -60,7 +60,7 @@
   width: 24px;
   height: 24px;
   border: 2px solid #e2e4df;
-  border-top-color: #c27a3e;
+  border-top-color: oklch(0.53 0.19 265);
   border-radius: 50%;
   animation: rd-spin 0.6s linear infinite;
 }
@@ -110,7 +110,7 @@
   font-family: 'Inter', sans-serif;
   font-size: 13px;
   font-weight: 500;
-  color: #c27a3e;
+  color: oklch(0.53 0.19 265);
   background: none;
   border: none;
   cursor: pointer;
@@ -139,7 +139,7 @@
   min-height: 72px;
 }
 .rd-textarea:focus {
-  box-shadow: 0 0 0 3px rgba(194,122,62,0.25), 0 0 0 1px #c27a3e;
+  box-shadow: 0 0 0 3px rgba(194,122,62,0.25), 0 0 0 1px oklch(0.53 0.19 265);
 }
 
 .rd-edit-actions {
@@ -156,7 +156,7 @@
   font-size: 13px;
   font-weight: 600;
   color: #fff;
-  background: #c27a3e;
+  background: oklch(0.53 0.19 265);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -209,7 +209,7 @@
   outline: none;
 }
 .rd-select:focus {
-  box-shadow: 0 0 0 3px rgba(194,122,62,0.25), 0 0 0 1px #c27a3e;
+  box-shadow: 0 0 0 3px rgba(194,122,62,0.25), 0 0 0 1px oklch(0.53 0.19 265);
 }
 
 /* Assigned user list */

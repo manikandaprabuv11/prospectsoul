@@ -1,4 +1,6 @@
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { Plus, LayoutList, TreePine } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { useSearchParams } from 'react-router'
@@ -85,41 +87,36 @@ export function NicCodesPage() {
   }
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">NIC Code Master</h1>
-          <p className="text-sm text-muted-foreground">
-            Reference data — admin-editable. Primary codes surface first in filter pickers.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant={view === 'table' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => updateParam('view', 'table')}
-          >
-            Table
-          </Button>
-          <Button
-            variant={view === 'tree' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => updateParam('view', 'tree')}
-          >
-            Tree
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => {
-              setEditing(null)
-              setDialogError(undefined)
-              setDialogOpen(true)
-            }}
-          >
-            + Add code
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="NIC Code Master"
+        description="Reference data — admin-editable. Primary codes surface first in filter pickers."
+        actions={
+          <>
+            <div className="inline-flex rounded-md border border-border/70 bg-background p-0.5 shadow-xs">
+              <Button
+                variant={view === 'table' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => updateParam('view', 'table')}
+              >
+                <LayoutList /> Table
+              </Button>
+              <Button
+                variant={view === 'tree' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => updateParam('view', 'tree')}
+              >
+                <TreePine /> Tree
+              </Button>
+            </div>
+            <Button
+              onClick={() => { setEditing(null); setDialogError(undefined); setDialogOpen(true); }}
+            >
+              <Plus /> Add code
+            </Button>
+          </>
+        }
+      />
 
       <NicImportPanel />
 

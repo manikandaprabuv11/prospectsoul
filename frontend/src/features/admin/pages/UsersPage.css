@@ -35,7 +35,7 @@
 .users-page .tab-btn:hover { color: #2c302e; }
 .users-page .tab-btn.active {
   color: #111413;
-  border-bottom-color: #c27a3e;
+  border-bottom-color: oklch(0.53 0.19 265);
 }
 .users-page .tab-count {
   display: inline-block;
@@ -47,8 +47,8 @@
   border-radius: 10px;
 }
 .users-page .tab-btn.active .tab-count {
-  background: #f8ead5;
-  color: #c27a3e;
+  background: oklch(0.95 0.05 265);
+  color: oklch(0.53 0.19 265);
 }
 
 /* Toolbar */
@@ -77,7 +77,7 @@
   outline: none;
 }
 .users-page .search-box input:focus {
-  box-shadow: 0 0 0 3px rgba(194,122,62,0.25), 0 0 0 1px #c27a3e;
+  box-shadow: 0 0 0 3px rgba(194,122,62,0.25), 0 0 0 1px oklch(0.53 0.19 265);
 }
 .users-page .search-box input::placeholder { color: #9ea2a0; }
 .users-page .search-box svg {
@@ -108,9 +108,9 @@
 }
 .users-page .filter-btn:hover { background: #fafaf9; }
 .users-page .filter-btn.active {
-  border-color: #c27a3e;
-  color: #c27a3e;
-  background: #f8ead5;
+  border-color: oklch(0.53 0.19 265);
+  color: oklch(0.53 0.19 265);
+  background: oklch(0.95 0.05 265);
 }
 
 /* Data card */
@@ -164,7 +164,7 @@
 }
 .users-page .avatar-PS_ANALYST { background: #4a7fb5; }
 .users-page .avatar-PS_SALES_LEAD { background: #6a5fb5; }
-.users-page .avatar-PS_ADMIN { background: #c27a3e; }
+.users-page .avatar-PS_ADMIN { background: oklch(0.53 0.19 265); }
 .users-page .avatar-PS_VIEWER { background: #5fb59e; }
 .users-page .avatar-PS_COO { background: #b55f6a; }
 .users-page .user-name {
@@ -222,9 +222,9 @@
 }
 .users-page .page-btn:hover { background: #f0f1ef; }
 .users-page .page-btn.active {
-  background: #c27a3e;
+  background: oklch(0.53 0.19 265);
   color: #fff;
-  border-color: #c27a3e;
+  border-color: oklch(0.53 0.19 265);
 }
 
 /* Add user button */
@@ -238,7 +238,7 @@
   font-size: 14px;
   font-weight: 500;
   color: #fff;
-  background: #c27a3e;
+  background: oklch(0.53 0.19 265);
   border: none;
   border-radius: 6px;
   cursor: pointer;

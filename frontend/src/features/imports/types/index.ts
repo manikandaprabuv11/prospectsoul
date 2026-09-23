@@ -28,6 +28,7 @@ export interface ImportRow {
   error_message: string | null
   company_id: string | null
   duplicate_of_company_id: string | null
+  outcome_reason: string | null
   created_at: string
 }
 

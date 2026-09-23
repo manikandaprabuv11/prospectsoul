@@ -1,4 +1,6 @@
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { Plus } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -39,17 +41,12 @@ export function ContactRolesPage() {
   }
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">Contact Roles</h1>
-          <p className="text-sm text-muted-foreground">
-            Deactivate roles instead of deleting them. Deactivated roles disappear from new-contact
-            dropdowns but still render on existing contacts.
-          </p>
-        </div>
-        <Button size="sm" onClick={() => setOpen(true)}>+ Add role</Button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Contact Roles"
+        description="Deactivate roles instead of deleting them. Deactivated roles disappear from new-contact dropdowns but still render on existing contacts."
+        actions={<Button onClick={() => setOpen(true)}><Plus /> Add role</Button>}
+      />
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>

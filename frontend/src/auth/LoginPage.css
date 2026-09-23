@@ -6,9 +6,9 @@
   --ps-navy:       #162032;
   --ps-navy-mid:   #1e2d44;
   --ps-navy-light: #263a56;
-  --ps-copper:     #c27a3e;
+  --ps-copper:     oklch(0.53 0.19 265);
   --ps-copper-glow:#d4944f;
-  --ps-copper-soft:#f8ead5;
+  --ps-copper-soft:oklch(0.95 0.05 265);
 
   /* Neutrals */
   --ps-white:      #ffffff;

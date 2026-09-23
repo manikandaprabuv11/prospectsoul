@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -76,18 +77,11 @@ export function VerificationDetailPage() {
 
   return (
     <div className="space-y-6">
-      <BackLink />
-
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Verification job</h1>
-          <p className="text-sm text-muted-foreground">
-            Started {formatDateTime(job.started_at ?? job.created_at)} by{' '}
-            {job.requested_by_name ?? job.requested_by}
-          </p>
-        </div>
-        <BatchStatusBadge status={job.status} />
-      </div>
+      <PageHeader
+        breadcrumb={<Link to="/verify" className="inline-flex items-center gap-1 hover:text-foreground transition-colors"><ArrowLeft className="size-3.5" /> Back to verify</Link>}
+        title={<span className="flex items-center gap-3 flex-wrap">Verification job <BatchStatusBadge status={job.status} /></span>}
+        description={<>Started {formatDateTime(job.started_at ?? job.created_at)} by {job.requested_by_name ?? job.requested_by}</>}
+      />
 
       <Card>
         <CardHeader className="pb-3">

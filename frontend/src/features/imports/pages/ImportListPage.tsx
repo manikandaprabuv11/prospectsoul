@@ -1,21 +1,13 @@
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Plus } from 'lucide-react'
+import { LoadingRows } from '@/components/feedback/LoadingRows'
+import { ErrorState } from '@/components/feedback/ErrorState'
+import { EmptyState } from '@/components/feedback/EmptyState'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { StatusChip } from '@/components/feedback/StatusChip'
+import { FileUp, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { useImportBatches } from '../hooks'
-
-function statusBadge(status: string) {
-  switch (status) {
-    case 'COMPLETED': return <Badge variant="success">Completed</Badge>
-    case 'PROCESSING': return <Badge variant="warning">Processing</Badge>
-    case 'FAILED': return <Badge variant="destructive">Failed</Badge>
-    case 'MAPPING': return <Badge variant="secondary">Mapping</Badge>
-    case 'PREVIEWING': return <Badge variant="secondary">Previewing</Badge>
-    default: return <Badge variant="outline">{status}</Badge>
-  }
-}
 
 export function ImportListPage() {
   const [page, setPage] = useState(0)
@@ -23,92 +15,130 @@ export function ImportListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Imports</h1>
-          <p className="text-sm text-muted-foreground">Upload and manage data imports</p>
-        </div>
-        <Button asChild>
-          <Link to="/imports/new"><Plus className="size-4" /> New Import</Link>
-        </Button>
-      </div>
+      <PageHeader
+        title="Imports"
+        description="Upload Excel or CSV files. Progress updates live; safe to close the tab."
+        actions={
+          <Button asChild>
+            <Link to="/imports/new"><Plus /> New import</Link>
+          </Button>
+        }
+      />
 
       {isLoading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 w-full" />
-          ))}
-        </div>
+        <LoadingRows count={5} height="h-14" />
       ) : isError ? (
-        <div className="rounded-lg border border-destructive/50 p-6 text-center text-sm text-destructive">
-          {error instanceof Error ? error.message : 'Failed to load imports'}
-        </div>
+        <ErrorState message={error instanceof Error ? error.message : 'Failed to load imports'} />
       ) : data && data.content.length === 0 ? (
-        <div className="rounded-lg border p-12 text-center">
-          <p className="text-muted-foreground">No imports yet.</p>
-          <Button className="mt-4" asChild>
-            <Link to="/imports/new">Upload your first file</Link>
-          </Button>
-        </div>
+        <EmptyState
+          icon={<FileUp className="size-6" />}
+          title="No imports yet"
+          description="Upload your first Excel or CSV file to get started."
+          action={
+            <Button asChild>
+              <Link to="/imports/new">Upload a file</Link>
+            </Button>
+          }
+        />
       ) : data ? (
-        <>
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">File</th>
-                  <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">Type</th>
-                  <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">Source</th>
-                  <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">Status</th>
-                  <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">Rows</th>
-                  <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">Created / Dup / Rejected</th>
-                  <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.content.map((batch) => (
-                  <tr key={batch.id} className="border-b last:border-0 hover:bg-muted/30">
-                    <td className="px-3 py-2.5 font-medium">
-                      <Link to={`/imports/${batch.id}`} className="text-primary hover:underline">
-                        {batch.file_name}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-2.5">{batch.file_type}</td>
-                    <td className="px-3 py-2.5">{batch.source}</td>
-                    <td className="px-3 py-2.5">{statusBadge(batch.status)}</td>
-                    <td className="px-3 py-2.5">{batch.total_rows}</td>
-                    <td className="px-3 py-2.5">
-                      <span className="text-emerald-600">{batch.created_rows}</span>
-                      {' / '}
-                      <span className="text-amber-600">{batch.duplicate_rows}</span>
-                      {' / '}
-                      <span className="text-red-600">{batch.rejected_rows}</span>
-                    </td>
-                    <td className="px-3 py-2.5 text-muted-foreground">
-                      {new Date(batch.created_at).toLocaleDateString()}
-                    </td>
+        <div className="space-y-3">
+          <div className="overflow-hidden rounded-lg border border-border/70 bg-card shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm" data-tabular="true">
+                <thead className="bg-muted/40">
+                  <tr className="border-b border-border/70">
+                    <Th>File</Th>
+                    <Th>Source</Th>
+                    <Th>Status</Th>
+                    <Th className="text-right">Rows</Th>
+                    <Th className="text-right">Created</Th>
+                    <Th className="text-right">Duplicates</Th>
+                    <Th className="text-right">Rejected</Th>
+                    <Th>Uploaded</Th>
+                    <Th className="text-right pr-4">&nbsp;</Th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border/70">
+                  {data.content.map((batch) => {
+                    const pct = batch.total_rows > 0
+                      ? Math.round((batch.processed_rows / batch.total_rows) * 100)
+                      : batch.status === 'COMPLETED' ? 100 : 0
+                    return (
+                      <tr key={batch.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-3 py-2.5 max-w-[280px]">
+                          <Link
+                            to={`/imports/${batch.id}`}
+                            className="font-medium text-foreground hover:text-primary transition-colors block truncate"
+                          >
+                            {batch.file_name}
+                          </Link>
+                          <p className="text-xs text-muted-foreground uppercase">{batch.file_type}</p>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium">
+                            {batch.source}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5 min-w-[160px]">
+                          <StatusChip kind="batch" value={batch.status} />
+                          {batch.status === 'PROCESSING' && (
+                            <div className="mt-1.5 h-1 w-32 overflow-hidden rounded bg-muted">
+                              <div
+                                className="h-full rounded bg-primary transition-all duration-300"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5 text-right tabular-nums">{batch.total_rows.toLocaleString()}</td>
+                        <td className="px-3 py-2.5 text-right tabular-nums text-emerald-600 dark:text-emerald-400 font-medium">
+                          {batch.created_rows.toLocaleString()}
+                        </td>
+                        <td className="px-3 py-2.5 text-right tabular-nums text-amber-700 dark:text-amber-400">
+                          {batch.duplicate_rows.toLocaleString()}
+                        </td>
+                        <td className="px-3 py-2.5 text-right tabular-nums text-red-600 dark:text-red-400">
+                          {batch.rejected_rows.toLocaleString()}
+                        </td>
+                        <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">
+                          {new Date(batch.created_at).toLocaleString(undefined, {
+                            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                          })}
+                        </td>
+                        <td className="px-3 py-2.5 text-right pr-4">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link to={`/imports/${batch.id}`}>Open</Link>
+                          </Button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
+
           {data.total_pages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Page {data.page + 1} of {data.total_pages}
+            <div className="flex items-center justify-between text-sm">
+              <p className="text-muted-foreground tabular-nums">
+                Page {data.page + 1} of {data.total_pages} · {data.total_elements.toLocaleString()} total
               </p>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
-                  Previous
-                </Button>
-                <Button variant="outline" size="sm" disabled={page >= data.total_pages - 1} onClick={() => setPage(page + 1)}>
-                  Next
-                </Button>
+                <Button variant="outline" size="sm" disabled={data.page === 0} onClick={() => setPage((p) => p - 1)}>Previous</Button>
+                <Button variant="outline" size="sm" disabled={data.page >= data.total_pages - 1} onClick={() => setPage((p) => p + 1)}>Next</Button>
               </div>
             </div>
           )}
-        </>
+        </div>
       ) : null}
     </div>
+  )
+}
+
+function Th({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <th scope="col" className={`px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground ${className ?? ''}`}>
+      {children}
+    </th>
   )
 }

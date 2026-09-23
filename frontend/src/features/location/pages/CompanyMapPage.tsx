@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { useMemo, useState } from 'react'
@@ -47,8 +48,11 @@ export function CompanyMapPage() {
   const unknown = owned.data?.unknown_pincode
 
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-xl font-semibold">Company Map</h1>
+    <div className="space-y-6">
+      <PageHeader
+        title="Company Map"
+        description="Enter any Indian pincode. Owned companies plot instantly; external Places results come live from OpenStreetMap or Google."
+      />
 
       <div className="flex flex-wrap items-end gap-3">
         <div>

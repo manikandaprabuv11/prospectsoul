@@ -36,7 +36,7 @@
 .roles-page .tab-btn:hover { color: #2c302e; }
 .roles-page .tab-btn.active {
   color: #111413;
-  border-bottom-color: #c27a3e;
+  border-bottom-color: oklch(0.53 0.19 265);
 }
 .roles-page .tab-count {
   display: inline-block;
@@ -48,8 +48,8 @@
   border-radius: 10px;
 }
 .roles-page .tab-btn.active .tab-count {
-  background: #f8ead5;
-  color: #c27a3e;
+  background: oklch(0.95 0.05 265);
+  color: oklch(0.53 0.19 265);
 }
 
 /* Role cards grid */
@@ -67,7 +67,7 @@
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .role-card:hover {
-  border-color: #c27a3e;
+  border-color: oklch(0.53 0.19 265);
   box-shadow: 0 2px 12px rgba(194,122,62,0.1);
 }
 .role-card-header {
@@ -86,7 +86,7 @@
 }
 .role-card-icon.PS_ANALYST { background: #e8f0fc; color: #2d5fa3; }
 .role-card-icon.PS_SALES_LEAD { background: #ede8fc; color: #5a44a3; }
-.role-card-icon.PS_ADMIN { background: #f8ead5; color: #c27a3e; }
+.role-card-icon.PS_ADMIN { background: oklch(0.95 0.05 265); color: oklch(0.53 0.19 265); }
 .role-card-icon.PS_VIEWER { background: #e8f5ee; color: #2d8a5e; }
 .role-card-icon.PS_COO { background: #fce8ed; color: #963b4a; }
 .role-card-icon svg { width: 20px; height: 20px; }

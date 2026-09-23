@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -92,26 +93,40 @@ export function ImportWizardPage() {
     setStep('complete')
   }
 
+  const stepList = ['upload', 'mapping', 'preview', 'processing', 'complete'] as WizardStep[]
+  const currentIdx = stepList.indexOf(step)
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild>
-          <Link to="/imports"><ArrowLeft className="size-4" /></Link>
-        </Button>
-        <h1 className="text-2xl font-semibold tracking-tight">Import Data</h1>
-      </div>
+      <PageHeader
+        breadcrumb={<Link to="/imports" className="inline-flex items-center gap-1 hover:text-foreground transition-colors"><ArrowLeft className="size-3.5" /> Back to imports</Link>}
+        title="Import data"
+        description="Upload a file, map its columns, preview the outcome, then process. Skip-on-error is on by default."
+      />
 
-      {/* Step indicator */}
-      <div className="flex gap-2">
-        {(['upload', 'mapping', 'preview', 'processing', 'complete'] as WizardStep[]).map((s, i) => (
-          <Badge
-            key={s}
-            variant={s === step ? 'default' : i < ['upload', 'mapping', 'preview', 'processing', 'complete'].indexOf(step) ? 'success' : 'outline'}
-          >
-            {i + 1}. {s.charAt(0).toUpperCase() + s.slice(1)}
-          </Badge>
-        ))}
-      </div>
+      {/* Step indicator — polished progress rail */}
+      <ol className="flex items-center gap-2 overflow-x-auto pb-1">
+        {stepList.map((s, i) => {
+          const state = i === currentIdx ? 'current' : i < currentIdx ? 'done' : 'todo'
+          return (
+            <li key={s} className="flex items-center gap-2 shrink-0">
+              <div className={
+                'flex size-6 items-center justify-center rounded-full text-[11px] font-semibold ' +
+                (state === 'done' ? 'bg-emerald-500 text-white' :
+                 state === 'current' ? 'bg-primary text-primary-foreground shadow' :
+                 'bg-muted text-muted-foreground border border-border')
+              }>{i + 1}</div>
+              <span className={
+                'text-xs font-medium capitalize ' +
+                (state === 'current' ? 'text-foreground' : 'text-muted-foreground')
+              }>{s}</span>
+              {i < stepList.length - 1 && (
+                <div className={'h-px w-8 ' + (i < currentIdx ? 'bg-emerald-500' : 'bg-border')} />
+              )}
+            </li>
+          )
+        })}
+      </ol>
 
       {/* Upload step */}
       {step === 'upload' && (

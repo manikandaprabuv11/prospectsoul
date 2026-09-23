@@ -1,6 +1,8 @@
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Download, Plus } from 'lucide-react'
+import { LoadingRows } from '@/components/feedback/LoadingRows'
+import { ErrorState } from '@/components/feedback/ErrorState'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { Download, FileUp, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import { DownloadModal } from '../components/DownloadModal'
@@ -30,40 +32,41 @@ export function CompanyListPage() {
     }))
   }
 
+  const pageStart = data ? (data.page ?? 0) * (data.size ?? 25) + 1 : 0
+  const pageEnd   = data ? Math.min((data.page ?? 0) * (data.size ?? 25) + data.content.length, data.total_elements) : 0
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Companies</h1>
-          <p className="text-sm text-muted-foreground">
-            {data ? `${data.total_elements} companies` : 'Manage prospect companies'}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setDownloadOpen(true)}>
-            <Download className="size-4" /> Download
-          </Button>
-          <Button variant="outline" asChild>
-            <Link to="/imports/new">Import</Link>
-          </Button>
-          <Button asChild>
-            <Link to="/companies/new"><Plus className="size-4" /> New Company</Link>
-          </Button>
-        </div>
+      <PageHeader
+        title="Companies"
+        description={
+          data
+            ? `${data.total_elements.toLocaleString()} prospects across your pipeline.`
+            : 'Manage prospect companies, filter, verify and export.'
+        }
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setDownloadOpen(true)}>
+              <Download /> Download
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/imports/new"><FileUp /> Import</Link>
+            </Button>
+            <Button asChild>
+              <Link to="/companies/new"><Plus /> New company</Link>
+            </Button>
+          </>
+        }
+      />
+
+      <div className="rounded-lg border border-border/70 bg-card p-4 shadow-xs">
+        <CompanyFilters filters={filters} onChange={setFilters} />
       </div>
 
-      <CompanyFilters filters={filters} onChange={setFilters} />
-
       {isLoading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
+        <LoadingRows count={6} />
       ) : isError ? (
-        <div className="rounded-lg border border-destructive/50 p-6 text-center text-sm text-destructive">
-          {error instanceof Error ? error.message : 'Failed to load companies'}
-        </div>
+        <ErrorState message={error instanceof Error ? error.message : 'Failed to load companies'} />
       ) : data ? (
         <>
           <CompanyTable
@@ -73,11 +76,13 @@ export function CompanyListPage() {
             sortDir={filters.sort_dir ?? 'desc'}
           />
           {data.total_pages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Page {data.page + 1} of {data.total_pages} ({data.total_elements} total)
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between text-sm">
+              <p className="text-muted-foreground" data-tabular="true">
+                Showing <span className="font-medium text-foreground">{pageStart}</span>–
+                <span className="font-medium text-foreground">{pageEnd}</span> of{' '}
+                <span className="font-medium text-foreground">{data.total_elements.toLocaleString()}</span>
               </p>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -86,6 +91,9 @@ export function CompanyListPage() {
                 >
                   Previous
                 </Button>
+                <span className="text-xs text-muted-foreground tabular-nums px-1">
+                  Page {data.page + 1} of {data.total_pages}
+                </span>
                 <Button
                   variant="outline"
                   size="sm"
@@ -99,6 +107,7 @@ export function CompanyListPage() {
           )}
         </>
       ) : null}
+
       <DownloadModal
         open={downloadOpen}
         onOpenChange={setDownloadOpen}

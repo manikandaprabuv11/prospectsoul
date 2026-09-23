@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/layout/PageHeader'
 import { usePermissions } from '@/auth/usePermissions'
 import { Button } from '@/components/ui/button'
 import { ChevronDown, ChevronUp } from 'lucide-react'
@@ -45,33 +46,22 @@ export function VerifyPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Verify</h1>
-          <p className="text-sm text-muted-foreground">
-            Check prospect phone numbers through the verification provider and keep each company's
-            verification state current.
-          </p>
-        </div>
-        {canMutate && (
-          <Button
-            variant={selectionOpen ? 'outline' : 'default'}
-            onClick={() => setSelectionOpen((open) => !open)}
-            aria-expanded={selectionOpen}
-            aria-controls="verify-new-companies"
-          >
-            {selectionOpen ? (
-              <>
-                <ChevronUp className="size-4" /> Hide selection
-              </>
-            ) : (
-              <>
-                <ChevronDown className="size-4" /> Verify New Companies
-              </>
-            )}
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Verify"
+        description="Check prospect phone numbers through the verification provider and keep each company's verification state current."
+        actions={
+          canMutate ? (
+            <Button
+              variant={selectionOpen ? 'outline' : 'default'}
+              onClick={() => setSelectionOpen((open) => !open)}
+              aria-expanded={selectionOpen}
+              aria-controls="verify-new-companies"
+            >
+              {selectionOpen ? (<><ChevronUp /> Hide selection</>) : (<><ChevronDown /> Verify new companies</>)}
+            </Button>
+          ) : null
+        }
+      />
 
       {selectionOpen && (
         <div id="verify-new-companies">

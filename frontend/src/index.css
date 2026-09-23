@@ -1,74 +1,158 @@
+/* ProspectSoul — global styles.
+ *
+ * Design language:
+ *   • Rich indigo→violet primary gradient for hero surfaces and the
+ *     brand mark; solid indigo for controls.
+ *   • Feature-specific accent hues (teal Companies · violet Imports ·
+ *     emerald Verify · amber Map · rose Admin) applied on stat tiles
+ *     and category cards, coherent because every hue sits on the same
+ *     lightness/chroma scale in OKLCH.
+ *   • Typography: Inter for UI, JetBrains Mono for code/IDs; tabular
+ *     numerals on tables and stat cards.
+ *   • Motion: 120/180 ms curves; respects prefers-reduced-motion.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --radius:        0.5rem;
+  --radius-lg:     0.75rem;
+  --radius-xl:     1rem;
+
+  /* Ground — very subtly tinted so it never looks sterile-white */
+  --background:            oklch(0.995 0.005 260);
+  --foreground:            oklch(0.16 0.02 260);
+  --muted:                 oklch(0.965 0.008 260);
+  --muted-foreground:      oklch(0.48 0.02 260);
+  --card:                  oklch(1 0 0);
+  --card-foreground:       oklch(0.16 0.02 260);
+  --popover:               oklch(1 0 0);
+  --popover-foreground:    oklch(0.16 0.02 260);
+
+  /* Primary — refined indigo, gradient partner is violet */
+  --primary:               oklch(0.53 0.19 265);
+  --primary-foreground:    oklch(0.99 0.005 260);
+  --primary-strong:        oklch(0.44 0.2 265);
+  --primary-soft:          oklch(0.95 0.03 265);
+  --gradient-start:        oklch(0.55 0.2 260);
+  --gradient-end:          oklch(0.5 0.22 300);
+
+  --secondary:             oklch(0.955 0.008 260);
+  --secondary-foreground:  oklch(0.22 0.02 260);
+  --accent:                oklch(0.955 0.012 260);
+  --accent-foreground:     oklch(0.22 0.02 260);
+
+  /* Feature accents — every hue at similar L/C so they harmonise */
+  --accent-teal:      oklch(0.6  0.13 200);
+  --accent-violet:    oklch(0.58 0.2  300);
+  --accent-emerald:   oklch(0.62 0.15 155);
+  --accent-amber:     oklch(0.72 0.16 75);
+  --accent-rose:      oklch(0.65 0.19 15);
+  --accent-sky:       oklch(0.63 0.16 235);
+
+  /* Semantic */
+  --success:               oklch(0.63 0.15 155);
+  --success-foreground:    oklch(0.99 0 0);
+  --warning:               oklch(0.75 0.15 75);
+  --warning-foreground:    oklch(0.22 0.03 60);
+  --info:                  oklch(0.62 0.15 235);
+  --info-foreground:       oklch(0.99 0 0);
+  --destructive:           oklch(0.58 0.22 25);
+  --destructive-foreground:oklch(0.99 0 0);
+
+  --border:                oklch(0.92 0.008 260);
+  --border-strong:         oklch(0.85 0.012 260);
+  --input:                 oklch(0.92 0.008 260);
+  --ring:                  oklch(0.53 0.19 265);
+
+  --surface-1:             oklch(0.985 0.006 260);
+  --surface-2:             oklch(0.975 0.008 260);
+
+  /* Shadows — coloured, short-throw, so cards feel layered */
+  --shadow-xs: 0 1px 2px 0 rgb(15 23 42 / 0.04);
+  --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.06), 0 1px 1px -1px rgb(15 23 42 / 0.04);
+  --shadow-md: 0 4px 8px -2px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.05);
+  --shadow-lg: 0 12px 24px -8px rgb(15 23 42 / 0.14), 0 6px 8px -4px rgb(15 23 42 / 0.06);
+  --shadow-primary: 0 8px 24px -8px oklch(0.53 0.19 265 / 0.35);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --background:            oklch(0.14 0.02 260);
+  --foreground:            oklch(0.98 0.004 260);
+  --muted:                 oklch(0.22 0.02 260);
+  --muted-foreground:      oklch(0.68 0.02 260);
+  --card:                  oklch(0.19 0.02 260);
+  --card-foreground:       oklch(0.98 0.004 260);
+  --popover:               oklch(0.2 0.02 260);
+  --popover-foreground:    oklch(0.98 0.004 260);
+  --primary:               oklch(0.68 0.19 265);
+  --primary-foreground:    oklch(0.14 0.02 260);
+  --primary-strong:        oklch(0.75 0.19 265);
+  --primary-soft:          oklch(0.28 0.06 265);
+  --gradient-start:        oklch(0.55 0.2 260);
+  --gradient-end:          oklch(0.55 0.22 300);
+  --secondary:             oklch(0.26 0.02 260);
+  --secondary-foreground:  oklch(0.98 0.004 260);
+  --accent:                oklch(0.26 0.02 260);
+  --accent-foreground:     oklch(0.98 0.004 260);
+  --success:               oklch(0.7 0.17 155);
+  --success-foreground:    oklch(0.15 0.02 155);
+  --warning:               oklch(0.8 0.17 75);
+  --warning-foreground:    oklch(0.2 0.03 60);
+  --info:                  oklch(0.72 0.17 235);
+  --info-foreground:       oklch(0.15 0.02 235);
+  --destructive:           oklch(0.68 0.2 25);
+  --border:                oklch(1 0 0 / 12%);
+  --border-strong:         oklch(1 0 0 / 20%);
+  --input:                 oklch(1 0 0 / 12%);
+  --ring:                  oklch(0.68 0.19 265);
+  --surface-1:             oklch(0.19 0.02 260);
+  --surface-2:             oklch(0.23 0.02 260);
 }
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+               Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  --color-background:           var(--background);
+  --color-foreground:           var(--foreground);
+  --color-card:                 var(--card);
+  --color-card-foreground:      var(--card-foreground);
+  --color-popover:              var(--popover);
+  --color-popover-foreground:   var(--popover-foreground);
+  --color-primary:              var(--primary);
+  --color-primary-foreground:   var(--primary-foreground);
+  --color-secondary:            var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
+  --color-muted:                var(--muted);
+  --color-muted-foreground:     var(--muted-foreground);
+  --color-accent:               var(--accent);
+  --color-accent-foreground:    var(--accent-foreground);
+  --color-destructive:          var(--destructive);
+  --color-success:              var(--success);
+  --color-warning:              var(--warning);
+  --color-info:                 var(--info);
+  --color-border:               var(--border);
+  --color-input:                var(--input);
+  --color-ring:                 var(--ring);
+  --color-surface-1:            var(--surface-1);
+  --color-surface-2:            var(--surface-2);
+
+  --color-accent-teal:    var(--accent-teal);
+  --color-accent-violet:  var(--accent-violet);
+  --color-accent-emerald: var(--accent-emerald);
+  --color-accent-amber:   var(--accent-amber);
+  --color-accent-rose:    var(--accent-rose);
+  --color-accent-sky:     var(--accent-sky);
 }
 
 @layer base {
@@ -76,7 +160,154 @@
     @apply border-border outline-ring/50;
   }
 
-  body {
-    @apply bg-background text-foreground;
+  html {
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
+
+  /* App background: a very subtle wash so the shell doesn't feel flat.
+   * Radial spots pinned to the top corners give the app a "sunlit"
+   * quality that reads premium without shouting.
+   */
+  body {
+    @apply text-foreground font-sans;
+    background:
+      radial-gradient(1200px 800px at -10% -20%,
+        color-mix(in oklch, var(--gradient-start) 12%, transparent) 0%,
+        transparent 55%),
+      radial-gradient(1000px 700px at 110% -10%,
+        color-mix(in oklch, var(--gradient-end) 10%, transparent) 0%,
+        transparent 55%),
+      var(--background);
+    background-attachment: fixed;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  table, [data-tabular="true"], .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in oklch, var(--muted-foreground) 22%, transparent);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklch, var(--muted-foreground) 44%, transparent);
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 22%, transparent);
+    color: var(--foreground);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Signature brand gradient — used on the brand mark and hero CTAs */
+  .bg-brand-gradient {
+    background: linear-gradient(135deg,
+      var(--gradient-start) 0%,
+      var(--gradient-end) 100%);
+  }
+  .text-brand-gradient {
+    background: linear-gradient(135deg,
+      var(--gradient-start) 0%,
+      var(--gradient-end) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .shadow-primary { box-shadow: var(--shadow-primary); }
+
+  /* Feature accent utilities — used as border-top stripes and icon tints */
+  .accent-teal    { --accent-hue: var(--accent-teal); }
+  .accent-violet  { --accent-hue: var(--accent-violet); }
+  .accent-emerald { --accent-hue: var(--accent-emerald); }
+  .accent-amber   { --accent-hue: var(--accent-amber); }
+  .accent-rose    { --accent-hue: var(--accent-rose); }
+  .accent-sky     { --accent-hue: var(--accent-sky); }
+  .accent-indigo  { --accent-hue: var(--primary); }
+
+  .accent-stripe {
+    position: relative;
+    overflow: hidden;
+  }
+  .accent-stripe::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg,
+      var(--accent-hue),
+      color-mix(in oklch, var(--accent-hue) 40%, transparent));
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+  }
+
+  .accent-chip-bg {
+    background: color-mix(in oklch, var(--accent-hue) 13%, transparent);
+    color: var(--accent-hue);
+  }
+}
+
+/* Legacy CSS bridge — admin (users/roles) and auth screens use their own
+ * scoped .css files. These overrides pull them onto the shared design
+ * tokens so buttons, focus rings and cards feel consistent with the rest
+ * of the app without a full rewrite.
+ */
+.users-page, .roles-page {
+  font-family: var(--font-sans);
+  padding: 0;
+}
+.users-page .page-header h2,
+.roles-page .page-header h2 {
+  font-family: var(--font-sans);
+  color: var(--foreground);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.users-page .btn-add,
+.roles-page .btn-add,
+.users-page .btn-primary,
+.roles-page .btn-primary {
+  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)) !important;
+  color: var(--primary-foreground) !important;
+  border-radius: var(--radius) !important;
+  transition: transform .12s, box-shadow .15s, opacity .15s;
+  box-shadow: var(--shadow-sm);
+}
+.users-page .btn-add:hover,
+.roles-page .btn-add:hover,
+.users-page .btn-primary:hover,
+.roles-page .btn-primary:hover {
+  box-shadow: var(--shadow-primary);
+  transform: translateY(-1px);
+}
+.users-page input[type=text],
+.roles-page input[type=text],
+.users-page input[type=email],
+.roles-page input[type=email],
+.users-page select, .roles-page select {
+  border-radius: var(--radius);
+  transition: border-color .15s, box-shadow .15s;
+}
+.users-page input:focus, .roles-page input:focus,
+.users-page select:focus, .roles-page select:focus {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 25%, transparent);
 }

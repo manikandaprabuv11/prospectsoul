@@ -1,6 +1,7 @@
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Card, CardContent } from '@/components/ui/card'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { LoadingRows } from '@/components/feedback/LoadingRows'
+import { ErrorState } from '@/components/feedback/ErrorState'
 import { ArrowLeft } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { CompanyForm } from '../components/CompanyForm'
@@ -15,41 +16,33 @@ export function CompanyEditPage() {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-96 w-full" />
+        <LoadingRows count={1} height="h-16" />
+        <LoadingRows count={1} height="h-80" />
       </div>
     )
   }
-
-  if (!company) {
-    return (
-      <div className="rounded-lg border border-destructive/50 p-6 text-center text-sm text-destructive">
-        Company not found
-      </div>
-    )
-  }
+  if (!company) return <ErrorState title="Company not found" />
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild>
-          <Link to={`/companies/${id}`}><ArrowLeft className="size-4" /></Link>
-        </Button>
-        <h1 className="text-2xl font-semibold tracking-tight">Edit: {company.canonical_name}</h1>
-      </div>
-
+      <PageHeader
+        breadcrumb={
+          <Link to={`/companies/${id}`} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+            <ArrowLeft className="size-3.5" /> Back to company
+          </Link>
+        }
+        title={`Edit · ${company.canonical_name}`}
+        description="Changes are audited and stamp the actor on the record."
+      />
       <Card>
-        <CardHeader><CardTitle>Company Details</CardTitle></CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <CompanyForm
             initialData={company}
             onSubmit={(data) => {
-              updateMutation.mutate(data, {
-                onSuccess: () => navigate(`/companies/${id}`),
-              })
+              updateMutation.mutate(data, { onSuccess: () => navigate(`/companies/${id}`) })
             }}
             isPending={updateMutation.isPending}
-            submitLabel="Save Changes"
+            submitLabel="Save changes"
           />
         </CardContent>
       </Card>
