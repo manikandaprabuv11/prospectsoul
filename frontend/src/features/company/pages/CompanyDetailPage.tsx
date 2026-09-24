@@ -8,6 +8,9 @@ import { ArrowLeft, Building2, CheckCircle2, ExternalLink, Pencil } from 'lucide
 import { Link, useParams } from 'react-router'
 import { ContactsPanel } from '@/features/contact/components/ContactsPanel'
 import { CompanyNicSection } from '@/features/company/components/CompanyNicSection'
+import { EnrichButton } from '@/features/enrichment/components/EnrichButton'
+import { CandidatesPanel } from '@/features/enrichment/components/CandidatesPanel'
+import { EnrichmentJobsPanel } from '@/features/enrichment/components/EnrichmentJobsPanel'
 import { useCompany, useVerifyCompany } from '../hooks'
 
 /**
@@ -71,6 +74,12 @@ export function CompanyDetailPage() {
         }
         actions={
           <>
+            <EnrichButton
+              companyId={id!}
+              lastGoogleEnrich={company.google_last_enriched_at}
+              lastWebsiteEnrich={company.website_last_enriched_at}
+              lastPhoneEnrich={company.primary_phone_last_enriched_at}
+            />
             {company.verification_status !== 'VERIFIED' && (
               <Button
                 variant="outline"
@@ -164,6 +173,57 @@ export function CompanyDetailPage() {
           <ContactsPanel companyId={id!} />
         </CardContent>
       </Card>
+
+      {(company.google_place_id || company.website_title || company.social_linkedin ||
+        company.primary_phone_status) ? (
+        <Card>
+          <CardHeader className="border-b-0 pb-2">
+            <CardTitle>Enrichment data</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="grid gap-x-6 gap-y-3 md:grid-cols-2 lg:grid-cols-4">
+              {company.google_name && <Field label="Google name" value={company.google_name} />}
+              {company.google_business_category && <Field label="Business type" value={company.google_business_category} />}
+              {company.google_business_status && <Field label="Business status" value={company.google_business_status} />}
+              {company.google_maps_url && (
+                <Field label="Maps" value={
+                  <a href={company.google_maps_url} target="_blank" rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-1">
+                    Open in Maps <ExternalLink className="size-3" />
+                  </a>
+                } />
+              )}
+              {company.website_title && <Field label="Website title" value={company.website_title} />}
+              {company.website_description && <Field label="Website desc" value={company.website_description} className="md:col-span-3" />}
+              {company.website_reachable !== null && company.website_reachable !== undefined && (
+                <Field label="Website reachable" value={company.website_reachable ? 'Yes' : 'No'} />
+              )}
+              {company.social_linkedin && (
+                <Field label="LinkedIn" value={
+                  <a href={company.social_linkedin} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate">{company.social_linkedin}</a>
+                } />
+              )}
+              {company.social_facebook && (
+                <Field label="Facebook" value={
+                  <a href={company.social_facebook} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate">{company.social_facebook}</a>
+                } />
+              )}
+              {company.social_x && (
+                <Field label="X / Twitter" value={
+                  <a href={company.social_x} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate">{company.social_x}</a>
+                } />
+              )}
+              {company.primary_phone_status && <Field label="Phone status" value={company.primary_phone_status} />}
+              {company.primary_phone_type && <Field label="Phone type" value={company.primary_phone_type} />}
+              {company.primary_phone_carrier && <Field label="Carrier" value={company.primary_phone_carrier} />}
+              {company.primary_phone_region && <Field label="Phone region" value={company.primary_phone_region} />}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <CandidatesPanel companyId={id!} />
+      <EnrichmentJobsPanel companyId={id!} />
 
       {company.tags && company.tags.length > 0 && (
         <Card>

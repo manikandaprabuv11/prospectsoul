@@ -1,36 +1,80 @@
-import { Button } from '@/components/ui/button'
-import { PageHeader } from '@/components/layout/PageHeader'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { EmptyState } from '@/components/feedback/EmptyState'
+import { LoadingRows } from '@/components/feedback/LoadingRows'
+import { InlineTip } from '@/components/feedback/InlineTip'
+import { useNicPrimary, useResolveNicByCode } from '@/features/nic/hooks'
+import { MapPin } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { useMapCompanies, usePincode, usePlacesSearch } from '../hooks'
-import type { MapCompanyItem } from '../types'
+import { useMapCompanies, usePincode } from '../hooks'
+import type { MapCompanyItem, MapNicCodeRef } from '../types'
 
 /**
- * `/companies/map` — UI/UX Addendum §5.
- *
- * Google Maps JS is optional: set VITE_MAPS_JS_API_KEY in
- * frontend/.env.local (origin-restricted) to render the real map. When it
- * is absent, the page falls back to an OpenStreetMap iframe centred on the
- * pincode centroid, so the geographic context is still visible without any
- * paid dependency.
- *
- * Owned companies (solid teal) and external Google results (dashed amber)
- * always render as two separated lists per UX Rule 7.
+ * `/companies/map` — owned companies plotted around a pincode centroid.
+ * External Places search (Overpass / Google) has been removed by product
+ * decision; the tab, the API call, and the "+ Add" flow are gone. What
+ * remains is a pincode search box, a radius selector, a map render and
+ * the list of ProspectSoul companies at that pincode.
  */
-
-const MAPS_KEY = import.meta.env.VITE_MAPS_JS_API_KEY as string | undefined
-
 export function CompanyMapPage() {
   const [sp, setSp] = useSearchParams()
   const pincode = sp.get('pincode') ?? ''
   const radiusKm = Number(sp.get('radius_km') ?? '5')
-  const [tab, setTab] = useState<'owned' | 'external'>('owned')
+  const nicParentId = sp.get('nic_parent_id') ?? ''
+  const nicIncludeDescendants = sp.get('nic_include_descendants') !== 'false'
 
+  const nicPrimary = useNicPrimary()
   const centroid = usePincode(pincode)
-  const owned = useMapCompanies(pincode, radiusKm)
-  const external = usePlacesSearch(pincode, radiusKm * 1000, tab === 'external')
+  const owned = useMapCompanies(pincode, radiusKm, {
+    nic_parent_id: nicParentId || undefined,
+    nic_include_descendants: nicParentId ? nicIncludeDescendants : undefined,
+  })
+
+  // Manual NIC code entry (map page only) — a text-input alternative to the
+  // dropdown. Local UI state: the in-progress text and its resolution error
+  // are transient and belong here, not in the URL; the RESOLVED filter still
+  // lives in `nic_parent_id` like the dropdown, so the URL shape is unchanged.
+  const [manualNicCode, setManualNicCode] = useState('')
+  const [manualNicError, setManualNicError] = useState<string | null>(null)
+  const resolveNic = useResolveNicByCode()
+
+  function handleManualNicChange(value: string) {
+    setManualNicCode(value)
+    setManualNicError(null)
+    // Typing clears the dropdown selection — only one input drives the
+    // active filter at a time.
+    if (nicParentId) update('nic_parent_id', '')
+  }
+
+  function submitManualNic() {
+    const trimmed = manualNicCode.trim()
+    if (!trimmed) return
+    resolveNic.mutate(trimmed, {
+      onSuccess: (nic) => {
+        setManualNicError(null)
+        update('nic_parent_id', nic.id)
+      },
+      onError: (err) => {
+        setManualNicError(err instanceof Error ? err.message : `No NIC found for '${trimmed}'`)
+      },
+    })
+  }
+
+  function handleDropdownNicChange(value: string) {
+    update('nic_parent_id', value)
+    // Picking from the dropdown clears the manual input.
+    setManualNicCode('')
+    setManualNicError(null)
+  }
+
+  const matchedNicCodeIds = owned.data?.matched_nic_code_ids ?? null
+  function visibleNicCodes(nicCodes: MapNicCodeRef[]): MapNicCodeRef[] {
+    if (!matchedNicCodeIds) return nicCodes
+    const matched = new Set(matchedNicCodeIds)
+    return nicCodes.filter((n) => n.id != null && matched.has(n.id))
+  }
 
   const center = useMemo(() => {
     if (centroid.data)
@@ -46,227 +90,193 @@ export function CompanyMapPage() {
   }
 
   const unknown = owned.data?.unknown_pincode
+  const list: MapCompanyItem[] = owned.data?.content ?? []
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Company Map"
-        description="Enter any Indian pincode. Owned companies plot instantly; external Places results come live from OpenStreetMap or Google."
+        description="Plot ProspectSoul companies around any Indian pincode. The centroid is resolved on demand and cached."
       />
 
-      <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <label className="text-xs text-muted-foreground">Pincode</label>
-          <Input
-            className="w-32"
-            value={pincode}
-            onChange={(e) => update('pincode', e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-            placeholder="e.g. 641001"
-          />
+      <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="min-w-[8rem]">
+            <label htmlFor="map-pincode" className="text-xs font-medium text-muted-foreground">Pincode</label>
+            <Input
+              id="map-pincode"
+              className="mt-1"
+              value={pincode}
+              onChange={(e) => update('pincode', e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+              placeholder="e.g. 641006"
+              inputMode="numeric"
+            />
+          </div>
+          <div className="min-w-[8rem]">
+            <label htmlFor="map-radius" className="text-xs font-medium text-muted-foreground">Radius</label>
+            <Select id="map-radius" className="mt-1" value={String(radiusKm)} onChange={(e) => update('radius_km', e.target.value)}>
+              <option value="2">2 km</option>
+              <option value="5">5 km</option>
+              <option value="10">10 km</option>
+              <option value="25">25 km</option>
+              <option value="50">50 km</option>
+            </Select>
+          </div>
+          <div className="min-w-[10rem]">
+            <label htmlFor="map-nic" className="text-xs font-medium text-muted-foreground">NIC (with sub-codes)</label>
+            <Select
+              id="map-nic"
+              className="mt-1"
+              value={nicParentId}
+              onChange={(e) => handleDropdownNicChange(e.target.value)}
+            >
+              <option value="">Any NIC</option>
+              {nicPrimary.data?.map((n) => (
+                <option key={n.id} value={n.id}>{n.code} · {n.description}</option>
+              ))}
+            </Select>
+          </div>
+          <div className="min-w-[9rem]">
+            <label htmlFor="map-nic-manual" className="text-xs font-medium text-muted-foreground">Or type NIC code</label>
+            <Input
+              id="map-nic-manual"
+              className="mt-1"
+              value={manualNicCode}
+              onChange={(e) => handleManualNicChange(e.target.value)}
+              onBlur={submitManualNic}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  submitManualNic()
+                }
+              }}
+              placeholder="e.g. 22199"
+              aria-invalid={manualNicError ? true : undefined}
+              aria-describedby={manualNicError ? 'map-nic-manual-error' : undefined}
+            />
+            {manualNicError ? (
+              <p id="map-nic-manual-error" className="mt-1 text-xs text-destructive">{manualNicError}</p>
+            ) : null}
+          </div>
+          {nicParentId ? (
+            <label className="flex h-9 items-center gap-2 pb-1.5 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={nicIncludeDescendants}
+                onChange={(e) => update('nic_include_descendants', e.target.checked ? '' : 'false')}
+              />
+              Include descendants
+            </label>
+          ) : null}
+          {centroid.data ? (
+            <div className="text-sm text-muted-foreground pb-1.5">
+              → <span className="font-medium text-foreground">{centroid.data.area_name}</span>
+              {centroid.data.state ? `, ${centroid.data.state}` : ''}
+            </div>
+          ) : null}
         </div>
-        <div>
-          <label className="text-xs text-muted-foreground">Radius</label>
-          <Select value={String(radiusKm)} onChange={(e) => update('radius_km', e.target.value)}>
-            <option value="2">2 km</option>
-            <option value="5">5 km</option>
-            <option value="10">10 km</option>
-            <option value="25">25 km</option>
-            <option value="50">50 km</option>
-          </Select>
-        </div>
-        {centroid.data ? (
-          <p className="text-sm text-muted-foreground">
-            → {centroid.data.area_name}
-            {centroid.data.state ? `, ${centroid.data.state}` : ''}
-          </p>
+
+        {unknown ? (
+          <InlineTip tone="warning" className="mt-3">
+            Pincode <strong>{pincode}</strong> isn't in the master centroid table yet — the map is
+            centred at India for now, but the companies list below still shows every ProspectSoul
+            record whose pincode matches.
+          </InlineTip>
         ) : null}
       </div>
 
-      {unknown ? (
-        <p className="rounded bg-amber-50 border border-amber-300 p-2 text-xs text-amber-800">
-          Pincode <strong>{pincode}</strong> is not in the master centroid table yet — the map is
-          centred at India for now, but the companies list below still shows every record whose
-          pincode matches. Add this pincode to <code>pincode_centroids</code> (or import an India
-          Post PIN file) to get an accurate centre.
-        </p>
-      ) : null}
-
       {pincode && center ? (
-        <MapView
-          center={center}
-          radiusKm={radiusKm}
-          owned={owned.data?.content ?? []}
-          externalMarkers={tab === 'external' ? (external.data?.results ?? []).map((r) => ({
-            id: r.place_id,
-            lat: Number(r.lat),
-            lng: Number(r.lng),
-            name: r.name,
-          })) : []}
-        />
+        <MapView center={center} radiusKm={radiusKm} ownedCount={list.length} />
       ) : (
-        <p className="text-sm text-muted-foreground">Enter a 6-digit pincode to load the map.</p>
+        <EmptyState
+          icon={<MapPin className="size-6" />}
+          title="Enter a pincode"
+          description="Type a 6-digit Indian pincode to load the map and see companies in ProspectSoul in that area."
+        />
       )}
 
-      <div className="flex gap-2">
-        <Button size="sm" variant={tab === 'owned' ? 'default' : 'outline'} onClick={() => setTab('owned')}>
-          In ProspectSoul ({owned.data?.content.length ?? 0})
-        </Button>
-        <Button size="sm" variant={tab === 'external' ? 'default' : 'outline'} onClick={() => setTab('external')}>
-          {externalLabel(external.data?.source)} ({external.data?.results.length ?? 0})
-        </Button>
-      </div>
-
-      {tab === 'owned' ? (
-        <section className="space-y-1">
-          {owned.isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : owned.data && owned.data.content.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No owned companies in this area.</p>
-          ) : (
-            <ul className="text-sm space-y-1">
-              {owned.data?.content.map((c) => (
-                <li key={c.id} className="rounded border p-2 flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">{c.canonical_name}</div>
-                    <div className="text-xs text-muted-foreground">
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          In ProspectSoul ({list.length})
+        </h2>
+        {owned.isLoading ? (
+          <LoadingRows count={3} height="h-14" />
+        ) : list.length === 0 ? (
+          <EmptyState
+            title="No companies in this area"
+            description="Try a larger radius, or import companies for this pincode from the Imports page."
+          />
+        ) : (
+          <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {list.map((c) => {
+              const chips = visibleNicCodes(c.nic_codes ?? [])
+              return (
+                <li key={c.id} className="rounded-lg border border-border/70 bg-card p-3 shadow-sm hover:shadow-md transition-shadow flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <Link to={`/companies/${c.id}`} className="font-medium text-foreground hover:text-primary transition-colors block truncate">
+                      {c.canonical_name}
+                    </Link>
+                    <div className="text-xs text-muted-foreground mt-0.5">
                       {c.pipeline_state} · {Number(c.lat).toFixed(4)}, {Number(c.lng).toFixed(4)}
                     </div>
+                    {chips.length > 0 ? (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {chips.map((n) => (
+                          <span
+                            key={n.id ?? n.code}
+                            title={n.description}
+                            className={
+                              'inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium ' +
+                              (n.primary
+                                ? 'bg-primary/10 text-primary border border-primary/20'
+                                : 'bg-muted text-foreground border border-border')
+                            }
+                          >
+                            {n.primary ? <span className="text-amber-500">★</span> : null}
+                            {n.code}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
-                  <Link to={`/companies/${c.id}`} className="text-primary text-xs">
-                    view →
-                  </Link>
                 </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      ) : (
-        <section className="space-y-2">
-          {external.isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading external results…</p>
-          ) : external.isError ? (
-            <p className="text-sm text-destructive">
-              {String((external.error as Error)?.message ?? 'External lookup failed')}
-            </p>
-          ) : external.data && external.data.results.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No external results.</p>
-          ) : (
-            <ul className="text-sm space-y-1">
-              {external.data?.results.map((r) => (
-                <li
-                  key={r.place_id}
-                  className="rounded border border-dashed border-amber-400 p-2 flex items-center justify-between"
-                >
-                  <div>
-                    <div className="font-medium">{r.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {r.formatted_address} · not yet in ProspectSoul
-                    </div>
-                  </div>
-                  <Link
-                    to={{
-                      pathname: '/companies/new',
-                      search: new URLSearchParams({
-                        source: 'GOOGLE_PLACES',
-                        canonical_name: r.name,
-                        pincode,
-                        address_line: r.formatted_address,
-                        primary_phone: r.phone ?? '',
-                      }).toString(),
-                    }}
-                    className="rounded border px-2 py-1 text-xs"
-                  >
-                    + Add
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-          {external.data ? (
-            <p className="text-xs text-muted-foreground">
-              Quota remaining today: {external.data.quota_remaining}
-            </p>
-          ) : null}
-        </section>
-      )}
+              )
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   )
 }
 
-interface MapViewProps {
-  center: { lat: number; lng: number }
-  radiusKm: number
-  owned: MapCompanyItem[]
-  externalMarkers: { id: string; lat: number; lng: number; name: string }[]
-}
+const MAPS_KEY = import.meta.env.VITE_MAPS_JS_API_KEY as string | undefined
 
-/**
- * Renders a Google Maps JS iframe when VITE_MAPS_JS_API_KEY is set; falls
- * back to an OpenStreetMap iframe otherwise so the page always shows a
- * visible map instead of just text lists.
- */
-function MapView({ center, radiusKm, owned, externalMarkers }: MapViewProps) {
-  // Rough BBox around the centre for the OSM fallback iframe. 0.045 deg
-  // ≈ 5 km at Indian latitudes — scales roughly with the radius.
+function MapView({ center, radiusKm, ownedCount }: { center: { lat: number; lng: number }; radiusKm: number; ownedCount: number }) {
   const delta = 0.01 * Math.max(radiusKm, 2)
   const bbox = [center.lng - delta, center.lat - delta, center.lng + delta, center.lat + delta]
 
-  if (MAPS_KEY) {
-    // Google Maps Embed API. The key MUST be origin-restricted in the
-    // Google Cloud Console — never a server-side key.
-    const src = `https://www.google.com/maps/embed/v1/view?key=${MAPS_KEY}&center=${center.lat},${center.lng}&zoom=13`
-    return (
-      <div className="rounded border overflow-hidden">
-        <iframe
-          src={src}
-          title="Company map"
-          className="w-full h-[400px] border-0"
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-        />
-        <MapLegend ownedCount={owned.length} externalCount={externalMarkers.length} />
-      </div>
-    )
-  }
+  const src = MAPS_KEY
+    ? `https://www.google.com/maps/embed/v1/view?key=${MAPS_KEY}&center=${center.lat},${center.lng}&zoom=13`
+    : `https://www.openstreetmap.org/export/embed.html?bbox=${bbox.join(',')}&layer=mapnik&marker=${center.lat},${center.lng}`
 
-  const osmSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox.join(',')}&layer=mapnik&marker=${center.lat},${center.lng}`
   return (
-    <div className="rounded border overflow-hidden">
+    <div className="rounded-xl overflow-hidden border border-border/70 shadow-sm bg-card">
       <iframe
-        src={osmSrc}
-        title="Company map (OpenStreetMap fallback)"
+        src={src}
+        title="Company map"
         className="w-full h-[400px] border-0"
         loading="lazy"
         referrerPolicy="no-referrer-when-downgrade"
       />
-      <div className="border-t px-3 py-2 text-xs text-muted-foreground">
-        Showing an OpenStreetMap fallback. Set <code>VITE_MAPS_JS_API_KEY</code> in
-        <code> frontend/.env.local</code> (origin-restricted) to render Google Maps here.
+      <div className="flex items-center justify-between border-t border-border/70 px-3 py-2 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-2">
+          <span className="inline-block w-3 h-3 rounded-full bg-teal-500" />
+          Owned in ProspectSoul ({ownedCount})
+        </span>
+        {!MAPS_KEY ? (
+          <span>OpenStreetMap fallback — set <code>VITE_MAPS_JS_API_KEY</code> for Google Maps.</span>
+        ) : null}
       </div>
-      <MapLegend ownedCount={owned.length} externalCount={externalMarkers.length} />
     </div>
   )
-}
-
-function MapLegend({ ownedCount, externalCount }: { ownedCount: number; externalCount: number }) {
-  return (
-    <div className="flex gap-4 border-t px-3 py-2 text-xs text-muted-foreground">
-      <span className="inline-flex items-center gap-1">
-        <span className="inline-block w-3 h-3 rounded-full bg-teal-500" /> Owned ({ownedCount})
-      </span>
-      <span className="inline-flex items-center gap-1">
-        <span className="inline-block w-3 h-3 rounded-full border-2 border-dashed border-amber-500" />
-        External ({externalCount})
-      </span>
-    </div>
-  )
-}
-
-function externalLabel(source: string | undefined) {
-  switch (source) {
-    case 'google_places':          return 'Found on Google'
-    case 'openstreetmap_overpass': return 'Found on OpenStreetMap'
-    case 'stub':                   return 'Found (stub)'
-    default:                       return 'Found externally'
-  }
 }

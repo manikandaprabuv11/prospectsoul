@@ -11,12 +11,10 @@ import com.vyoog.prospectsoul_backend.company.repository.CompanyRepository;
 import com.vyoog.prospectsoul_backend.imports.entity.ImportBatch;
 import com.vyoog.prospectsoul_backend.imports.repository.ImportBatchRepository;
 import com.vyoog.prospectsoul_backend.imports.repository.ImportRowRepository;
-import com.vyoog.prospectsoul_backend.location.dto.response.ExternalPlacesResponse;
 import com.vyoog.prospectsoul_backend.location.dto.response.MapCompanyResponse;
 import com.vyoog.prospectsoul_backend.location.dto.response.PincodeCentroidResponse;
 import com.vyoog.prospectsoul_backend.location.service.CompanyMapService;
 import com.vyoog.prospectsoul_backend.location.service.PincodeCentroidService;
-import com.vyoog.prospectsoul_backend.location.service.PlacesLookupService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,15 +27,10 @@ class LocationIntegrationTest {
 
     @Autowired PincodeCentroidService pincodeCentroidService;
     @Autowired CompanyMapService companyMapService;
-    @Autowired PlacesLookupService placesLookupService;
     @Autowired CompanyRepository companyRepository;
     @Autowired ImportBatchRepository importBatchRepository;
     @Autowired ImportRowRepository importRowRepository;
 
-    @BeforeEach
-    void reset() {
-        placesLookupService.resetQuotaCounter();
-    }
 
     @Test
     void pincodeCentroidComesFromSeededTableNotFromGoogle() {
@@ -46,29 +39,7 @@ class LocationIntegrationTest {
         assertThat(resp.centroid().lat()).isEqualByComparingTo(new BigDecimal("11.017100"));
     }
 
-    @Test
-    void placesSearchWritesZeroRowsToCompaniesOrImportBatches() {
-        long companiesBefore = companyRepository.count();
-        long batchesBefore = importBatchRepository.count();
-        long rowsBefore = importRowRepository.count();
 
-        ExternalPlacesResponse resp = placesLookupService.search("641001", null, null, null);
-
-        assertThat(resp.persisted()).isFalse();
-        assertThat(resp.source()).isEqualTo("stub");
-        assertThat(resp.results()).isNotEmpty();
-        assertThat(resp.quotaRemaining()).isNotNegative();
-
-        assertThat(companyRepository.count()).isEqualTo(companiesBefore);
-        assertThat(importBatchRepository.count()).isEqualTo(batchesBefore);
-        assertThat(importRowRepository.count()).isEqualTo(rowsBefore);
-    }
-
-    @Test
-    void invalidPincodeReturns422() {
-        assertThatThrownBy(() -> placesLookupService.search("bad", null, null, null))
-                .hasMessageContaining("6 digits");
-    }
 
     @Test
     void mapCompaniesReturnsOwnedRowsWithinRadius() {

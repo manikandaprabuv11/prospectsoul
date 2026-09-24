@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { locationApi } from '../api'
+import type { MapCompaniesFilters } from '../types'
 
 export function usePincode(pincode: string) {
   return useQuery({
@@ -9,19 +10,11 @@ export function usePincode(pincode: string) {
   })
 }
 
-export function useMapCompanies(pincode: string, radiusKm: number) {
+export function useMapCompanies(pincode: string, radiusKm: number, filters?: MapCompaniesFilters) {
   return useQuery({
-    queryKey: ['map', 'companies', pincode, radiusKm],
-    queryFn: () => locationApi.companies(pincode, radiusKm),
+    queryKey: ['map', 'companies', pincode, radiusKm, filters?.nic_parent_id, filters?.nic_include_descendants],
+    queryFn: () => locationApi.companies(pincode, radiusKm, filters),
     enabled: !!pincode && /^\d{6}$/.test(pincode),
   })
 }
 
-export function usePlacesSearch(pincode: string, radiusMeters: number, enabled: boolean) {
-  return useQuery({
-    queryKey: ['places', pincode, radiusMeters],
-    queryFn: () => locationApi.placesSearch(pincode, radiusMeters),
-    enabled: enabled && !!pincode && /^\d{6}$/.test(pincode),
-    staleTime: 5 * 60 * 1000,
-  })
-}

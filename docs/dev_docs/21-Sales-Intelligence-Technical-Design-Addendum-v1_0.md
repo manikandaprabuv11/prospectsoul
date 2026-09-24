@@ -354,6 +354,22 @@ Selecting an external result opens the existing manual-entry form pre-filled fro
 
 Import source is set to `GOOGLE_PLACES`.
 
+### 7.4 Implementation Note (2026-09-24) — NIC filter on the map, ANDed with pincode
+
+`GET /api/v1/map/companies` gained two additive optional params, `nic_parent_id` (UUID) and `nic_include_descendants` (boolean) — existing callers without them are unaffected:
+
+```text
+GET /api/v1/map/companies?pincode=641001&radius_km=5&nic_parent_id=<uuid>&nic_include_descendants=true
+```
+
+`CompanyMapService` resolves the NIC id set via the existing `NicCodeRepository.findDescendantIds` recursive CTE (the same one `CompanySpecification` uses for the Companies List NIC filter), then **intersects** that id set with the pincode/radius match — a company must satisfy both filters, not either. Matching is done through a new `CompanyNicCodeRepository.findCompanyIdsByNicCodeIdIn(Collection<UUID> nicCodeIds)` (JPQL over the `company_nic_codes` join table, primary and secondary codes both count) so the map's NIC semantics stay identical to the list's.
+
+`MapCompanyResponse` also gained:
+- `content[].nicCodes` — each company's full, unfiltered NIC list (id, code, description, primary flag) — always returned regardless of filter.
+- `matchedNicCodeIds` (top-level `List<UUID>`) — the resolved parent-plus-descendants id set when a NIC filter is active, `null` when it is not. This lets the frontend show only the chips that matched without baking a display decision into the endpoint.
+
+No new endpoint was added for the manual NIC-code lookup on the map page (§5.2 of the UI/UX Addendum) — it reuses the existing `nic` list endpoint with a `q` param and an exact-code match client-side; see the UI/UX Addendum for the frontend contract.
+
 ---
 
 ## 8. Export — Two Distinct Operations
@@ -427,6 +443,10 @@ For Udyam imports, `source_reference` is composed as `LG_ST_Code-LG_DT_Code-pinc
 | Distinct NIC codes seen | 1,162 | Some may not exist in the master → NULL `nic_code_id`, raw kept |
 | Companies with >1 activity | 25,514 (21%) | Handled via join table |
 | Max activities on one company | 91 | Handled — no upper limit |
+
+### 9.5 Implementation Note (2026-09-24) — batch completion status bug
+
+Batches that finished with `processed_rows == total_rows` and `created_rows > 0` were sometimes displayed as `FAILED`. Root cause and fix are recorded in `docs/dev_docs/adr/ADR-0007-streaming-registry-imports.md` ("Update — 2026-09-24"): the completion audit call had no transaction to join under `processBatch`'s intentionally non-transactional design, threw, and the async catch block regressed the just-set `COMPLETED` status. Fixed with a `REQUIRES_NEW` `recordBatchCompletion(...)` helper (called via `self`) plus a `markBatchFailed(...)` guard that never overwrites a terminal (`COMPLETED`/`FAILED`) status.
 
 ---
 

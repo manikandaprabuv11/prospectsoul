@@ -1,5 +1,6 @@
 package com.vyoog.prospectsoul_backend.company.nic.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,6 +15,15 @@ public interface CompanyNicCodeRepository extends JpaRepository<CompanyNicCode, 
 
     List<CompanyNicCode> findByCompanyIdOrderBySequenceNoAsc(UUID companyId);
 
+    /**
+     * Company ids that have any of the given NIC codes attached (primary or
+     * secondary) — same semantics as {@link com.vyoog.prospectsoul_backend.company.specification.CompanySpecification}'s
+     * NIC subquery, reused by the Companies Map endpoint so the NIC filter
+     * behaves identically on both screens.
+     */
+    @Query("select distinct c.companyId from CompanyNicCode c where c.nicCode.id in :nicCodeIds")
+    List<UUID> findCompanyIdsByNicCodeIdIn(@Param("nicCodeIds") Collection<UUID> nicCodeIds);
+
     Optional<CompanyNicCode> findFirstByCompanyIdAndIsPrimaryTrue(UUID companyId);
 
     Optional<CompanyNicCode> findByCompanyIdAndNicCodeRaw(UUID companyId, String raw);
@@ -23,4 +33,7 @@ public interface CompanyNicCodeRepository extends JpaRepository<CompanyNicCode, 
     int demoteOthers(@Param("companyId") UUID companyId, @Param("keepId") UUID keepId);
 
     long countByCompanyId(UUID companyId);
+
+    /** Bulk fetch NIC join rows for a page of companies. */
+    List<CompanyNicCode> findByCompanyIdInOrderByCompanyIdAscSequenceNoAsc(java.util.List<UUID> companyIds);
 }

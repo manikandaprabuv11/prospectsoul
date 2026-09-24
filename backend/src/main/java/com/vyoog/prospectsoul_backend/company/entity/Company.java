@@ -152,6 +152,81 @@ public class Company {
     @Column(precision = 9, scale = 6)
     private BigDecimal longitude;
 
+    @Column(name = "google_place_id", length = 120)
+    private String googlePlaceId;
+
+    @Column(name = "google_name")
+    private String googleName;
+
+    @Column(name = "google_business_category", length = 120)
+    private String googleBusinessCategory;
+
+    @Column(name = "google_business_types")
+    private String googleBusinessTypes;
+
+    @Column(name = "google_maps_url")
+    private String googleMapsUrl;
+
+    @Column(name = "google_lat", precision = 10, scale = 7)
+    private BigDecimal googleLat;
+
+    @Column(name = "google_lng", precision = 10, scale = 7)
+    private BigDecimal googleLng;
+
+    @Column(name = "google_business_status", length = 30)
+    private String googleBusinessStatus;
+
+    @Column(name = "google_last_enriched_at")
+    private Instant googleLastEnrichedAt;
+
+    @Column(name = "website_reachable")
+    private Boolean websiteReachable;
+
+    @Column(name = "website_title")
+    private String websiteTitle;
+
+    @Column(name = "website_description")
+    private String websiteDescription;
+
+    @Column(name = "website_last_enriched_at")
+    private Instant websiteLastEnrichedAt;
+
+    @Column(name = "social_linkedin", length = 200)
+    private String socialLinkedin;
+
+    @Column(name = "social_facebook", length = 200)
+    private String socialFacebook;
+
+    @Column(name = "social_x", length = 200)
+    private String socialX;
+
+    @Column(name = "social_instagram", length = 200)
+    private String socialInstagram;
+
+    @Column(name = "social_youtube", length = 200)
+    private String socialYoutube;
+
+    @Column(name = "primary_phone_country", length = 3)
+    private String primaryPhoneCountry;
+
+    @Column(name = "primary_phone_region", length = 60)
+    private String primaryPhoneRegion;
+
+    @Column(name = "primary_phone_carrier", length = 60)
+    private String primaryPhoneCarrier;
+
+    @Column(name = "primary_phone_type", length = 20)
+    private String primaryPhoneType;
+
+    @Column(name = "primary_phone_status", length = 20)
+    private String primaryPhoneStatus;
+
+    @Column(name = "primary_phone_dnd_registered")
+    private Boolean primaryPhoneDndRegistered;
+
+    @Column(name = "primary_phone_last_enriched_at")
+    private Instant primaryPhoneLastEnrichedAt;
+
     @PrePersist
     void prePersist() {
         Instant now = Instant.now();

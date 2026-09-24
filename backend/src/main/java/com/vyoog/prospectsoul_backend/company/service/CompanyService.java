@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -20,6 +21,10 @@ import com.vyoog.prospectsoul_backend.company.dto.response.CompanyGroupedByNicRe
 import com.vyoog.prospectsoul_backend.company.specification.CompanySpecification;
 import com.vyoog.prospectsoul_backend.nic.entity.NicCode;
 import com.vyoog.prospectsoul_backend.nic.repository.NicCodeRepository;
+import com.vyoog.prospectsoul_backend.contact.entity.Contact;
+import com.vyoog.prospectsoul_backend.contact.repository.ContactRepository;
+import com.vyoog.prospectsoul_backend.company.nic.entity.CompanyNicCode;
+import com.vyoog.prospectsoul_backend.company.nic.repository.CompanyNicCodeRepository;
 import java.math.BigDecimal;
 import com.vyoog.prospectsoul_backend.imports.normalization.CompanyNameNormalizer;
 import com.vyoog.prospectsoul_backend.imports.normalization.PhoneNormalizer;
@@ -52,6 +57,8 @@ public class CompanyService {
     private final CompanyMapper companyMapper;
     private final AuditService auditService;
     private final NicCodeRepository nicCodeRepository;
+    private final ContactRepository contactRepository;
+    private final CompanyNicCodeRepository companyNicCodeRepository;
     private final CompanyNameNormalizer nameNormalizer;
     private final PhoneNormalizer phoneNormalizer;
     private final WebsiteNormalizer websiteNormalizer;
@@ -276,7 +283,67 @@ public class CompanyService {
         Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, resolvedSortField));
         Page<Company> result = companyRepository.findAll(CompanySpecification.withFilters(filters), pageable);
-        return PageResponse.from(result.map(companyMapper::toResponse));
+        return enrichPage(PageResponse.from(result.map(companyMapper::toResponse)));
+    }
+
+    /**
+     * Attach primary contact + NIC-code refs to the list rows. Loads
+     * both children in two bulk queries (by companyId IN (:ids)) so
+     * a 25-row page stays at 3 queries total instead of N per row.
+     */
+    private CompanyResponse enrichForListItem(CompanyResponse resp) {
+        // For a single-record enrichment we could go one query each — kept
+        // simple. The page-level bulk enrichment happens below.
+        return resp;
+    }
+
+    /** Backwards-compat overload used by internal callers if any. */
+    private PageResponse<CompanyResponse> enrichPage(PageResponse<CompanyResponse> page) {
+        if (page.content().isEmpty()) return page;
+        var ids = page.content().stream().map(CompanyResponse::id).toList();
+
+        Map<UUID, Contact> primaryContact = new java.util.HashMap<>();
+        for (Contact c : contactRepository.findFirstPerCompany(ids)) {
+            primaryContact.putIfAbsent(c.getCompanyId(), c);
+        }
+
+        Map<UUID, java.util.List<CompanyResponse.NicCodeRef>> nicByCompany = new java.util.HashMap<>();
+        for (CompanyNicCode cnc : companyNicCodeRepository.findByCompanyIdInOrderByCompanyIdAscSequenceNoAsc(ids)) {
+            NicCode nc = cnc.getNicCode();
+            String code = nc != null ? nc.getCode() : cnc.getNicCodeRaw();
+            String desc = nc != null ? nc.getDescription() : cnc.getDescriptionRaw();
+            nicByCompany.computeIfAbsent(cnc.getCompanyId(), k -> new java.util.ArrayList<>())
+                    .add(new CompanyResponse.NicCodeRef(code, desc, Boolean.TRUE.equals(cnc.getIsPrimary())));
+        }
+
+        var enriched = page.content().stream().map(r -> {
+            Contact c = primaryContact.get(r.id());
+            var nics = nicByCompany.getOrDefault(r.id(), java.util.List.of());
+            return new CompanyResponse(
+                    r.id(), r.canonicalName(), r.normalizedName(), r.websiteDomain(),
+                    r.primaryPhoneNormalized(), r.email(), r.city(), r.state(), r.cluster(),
+                    r.industry(), r.sizeBand(), r.tags(), r.source(), r.pipelineState(),
+                    r.completenessScore(), r.verificationStatus(), r.verifiedBy(), r.verifiedAt(),
+                    r.pincode(), r.district(), r.addressLine(), r.region(), r.products(), r.turnover(),
+                    r.gstNumber(), r.employeeCount(), r.registrationDate(), r.sourceReference(),
+                    r.lgStateCode(), r.lgDistrictCode(), r.primaryNicCodeId(), r.latitude(), r.longitude(),
+                    r.googlePlaceId(), r.googleName(), r.googleBusinessCategory(), r.googleBusinessTypes(),
+                    r.googleMapsUrl(), r.googleLat(), r.googleLng(), r.googleBusinessStatus(),
+                    r.googleLastEnrichedAt(),
+                    r.websiteReachable(), r.websiteTitle(), r.websiteDescription(), r.websiteLastEnrichedAt(),
+                    r.socialLinkedin(), r.socialFacebook(), r.socialX(), r.socialInstagram(), r.socialYoutube(),
+                    r.primaryPhoneCountry(), r.primaryPhoneRegion(), r.primaryPhoneCarrier(),
+                    r.primaryPhoneType(), r.primaryPhoneStatus(), r.primaryPhoneDndRegistered(),
+                    r.primaryPhoneLastEnrichedAt(),
+                    c != null ? c.getName() : null,
+                    c != null ? c.getPhone() : null,
+                    c != null && c.getRole() != null ? c.getRole().getLabel() : null,
+                    nics,
+                    r.createdBy(), r.createdAt(), r.updatedBy(), r.updatedAt()
+            );
+        }).toList();
+        return new PageResponse<>(enriched, page.page(), page.size(),
+                page.totalElements(), page.totalPages());
     }
 
     /**

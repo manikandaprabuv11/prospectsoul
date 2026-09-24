@@ -47,9 +47,6 @@ prospectsoul:
       lookup-base-url: http://localhost:1/unused
     default-country-code: "+91"
     stale-item-timeout-ms: 1000
-  places:
-    # Tests use the deterministic stub — never call the real Overpass or Google APIs.
-    provider: stub
   pincode:
     # Disable the live India Post + Nominatim geocoder in tests. The
     # TestPincodeGeocoderConfig registers a deterministic stub as @Primary

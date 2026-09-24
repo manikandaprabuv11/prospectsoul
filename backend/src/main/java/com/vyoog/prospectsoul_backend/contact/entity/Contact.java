@@ -85,6 +85,30 @@ public class Contact {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "phone_normalized", length = 20)
+    private String phoneNormalized;
+
+    @Column(name = "phone_country", length = 3)
+    private String phoneCountry;
+
+    @Column(name = "phone_region", length = 60)
+    private String phoneRegion;
+
+    @Column(name = "phone_carrier", length = 60)
+    private String phoneCarrier;
+
+    @Column(name = "phone_type", length = 20)
+    private String phoneType;
+
+    @Column(name = "phone_status", length = 20)
+    private String phoneStatus;
+
+    @Column(name = "phone_dnd_registered")
+    private Boolean phoneDndRegistered;
+
+    @Column(name = "phone_last_enriched_at")
+    private Instant phoneLastEnrichedAt;
+
     @PrePersist
     void prePersist() {
         Instant now = Instant.now();

@@ -14,7 +14,11 @@ import java.math.BigDecimal;
 import java.util.List;
 import com.vyoog.prospectsoul_backend.company.download.CompanyDownloadRequest;
 import com.vyoog.prospectsoul_backend.company.download.CompanyDownloadService;
+import com.vyoog.prospectsoul_backend.company.defaultfilter.entity.CompanyDefaultFilter;
+import com.vyoog.prospectsoul_backend.company.defaultfilter.service.CompanyDefaultFilterService;
 import com.vyoog.prospectsoul_backend.company.service.CompanyService;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -41,6 +45,8 @@ public class CompanyController {
 
     private final CompanyService companyService;
     private final CompanyDownloadService companyDownloadService;
+    private final CompanyDefaultFilterService companyDefaultFilterService;
+    private final ObjectMapper objectMapper;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -79,11 +85,40 @@ public class CompanyController {
             @RequestParam(name = "nic_parent_id", required = false) UUID nicParentId,
             @RequestParam(name = "nic_include_descendants", required = false) Boolean nicIncludeDescendants,
             @RequestParam(name = "has_contact_role_id", required = false) UUID hasContactRoleId,
+            @RequestParam(name = "apply_defaults", defaultValue = "false") boolean applyDefaults,
             @RequestParam(name = "view", defaultValue = "flat") String view,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int size,
             @RequestParam(defaultValue = "createdAt") String sort,
             @RequestParam(name = "sort_dir", defaultValue = "desc") String sortDir) {
+
+        // Admin-set defaults (only fields the caller left blank are populated).
+        if (applyDefaults) {
+            for (CompanyDefaultFilter d : companyDefaultFilterService.activeDefaults()) {
+                try {
+                    JsonNode v = d.getValue() == null || d.getValue().isBlank()
+                            ? null : objectMapper.readTree(d.getValue());
+                    switch (d.getFilterKey()) {
+                        case "employee_min":    if (employeeMin == null && v != null && v.isNumber()) employeeMin = v.asInt(); break;
+                        case "employee_max":    if (employeeMax == null && v != null && v.isNumber()) employeeMax = v.asInt(); break;
+                        case "turnover_min":    if (turnoverMin == null && v != null && v.isNumber()) turnoverMin = v.decimalValue(); break;
+                        case "turnover_max":    if (turnoverMax == null && v != null && v.isNumber()) turnoverMax = v.decimalValue(); break;
+                        case "gst_present":     if (gstPresent  == null && v != null && v.isBoolean()) gstPresent = v.asBoolean(); break;
+                        case "pipeline_state":  if ((pipelineState == null || pipelineState.isBlank()) && v != null && v.isTextual()) pipelineState = v.asText(); break;
+                        case "verification_status": if ((verificationStatus == null || verificationStatus.isBlank()) && v != null && v.isTextual()) verificationStatus = v.asText(); break;
+                        case "region":          if ((region == null || region.isBlank()) && v != null && v.isTextual()) region = v.asText(); break;
+                        case "district":        if ((district == null || district.isBlank()) && v != null && v.isTextual()) district = v.asText(); break;
+                        case "pincode":         if ((pincode == null || pincode.isBlank()) && v != null && v.isTextual()) pincode = v.asText(); break;
+                        case "nic_parent_id":   if (nicParentId == null && v != null && v.isTextual()) nicParentId = UUID.fromString(v.asText()); break;
+                        // "has_nic_primary" is a synthetic default — implemented as a
+                        // simple pincode/etc. equivalent in a later ticket. Skip when set,
+                        // preserve the flag as configuration, no-op here.
+                    }
+                } catch (Exception e) {
+                    // Malformed default value shouldn't kill the request.
+                }
+            }
+        }
 
         java.util.Collection<UUID> nicIds = null;
         if (nicParentId != null) {

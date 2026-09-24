@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
+import { Pagination } from '@/shared/components/Pagination'
 import { useMemo, useState } from 'react'
 import { useAddedByOptions, useEligibleCompanies, useStartVerification } from '../hooks'
 import type { EligibleCompany } from '../types'
@@ -308,44 +309,26 @@ export function VerifyNewCompaniesPanel({ canStart, batchRunning }: Props) {
             </div>
 
             {/* --- selection summary and pagination --- */}
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <p aria-live="polite" className="text-sm font-medium">
-                  {selected.size === 0
-                    ? 'No companies selected'
-                    : `${selected.size} ${selected.size === 1 ? 'company' : 'companies'} selected`}
-                </p>
-                {selected.size > 0 && (
-                  <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
-                    Clear selection
-                  </Button>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3">
-                <p className="text-sm text-muted-foreground">
-                  Page {(eligible.data?.page ?? 0) + 1} of {Math.max(1, eligible.data?.total_pages ?? 1)}
-                  {' · '}
-                  {eligible.data?.total_elements ?? 0} eligible
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 0}
-                  onClick={() => setPage((current) => current - 1)}
-                >
-                  Previous
+            <div className="flex items-center gap-3">
+              <p aria-live="polite" className="text-sm font-medium">
+                {selected.size === 0
+                  ? 'No companies selected'
+                  : `${selected.size} ${selected.size === 1 ? 'company' : 'companies'} selected`}
+              </p>
+              {selected.size > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+                  Clear selection
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= (eligible.data?.total_pages ?? 1) - 1}
-                  onClick={() => setPage((current) => current + 1)}
-                >
-                  Next
-                </Button>
-              </div>
+              )}
             </div>
+
+            <Pagination
+              page={eligible.data?.page ?? 0}
+              totalPages={eligible.data?.total_pages ?? 1}
+              totalElements={eligible.data?.total_elements}
+              itemLabel="eligible"
+              onPageChange={setPage}
+            />
 
             {canStart ? (
               <div className="flex flex-wrap items-center justify-end gap-3">

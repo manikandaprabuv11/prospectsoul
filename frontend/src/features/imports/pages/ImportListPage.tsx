@@ -4,6 +4,7 @@ import { ErrorState } from '@/components/feedback/ErrorState'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { StatusChip } from '@/components/feedback/StatusChip'
+import { Pagination } from '@/shared/components/Pagination'
 import { FileUp, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
@@ -118,17 +119,13 @@ export function ImportListPage() {
             </div>
           </div>
 
-          {data.total_pages > 1 && (
-            <div className="flex items-center justify-between text-sm">
-              <p className="text-muted-foreground tabular-nums">
-                Page {data.page + 1} of {data.total_pages} · {data.total_elements.toLocaleString()} total
-              </p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={data.page === 0} onClick={() => setPage((p) => p - 1)}>Previous</Button>
-                <Button variant="outline" size="sm" disabled={data.page >= data.total_pages - 1} onClick={() => setPage((p) => p + 1)}>Next</Button>
-              </div>
-            </div>
-          )}
+          <Pagination
+            page={data.page}
+            totalPages={data.total_pages}
+            totalElements={data.total_elements}
+            itemLabel="imports"
+            onPageChange={setPage}
+          />
         </div>
       ) : null}
     </div>

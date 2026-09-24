@@ -6,5 +6,6 @@ public enum ActivityType {
     MANUAL_NOTE,
     CALL,
     VISIT,
-    VERIFICATION
+    VERIFICATION,
+    ENRICHMENT
 }

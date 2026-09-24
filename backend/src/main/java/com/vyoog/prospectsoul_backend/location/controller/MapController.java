@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/map")
 @RequiredArgsConstructor
@@ -30,7 +32,9 @@ public class MapController {
     @GetMapping("/companies")
     @PreAuthorize(RoleConstants.HAS_READ)
     public MapCompanyResponse companies(@RequestParam String pincode,
-                                         @RequestParam(name = "radius_km", defaultValue = "5") double radiusKm) {
-        return companyMapService.companiesInPincode(pincode, radiusKm);
+                                         @RequestParam(name = "radius_km", defaultValue = "5") double radiusKm,
+                                         @RequestParam(name = "nic_parent_id", required = false) UUID nicParentId,
+                                         @RequestParam(name = "nic_include_descendants", required = false) Boolean nicIncludeDescendants) {
+        return companyMapService.companiesInPincode(pincode, radiusKm, nicParentId, nicIncludeDescendants);
     }
 }

@@ -36,6 +36,11 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+          # Batch inserts for the import path — 100-row JDBC batches.
+          batch_size: 100
+        order_inserts: true
+        order_updates: true
+        batch_versioned_data: true
 
   flyway:
     enabled: true
@@ -83,68 +88,9 @@ prospectsoul:
   cors:
     # Comma-separated list; never widen this to "*" outside development.
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  enrichment:
+    google-places:
+      api-key: ${GOOGLE_PLACES_API_KEY:}
+    firecrawl:
+      api-key: ${FIRECRAWL_API_KEY:}
 
-  # External places lookup for the map screen (docs 21 §7). By default the
-  # backend uses the free OpenStreetMap Overpass API — no key required.
-  # Set GOOGLE_PLACES_API_KEY in the environment to switch to Google
-  # Places automatically (the frontend never sees this key). Set
-  # `prospectsoul.places.provider=stub` to force the deterministic stub
-  # provider used in tests.
-
-  # Pincode resolver — cache-first (pincode_centroids), external geocoder
-  # on miss (India Post + OpenStreetMap Nominatim by default). Override
-  # `geocoder` to disable the network path in a locked-down environment.
-  pincode:
-    geocoder: ${PINCODE_GEOCODER:india_post_nominatim}
-    postalpincode-url: ${POSTALPINCODE_URL:https://api.postalpincode.in/pincode}
-    nominatim-url: ${NOMINATIM_URL:https://nominatim.openstreetmap.org/search}
-    timeout-seconds: ${PINCODE_TIMEOUT_SECONDS:15}
-    user-agent: ${PINCODE_USER_AGENT:ProspectSoul/1.0 (contact@vyoog.com)}
-
-  places:
-    provider: ${PLACES_PROVIDER:overpass}
-    google-api-key: ${GOOGLE_PLACES_API_KEY:}
-    overpass-url: ${OVERPASS_URL:https://overpass-api.de/api/interpreter}
-    overpass-timeout-seconds: ${OVERPASS_TIMEOUT_SECONDS:20}
-    max-results: ${PLACES_MAX_RESULTS:30}
-    daily-quota: ${PLACES_DAILY_QUOTA:5000}
-    default-radius-m: ${PLACES_DEFAULT_RADIUS_M:3000}
-
-  storage:
-    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
-    access-key: ${MINIO_ACCESS_KEY:prospectsoul}
-    secret-key: ${MINIO_SECRET_KEY:prospectsoul}
-    bucket: ${MINIO_BUCKET:prospectsoul}
-
-  # Company phone verification (docs/dev_docs/14 §16). The worker is a
-  # DB-backed queue over verification_batch_items; no message broker.
-  verification:
-    worker-enabled: ${VERIFICATION_WORKER_ENABLED:true}
-    poll-interval-ms: ${VERIFICATION_POLL_INTERVAL_MS:5000}
-    batch-size: ${VERIFICATION_BATCH_SIZE:10}
-    max-retries: ${VERIFICATION_MAX_RETRIES:3}
-    provider: ${VERIFICATION_PROVIDER:twilio}
-    max-batch-companies: ${VERIFICATION_MAX_BATCH_COMPANIES:1000}
-    # How long an item may sit in PROCESSING before the worker treats it as
-    # abandoned by a dead JVM and returns it to the queue.
-    stale-item-timeout-ms: ${VERIFICATION_STALE_ITEM_TIMEOUT_MS:300000}
-    # Dialling code prefixed to a normalized 10-digit national number to build
-    # the E.164 form Twilio Lookup requires.
-    default-country-code: ${VERIFICATION_DEFAULT_COUNTRY_CODE:+91}
-
-    # Twilio Lookup v2 credentials. Environment only — never commit a real
-    # value, never expose one to the frontend, and treat any credential that
-    # has been pasted into a conversation or a sample as compromised and
-    # rotate it before production use. With no credentials configured, every
-    # item fails permanently with PROVIDER_NOT_CONFIGURED, which is visible on
-    # the item rather than hidden in a log.
-    twilio:
-      account-sid: ${TWILIO_ACCOUNT_SID:}
-      auth-token: ${TWILIO_AUTH_TOKEN:}
-      lookup-base-url: ${TWILIO_LOOKUP_BASE_URL:https://lookups.twilio.com}
-      connect-timeout-ms: ${TWILIO_CONNECT_TIMEOUT_MS:5000}
-      read-timeout-ms: ${TWILIO_READ_TIMEOUT_MS:10000}
-
-logging:
-  level:
-    org.springframework.security: ${LOG_LEVEL_SECURITY:INFO}

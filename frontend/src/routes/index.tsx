@@ -12,6 +12,9 @@ import { ImportWizardPage } from '@/features/imports/pages/ImportWizardPage'
 import { NicCodesPage } from '@/features/nic/pages/NicCodesPage'
 import { CompanyMapPage } from '@/features/location/pages/CompanyMapPage'
 import { ContactRolesPage } from '@/features/contactrole/pages/ContactRolesPage'
+import { CompanyDefaultsPage } from '@/features/companydefaults/pages/CompanyDefaultsPage'
+import { EnrichmentJobsPage } from '@/features/enrichment/pages/EnrichmentJobsPage'
+import { ProviderConfigPage } from '@/features/enrichment/pages/ProviderConfigPage'
 import { VerificationDetailPage } from '@/features/verification/pages/VerificationDetailPage'
 import { VerifyPage } from '@/features/verification/pages/VerifyPage'
 import { AppLayout } from '@/layouts/AppLayout'
@@ -73,6 +76,23 @@ export const router = createBrowserRouter([
       // and, decisively, by @PreAuthorize on the backend.
       { path: '/verify', element: <VerifyPage /> },
       { path: '/verify/:id', element: <VerificationDetailPage /> },
+      { path: '/enrichment/jobs', element: <EnrichmentJobsPage /> },
+      {
+        path: '/settings/enrichment-providers',
+        element: (
+          <RequireRole roles={ADMIN_ROLES}>
+            <ProviderConfigPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: '/settings/company-defaults',
+        element: (
+          <RequireRole roles={ADMIN_ROLES}>
+            <CompanyDefaultsPage />
+          </RequireRole>
+        ),
+      },
       {
         path: '/settings/contact-roles',
         element: (

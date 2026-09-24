@@ -36,6 +36,40 @@ export interface Company {
   primary_nic_code_id?: string | null
   latitude?: string | number | null
   longitude?: string | number | null
+  // Enrichment: Google Places
+  google_place_id?: string | null
+  google_name?: string | null
+  google_business_category?: string | null
+  google_business_types?: string | null
+  google_maps_url?: string | null
+  google_lat?: number | null
+  google_lng?: number | null
+  google_business_status?: string | null
+  google_last_enriched_at?: string | null
+  // Enrichment: Website
+  website_reachable?: boolean | null
+  website_title?: string | null
+  website_description?: string | null
+  website_last_enriched_at?: string | null
+  // Enrichment: Social
+  social_linkedin?: string | null
+  social_facebook?: string | null
+  social_x?: string | null
+  social_instagram?: string | null
+  social_youtube?: string | null
+  // Enrichment: Phone
+  primary_phone_country?: string | null
+  primary_phone_region?: string | null
+  primary_phone_carrier?: string | null
+  primary_phone_type?: string | null
+  primary_phone_status?: string | null
+  primary_phone_dnd_registered?: boolean | null
+  primary_phone_last_enriched_at?: string | null
+  // Enriched by the list endpoint only.
+  primary_contact_name?: string | null
+  primary_contact_phone?: string | null
+  primary_contact_role?: string | null
+  nic_codes?: { code: string; description: string; primary: boolean }[] | null
 }
 
 export interface CompanyCreateRequest {
@@ -100,4 +134,5 @@ export interface CompanyFilters {
   nic_include_descendants?: boolean
   has_contact_role_id?: string
   view?: 'grouped_by_nic'
+  apply_defaults?: boolean
 }

@@ -16,7 +16,15 @@ public record MapCompanyResponse(
         Centre center,
         double radiusKm,
         boolean unknownPincode,
-        List<Item> content
+        List<Item> content,
+        // Full set of NIC code ids the active nic_parent_id filter matched
+        // (the parent id itself plus its descendants when
+        // nic_include_descendants was honoured) — null when no NIC filter
+        // was supplied. The Companies Map page uses this, together with
+        // each item's own (always-unfiltered) nicCodes, to show only the
+        // NIC chips that matched the active filter without baking that
+        // display decision into this endpoint's data shape.
+        List<UUID> matchedNicCodeIds
 ) {
     public record Centre(BigDecimal lat, BigDecimal lng) {}
     public record Item(
@@ -25,6 +33,8 @@ public record MapCompanyResponse(
             String pipelineState,
             BigDecimal lat,
             BigDecimal lng,
-            UUID primaryNicCodeId
+            UUID primaryNicCodeId,
+            List<NicCodeRef> nicCodes
     ) {}
+    public record NicCodeRef(UUID id, String code, String description, boolean primary) {}
 }

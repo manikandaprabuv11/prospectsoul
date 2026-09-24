@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button'
 import { LoadingRows } from '@/components/feedback/LoadingRows'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { Pagination } from '@/shared/components/Pagination'
 import { Download, FileUp, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
@@ -31,9 +32,6 @@ export function CompanyListPage() {
       sort_dir: prev.sort === field && prev.sort_dir === 'desc' ? 'asc' : 'desc',
     }))
   }
-
-  const pageStart = data ? (data.page ?? 0) * (data.size ?? 25) + 1 : 0
-  const pageEnd   = data ? Math.min((data.page ?? 0) * (data.size ?? 25) + data.content.length, data.total_elements) : 0
 
   return (
     <div className="space-y-6">
@@ -75,36 +73,13 @@ export function CompanyListPage() {
             sortField={filters.sort ?? 'createdAt'}
             sortDir={filters.sort_dir ?? 'desc'}
           />
-          {data.total_pages > 1 && (
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between text-sm">
-              <p className="text-muted-foreground" data-tabular="true">
-                Showing <span className="font-medium text-foreground">{pageStart}</span>–
-                <span className="font-medium text-foreground">{pageEnd}</span> of{' '}
-                <span className="font-medium text-foreground">{data.total_elements.toLocaleString()}</span>
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={data.page === 0}
-                  onClick={() => setFilters((f) => ({ ...f, page: (f.page ?? 0) - 1 }))}
-                >
-                  Previous
-                </Button>
-                <span className="text-xs text-muted-foreground tabular-nums px-1">
-                  Page {data.page + 1} of {data.total_pages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={data.page >= data.total_pages - 1}
-                  onClick={() => setFilters((f) => ({ ...f, page: (f.page ?? 0) + 1 }))}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+          <Pagination
+            page={data.page}
+            totalPages={data.total_pages}
+            totalElements={data.total_elements}
+            itemLabel="companies"
+            onPageChange={(page) => setFilters((f) => ({ ...f, page }))}
+          />
         </>
       ) : null}
 

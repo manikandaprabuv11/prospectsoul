@@ -34,6 +34,26 @@ export function useNicPrimary() {
   return useQuery({ queryKey: KEYS.primary(), queryFn: () => nicApi.primary() })
 }
 
+/**
+ * Resolves a manually-typed NIC code (e.g. "22199") to its id, for screens
+ * that want a text-entry alternative to picking from a dropdown (Companies
+ * Map page). Reuses the existing paginated list search (`q` matches on code
+ * prefix) rather than adding a dedicated lookup-by-code endpoint, then
+ * requires an exact code match — a prefix hit alone isn't a resolution.
+ * Throws when nothing matches, so callers show that as an inline error.
+ */
+export function useResolveNicByCode() {
+  return useMutation({
+    mutationFn: async (code: string) => {
+      const trimmed = code.trim()
+      const result = await nicApi.list({ q: trimmed, size: 50, active: true })
+      const match = result.content.find((n) => n.code === trimmed)
+      if (!match) throw new Error(`No NIC found for '${trimmed}'`)
+      return match
+    },
+  })
+}
+
 export function useCreateNicCode() {
   const qc = useQueryClient()
   return useMutation({

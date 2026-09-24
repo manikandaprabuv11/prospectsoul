@@ -139,6 +139,8 @@ XYZ Plastics      2220 Plastics S. Raj (Purchase Head)    Kanchipuram  TN     B 
 
 Columns are user-toggleable. New default columns: `Primary NIC`, `Contact (Primary) with role`, `Region`, `Pincode`.
 
+**Implementation Note (2026-09-24):** `frontend/src/features/company/components/CompanyTable.tsx` was redesigned from 14 flat columns down to 6 (Company, Location, Industry/NIC, Phone, Website, Status) plus a leading expand chevron and a trailing Actions column. Clicking the chevron opens a `colSpan` detail row under that company with four sub-cards: Contact Details, Location Details, Business Info (including the full NIC list, not just the primary), and Enrichment & Social. Sorting stays on `canonicalName` (the Company column); filtering, pagination, row links and row actions are unchanged. This keeps the dense data available on demand without widening the table past what fits a laptop screen (UI_DESIGN.md's desktop-first guidance).
+
 ### 4.3 Grouped-by-NIC view
 
 Only appears when a NIC filter is active. Companies grouped under their NIC node, lazy-loaded per group.
@@ -215,6 +217,18 @@ The analyst reviews, adjusts, and confirms. Dedup runs against existing companie
 - External pins: dashed amber outline, smaller, always with a "not in system" tooltip
 - Never merged into one list styling
 - Quota indicator persistent under the external tab
+
+### 5.4 Implementation Note (2026-09-24) — NIC filter, chip narrowing, manual code entry
+
+`frontend/src/features/location/pages/CompanyMapPage.tsx` (owned-only map — the "Found on Google" tab described above is not part of the current build; see the release-gate note in doc 27) gained a NIC filter row next to the Radius selector:
+
+- A `Select` labeled "NIC (with sub-codes)", populated via `useNicPrimary()`.
+- An "Include descendants" checkbox, shown once a NIC is picked, default on.
+- A free-text `Input` beside the `Select` that accepts a NIC code string directly. Enter or blur resolves it through the new `useResolveNicByCode()` hook (`frontend/src/features/nic/hooks/index.ts`) — this reuses the existing `nicApi.list({ q })` call with a strict exact-code match client-side, **no new backend endpoint**. On success it sets `nic_parent_id` the same as picking from the dropdown; on failure it shows an inline "No NIC found for '<value>'" error.
+- The `Select` and the manual `Input` are mutually exclusive: typing in the input clears the dropdown selection and vice versa. "Include descendants" applies to either path.
+- Both `nic_parent_id` and `nic_include_descendants` are persisted in the URL (same params the backend takes) — the map filter is deep-linkable like every other list screen per `STATE_MANAGEMENT.md`.
+
+Per-company NIC chips are narrowed to the active filter: each map card intersects its own `nic_codes` with the response's top-level `matched_nic_code_ids` and renders only the intersecting chips. When no NIC filter is active, `matched_nic_code_ids` is `null` and all of a company's chips show, same as before. The Companies List and Company Detail pages are unchanged — they always show every NIC a company has.
 
 ---
 
@@ -294,6 +308,9 @@ Primary badge, star icon. `Make primary` swaps atomically.
 | `MapPin` | Map screen | Two variants: solid teal (owned) / dashed amber (external) |
 | `GroupedNicList` | Companies List grouped view | Collapsible tree of company groups, lazy-loaded per group |
 | `DownloadModal` | Companies List | Column selection, format, filter-count preview |
+| `Pagination` | Companies List, Imports List, Enrichment Jobs, Verification panels/tables | Previous/Next + windowed page-number buttons with ellipses, jump-to-page input (shown past 7 pages), item-count summary |
+
+**Implementation Note (2026-09-24):** `Pagination` (`frontend/src/shared/components/Pagination.tsx`) is new — it replaces the bare Previous/Next controls that `CompanyListPage`, `ImportListPage`, `EnrichmentJobsPage`, `VerifyNewCompaniesPanel`, `VerifiedCompaniesTable`, and `VerificationHistoryTable` each previously hand-rolled. Genuinely shared per `COMPONENTS.md`/`Frontend-File-Structure.md` (used by company, imports, enrichment and verification features), so it lives in `shared/components/`, not feature-local.
 
 ---
 

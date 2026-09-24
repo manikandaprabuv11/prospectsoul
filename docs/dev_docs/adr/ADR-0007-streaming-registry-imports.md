@@ -24,3 +24,15 @@ XSSF streaming (SAX / XSSFReader) is not swapped in yet — the test files exerc
 ## Affected
 - `backend/src/main/java/com/vyoog/prospectsoul_backend/imports/service/ImportService.java` (split `upload` / `stage`, added `persistChunk`, `streamCsv`, `streamExcel`)
 - No API contract change; the upload endpoint still returns an `ImportBatchResponse` with the parsed row count.
+
+## Update — 2026-09-24: completion audit was flipping COMPLETED batches back to FAILED
+
+`processBatch(...)` is deliberately non-`@Transactional` (see Decision above), so the batch-completion audit row (`AuditService.record(...)`, which is `@Transactional(propagation = MANDATORY)`) had no open transaction to join once the outer loop finished. That threw `IllegalTransactionStateException` right after the batch row had already been flipped to `COMPLETED` via `jdbcTemplate.update(...)`. `processAsync(...)`'s catch block then called `markBatchFailed(...)`, which unconditionally overwrote the status — so a batch with `processed_rows == total_rows` and `created_rows > 0` still displayed `FAILED` in the UI.
+
+Fix, in `ImportProcessingService`:
+- New `recordBatchCompletion(UUID batchId, String actor, String source, String fileName, int processed, int created, int duplicates, int rejected, long durationMs)`, annotated `@Transactional(propagation = Propagation.REQUIRES_NEW)`, called via the `self` proxy (`self.recordBatchCompletion(...)`) at the end of `processBatch(...)` — same self-invocation pattern already used for `processChunk`/`commitBatchProgress` to get a real proxy boundary. This gives the audit call its own transaction without making `processBatch` itself `@Transactional`, which would reintroduce the FK-lock deadlock against `commitBatchProgress` described above.
+- `markBatchFailed(UUID batchId, String error)` hardened to read the batch's current status first and return without writing when it is already `COMPLETED` or `FAILED` — a terminal status is never regressed by a later exception (e.g. from the completion audit, or any other post-completion step).
+
+Net effect: the completion audit failure is now impossible for the reason above (it runs in its own transaction), and even if some other post-completion step throws, a batch that already reached a terminal state stays there.
+
+**Affected (addition):** `backend/src/main/java/com/vyoog/prospectsoul_backend/imports/service/ImportProcessingService.java` (`recordBatchCompletion`, `markBatchFailed`).

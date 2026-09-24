@@ -14,9 +14,14 @@ public class AsyncConfig {
     @Bean(name = "importProcessingExecutor")
     public Executor importProcessingExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(2);
-        executor.setMaxPoolSize(4);
-        executor.setQueueCapacity(50);
+        // Tuned for large registry files. Each running import claims
+        // one core thread; workers spawned within a batch (see
+        // ImportProcessingService) run inside the same pool up to max.
+        executor.setCorePoolSize(4);
+        executor.setMaxPoolSize(16);
+        executor.setQueueCapacity(200);
+        executor.setKeepAliveSeconds(60);
+        executor.setAllowCoreThreadTimeOut(true);
         executor.setThreadNamePrefix("import-proc-");
         executor.initialize();
         return executor;

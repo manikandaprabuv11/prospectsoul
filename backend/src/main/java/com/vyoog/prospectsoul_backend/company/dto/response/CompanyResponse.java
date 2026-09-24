@@ -41,8 +41,47 @@ public record CompanyResponse(
         UUID primaryNicCodeId,
         BigDecimal latitude,
         BigDecimal longitude,
+        // Enriched fields used on the Companies list — populated only when
+        // returned from the paginated list endpoint. Detail endpoint leaves
+        // them null.
+        // Enrichment: Google Places
+        String googlePlaceId,
+        String googleName,
+        String googleBusinessCategory,
+        String googleBusinessTypes,
+        String googleMapsUrl,
+        BigDecimal googleLat,
+        BigDecimal googleLng,
+        String googleBusinessStatus,
+        Instant googleLastEnrichedAt,
+        // Enrichment: Website
+        Boolean websiteReachable,
+        String websiteTitle,
+        String websiteDescription,
+        Instant websiteLastEnrichedAt,
+        // Enrichment: Social
+        String socialLinkedin,
+        String socialFacebook,
+        String socialX,
+        String socialInstagram,
+        String socialYoutube,
+        // Enrichment: Phone
+        String primaryPhoneCountry,
+        String primaryPhoneRegion,
+        String primaryPhoneCarrier,
+        String primaryPhoneType,
+        String primaryPhoneStatus,
+        Boolean primaryPhoneDndRegistered,
+        Instant primaryPhoneLastEnrichedAt,
+        // List-only enriched fields
+        String primaryContactName,
+        String primaryContactPhone,
+        String primaryContactRole,
+        java.util.List<NicCodeRef> nicCodes,
         String createdBy,
         Instant createdAt,
         String updatedBy,
         Instant updatedAt
-) {}
+) {
+    public record NicCodeRef(String code, String description, boolean primary) {}
+}

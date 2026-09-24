@@ -1,8 +1,8 @@
 import { usePermissions } from '@/auth/usePermissions'
 import { cn } from '@/lib/utils'
 import {
-  Building2, FileUp, LayoutDashboard, ListTree, MapPin,
-  ShieldCheck, UserSquare2, Users, Sparkles, X,
+  Building2, FileUp, Filter, Layers, LayoutDashboard, ListTree, MapPin,
+  Settings2, ShieldCheck, UserSquare2, Users, Sparkles, X,
 } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router'
@@ -36,14 +36,17 @@ const sections: NavSection[] = [
     items: [
       { to: '/imports', label: 'Imports', icon: FileUp,      visible: ({ canMutate }) => canMutate },
       { to: '/verify',  label: 'Verify',  icon: ShieldCheck, visible: ({ canRead }) => canRead },
+      { to: '/enrichment/jobs', label: 'Enrichment', icon: Layers, visible: ({ canRead }) => canRead },
     ],
   },
   {
     label: 'Settings',
     items: [
-      { to: '/settings/users',         label: 'Users & Roles',  icon: Users,        visible: ({ canConfigure }) => canConfigure },
+      { to: '/settings/users',            label: 'Users & Roles',      icon: Users,        visible: ({ canConfigure }) => canConfigure },
+      { to: '/settings/company-defaults', label: 'Company defaults',   icon: Filter,       visible: ({ canConfigure }) => canConfigure },
       { to: '/settings/nic-codes',     label: 'NIC Codes',      icon: ListTree,     visible: ({ canConfigure }) => canConfigure },
       { to: '/settings/contact-roles', label: 'Contact Roles',  icon: UserSquare2,  visible: ({ canConfigure }) => canConfigure },
+      { to: '/settings/enrichment-providers', label: 'Enrichment Providers', icon: Settings2, visible: ({ canConfigure }) => canConfigure },
     ],
   },
 ]

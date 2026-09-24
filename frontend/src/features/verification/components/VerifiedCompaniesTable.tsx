@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Pagination } from '@/shared/components/Pagination'
 import { ArrowDown, ArrowUp } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
@@ -260,32 +261,13 @@ export function VerifiedCompaniesTable() {
               </table>
             </div>
 
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Page {(companies.data?.page ?? 0) + 1} of{' '}
-                {Math.max(1, companies.data?.total_pages ?? 1)}
-                {' · '}
-                {companies.data?.total_elements ?? 0} verified
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 0}
-                  onClick={() => setPage((current) => current - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= (companies.data?.total_pages ?? 1) - 1}
-                  onClick={() => setPage((current) => current + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
+            <Pagination
+              page={companies.data?.page ?? 0}
+              totalPages={companies.data?.total_pages ?? 1}
+              totalElements={companies.data?.total_elements}
+              itemLabel="verified"
+              onPageChange={setPage}
+            />
           </>
         )}
       </CardContent>

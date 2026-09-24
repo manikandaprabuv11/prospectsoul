@@ -1,8 +1,8 @@
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Pagination } from '@/shared/components/Pagination'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { useAddedByOptions, useVerificationBatches } from '../hooks'
@@ -150,31 +150,13 @@ export function VerificationHistoryTable() {
               </table>
             </div>
 
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Page {(batches.data?.page ?? 0) + 1} of {Math.max(1, batches.data?.total_pages ?? 1)}
-                {' · '}
-                {batches.data?.total_elements ?? 0} jobs
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 0}
-                  onClick={() => setPage((current) => current - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= (batches.data?.total_pages ?? 1) - 1}
-                  onClick={() => setPage((current) => current + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
+            <Pagination
+              page={batches.data?.page ?? 0}
+              totalPages={batches.data?.total_pages ?? 1}
+              totalElements={batches.data?.total_elements}
+              itemLabel="jobs"
+              onPageChange={setPage}
+            />
           </>
         )}
       </CardContent>
