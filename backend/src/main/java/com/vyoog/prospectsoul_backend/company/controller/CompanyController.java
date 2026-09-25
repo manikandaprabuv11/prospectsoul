@@ -83,6 +83,13 @@ public class CompanyController {
             @RequestParam(name = "gst_present", required = false) Boolean gstPresent,
             @RequestParam(name = "nic_code_id", required = false) UUID nicCodeId,
             @RequestParam(name = "nic_parent_id", required = false) UUID nicParentId,
+            // Bound as List<String> and parsed manually below because Spring's
+            // default binder silently drops List<UUID> from repeated query
+            // params: `?nic_parent_ids=<uuid>&nic_parent_ids=<uuid>` arrived
+            // as null and the NIC predicate was skipped entirely, returning
+            // every company. String binding is reliable; a bad value now
+            // fails loudly (400) exactly like the singular nic_parent_id.
+            @RequestParam(name = "nic_parent_ids", required = false) List<String> nicParentIdsRaw,
             @RequestParam(name = "nic_include_descendants", required = false) Boolean nicIncludeDescendants,
             @RequestParam(name = "has_contact_role_id", required = false) UUID hasContactRoleId,
             @RequestParam(name = "apply_defaults", defaultValue = "false") boolean applyDefaults,
@@ -93,6 +100,10 @@ public class CompanyController {
             @RequestParam(name = "sort_dir", defaultValue = "desc") String sortDir) {
 
         // Admin-set defaults (only fields the caller left blank are populated).
+        // NIC is the one exception: the config NIC scope is never silently
+        // dropped just because the analyst also picked one on the page — the
+        // two are combined below (intersection), not blank-filled.
+        UUID configNicParentId = null;
         if (applyDefaults) {
             for (CompanyDefaultFilter d : companyDefaultFilterService.activeDefaults()) {
                 try {
@@ -109,7 +120,7 @@ public class CompanyController {
                         case "region":          if ((region == null || region.isBlank()) && v != null && v.isTextual()) region = v.asText(); break;
                         case "district":        if ((district == null || district.isBlank()) && v != null && v.isTextual()) district = v.asText(); break;
                         case "pincode":         if ((pincode == null || pincode.isBlank()) && v != null && v.isTextual()) pincode = v.asText(); break;
-                        case "nic_parent_id":   if (nicParentId == null && v != null && v.isTextual()) nicParentId = UUID.fromString(v.asText()); break;
+                        case "nic_parent_id":   if (v != null && v.isTextual()) configNicParentId = UUID.fromString(v.asText()); break;
                         // "has_nic_primary" is a synthetic default — implemented as a
                         // simple pincode/etc. equivalent in a later ticket. Skip when set,
                         // preserve the flag as configuration, no-op here.
@@ -120,11 +131,56 @@ public class CompanyController {
             }
         }
 
-        java.util.Collection<UUID> nicIds = null;
-        if (nicParentId != null) {
-            // Descendants default ON when a parent is given (docs 21 §4.2).
-            boolean includeDesc = nicIncludeDescendants == null || nicIncludeDescendants;
-            nicIds = includeDesc ? companyService.expandNicSubtree(nicParentId) : List.of(nicParentId);
+        // Page-level NIC selection: the preferred multi-select `nic_parent_ids`
+        // plus the singular `nic_parent_id` kept as a backwards-compatible
+        // alias — both feed the same set. Semantics: OR across every selected
+        // NIC (a company matching ANY of them qualifies), each expanded to its
+        // own descendant subtree when `nic_include_descendants` isn't false.
+        java.util.LinkedHashSet<UUID> pageParentIds = new java.util.LinkedHashSet<>();
+        if (nicParentIdsRaw != null) {
+            for (String raw : nicParentIdsRaw) {
+                if (raw == null || raw.isBlank()) continue;
+                // A single param value may also arrive as CSV
+                // (?nic_parent_ids=a,b). Handle both shapes.
+                for (String token : raw.split(",")) {
+                    String t = token.trim();
+                    if (t.isEmpty()) continue;
+                    try {
+                        pageParentIds.add(UUID.fromString(t));
+                    } catch (IllegalArgumentException e) {
+                        throw new com.vyoog.prospectsoul_backend.common.exception.BusinessRuleException(
+                                "Invalid UUID in nic_parent_ids: " + t);
+                    }
+                }
+            }
+        }
+        if (nicParentId != null) pageParentIds.add(nicParentId);
+        boolean includeDesc = nicIncludeDescendants == null || nicIncludeDescendants;
+
+        java.util.LinkedHashSet<UUID> pageNicIds = new java.util.LinkedHashSet<>();
+        for (UUID pid : pageParentIds) {
+            if (includeDesc) pageNicIds.addAll(companyService.expandNicSubtree(pid));
+            else pageNicIds.add(pid);
+        }
+
+        // Combine with the configured default (docs 21 §4.2 + Company
+        // Defaults module): when both are present a company must satisfy
+        // BOTH scopes, so we intersect rather than let either one win —
+        // an empty intersection is a correct (if surprising) empty result,
+        // not a bug to paper over.
+        java.util.Collection<UUID> nicIds;
+        if (configNicParentId != null) {
+            java.util.LinkedHashSet<UUID> configNicIds = includeDesc
+                    ? new java.util.LinkedHashSet<>(companyService.expandNicSubtree(configNicParentId))
+                    : new java.util.LinkedHashSet<>(List.of(configNicParentId));
+            if (!pageParentIds.isEmpty()) {
+                configNicIds.retainAll(pageNicIds);
+            }
+            nicIds = configNicIds;
+        } else if (!pageParentIds.isEmpty()) {
+            nicIds = pageNicIds;
+        } else {
+            nicIds = null;
         }
 
         CompanySpecification.Filters filters = new CompanySpecification.Filters(

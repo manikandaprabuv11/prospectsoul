@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 
 import com.vyoog.prospectsoul_backend.TestcontainersConfiguration;
+import com.vyoog.prospectsoul_backend.company.entity.Company;
+import com.vyoog.prospectsoul_backend.company.nic.entity.CompanyNicCode;
 import com.vyoog.prospectsoul_backend.nic.dto.response.NicImportResultResponse;
 import com.vyoog.prospectsoul_backend.nic.entity.NicCode;
 import com.vyoog.prospectsoul_backend.nic.repository.NicCodeRepository;
@@ -30,6 +32,9 @@ class NicImportServiceIntegrationTest {
     @Autowired com.vyoog.prospectsoul_backend.company.repository.CompanyRepository companyRepository;
 
     @Autowired org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    @jakarta.persistence.PersistenceContext
+    jakarta.persistence.EntityManager entityManager;
 
     @BeforeEach
     void reset() {
@@ -118,5 +123,62 @@ class NicImportServiceIntegrationTest {
         NicImportResultResponse res = importService.applyRows(rows, "actor");
         assertThat(res.rejected()).isEqualTo(2);
         assertThat(res.created()).isEqualTo(1);
+    }
+
+    /**
+     * Reproduces the root cause behind "pincode + NIC returns empty even
+     * though companies obviously match both": when a company (and its
+     * {@code company_nic_codes} join row) is imported BEFORE the matching
+     * NIC master code exists, {@code ImportProcessingService}'s exact-code
+     * lookup misses and {@code nic_code_id} / {@code primary_nic_code_id}
+     * are left NULL — permanently, since nothing ever revisited them. Every
+     * NIC-scoped query (Companies page, Map) joins on that FK, so the
+     * company silently becomes invisible to NIC filtering.
+     * <p>
+     * Uploading the NIC master (even after the fact) must retroactively
+     * repair this: the orphaned join row and the company's primary pointer
+     * should both resolve as soon as the matching code appears.
+     */
+    @Test
+    void importingNicMaster_backfillsPreviouslyOrphanedCompanyNicLinks() throws Exception {
+        Company company = companyRepository.saveAndFlush(Company.builder()
+                .canonicalName("Orphaned Nic Link Corp")
+                .normalizedName("orphaned nic link corp")
+                .build());
+
+        CompanyNicCode orphanRow = companyNicCodeRepository.saveAndFlush(CompanyNicCode.builder()
+                .companyId(company.getId())
+                .nicCode(null) // unresolved at import time — the master didn't have this code yet
+                .nicCodeRaw("22111")
+                .isPrimary(true)
+                .sequenceNo((short) 1)
+                .build());
+
+        assertThat(orphanRow.getNicCode()).isNull();
+        assertThat(company.getPrimaryNicCodeId()).isNull();
+
+        // Same two steps importFile() runs in sequence (applyRows, then the
+        // backfill) — going through applyRows directly here, exactly like
+        // the fixture-based tests above, avoids coupling this test to the
+        // file-parsing layer, which isn't what's under test.
+        List<NicImportService.ParsedRow> rows = List.of(
+                new NicImportService.ParsedRow(1, "22111", "Manufacture of tyres", "Manufacturing", null));
+        importService.applyRows(rows, "actor");
+        entityManager.flush(); // same flush importFile() does before the backfill
+        importService.backfillCompanyNicResolution();
+
+        // The backfill runs as raw JDBC UPDATEs alongside the JPA-managed
+        // import — clear the persistence context so the re-reads below hit
+        // the database instead of returning the stale, pre-backfill entities
+        // already sitting in the first-level cache.
+        entityManager.clear();
+
+        NicCode resolved = nicCodeRepository.findByCode("22111").orElseThrow();
+
+        CompanyNicCode reloaded = companyNicCodeRepository.findById(orphanRow.getId()).orElseThrow();
+        assertThat(reloaded.getNicCodeId()).isEqualTo(resolved.getId());
+
+        Company reloadedCompany = companyRepository.findById(company.getId()).orElseThrow();
+        assertThat(reloadedCompany.getPrimaryNicCodeId()).isEqualTo(resolved.getId());
     }
 }

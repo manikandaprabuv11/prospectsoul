@@ -54,25 +54,44 @@ public class CompanyMapService {
         return companiesInPincode(pincode, radiusKm, null, null);
     }
 
+    /**
+     * Delegating shim kept for backwards compatibility (existing callers,
+     * including {@link com.vyoog.prospectsoul_backend.location.LocationIntegrationTest}):
+     * resolves the single parent id to its descendant subtree — exactly the
+     * pre-multi-NIC behaviour — then forwards to the pre-resolved overload.
+     */
     @Transactional(readOnly = true)
     public MapCompanyResponse companiesInPincode(String pincode, double radiusKm,
                                                   UUID nicParentId, Boolean nicIncludeDescendants) {
-        // 0. Resolve the NIC filter (if any) to the set of matching company
-        //    ids — same descendant-expansion + join-table membership rule as
-        //    the Companies list. Applied as an AND against the pincode/radius
-        //    match below, never an OR.
-        Set<UUID> nicCompanyIds = null;
-        Set<UUID> matchedNicCodeIds = null;
+        Collection<UUID> nicCodeIds = null;
         if (nicParentId != null) {
             boolean includeDesc = nicIncludeDescendants == null || nicIncludeDescendants;
-            Collection<UUID> nicIds = includeDesc
+            nicCodeIds = includeDesc
                     ? nicCodeRepository.findDescendantIds(nicParentId)
                     : List.of(nicParentId);
-            matchedNicCodeIds = Set.copyOf(nicIds);
-            nicCompanyIds = nicIds.isEmpty()
-                    ? Set.of()
-                    : Set.copyOf(companyNicCodeRepository.findCompanyIdsByNicCodeIdIn(nicIds));
         }
+        return companiesInPincode(pincode, radiusKm, nicCodeIds);
+    }
+
+    /**
+     * Main entry point once the caller (MapController) has already resolved
+     * the NIC selection to a concrete set of NIC code ids — multi-parent
+     * OR-expansion and the config-default intersection both happen there, the
+     * same shape as {@link com.vyoog.prospectsoul_backend.company.specification.CompanySpecification}'s
+     * NIC filter — so this service only needs to apply the join-table
+     * membership check. {@code null} means "no NIC filter active"; an empty
+     * (non-null) collection means the filter resolved to nothing and every
+     * company should be excluded — that is a correct empty result, not a bug.
+     */
+    @Transactional(readOnly = true)
+    public MapCompanyResponse companiesInPincode(String pincode, double radiusKm,
+                                                  Collection<UUID> nicCodeIds) {
+        Set<UUID> matchedNicCodeIds = nicCodeIds == null ? null : Set.copyOf(nicCodeIds);
+        Set<UUID> nicCompanyIds = nicCodeIds == null
+                ? null
+                : (nicCodeIds.isEmpty()
+                        ? Set.of()
+                        : Set.copyOf(companyNicCodeRepository.findCompanyIdsByNicCodeIdIn(nicCodeIds)));
         final Set<UUID> nicFilter = nicCompanyIds;
         final List<UUID> matchedNicCodeIdList = matchedNicCodeIds == null ? null : List.copyOf(matchedNicCodeIds);
 

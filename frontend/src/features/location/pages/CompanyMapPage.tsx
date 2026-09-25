@@ -4,8 +4,9 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { LoadingRows } from '@/components/feedback/LoadingRows'
 import { InlineTip } from '@/components/feedback/InlineTip'
-import { useNicPrimary, useResolveNicByCode } from '@/features/nic/hooks'
-import { MapPin } from 'lucide-react'
+import { useCompanyDefaults } from '@/features/companydefaults/hooks'
+import { useNicCode, useNicPrimary, useResolveNicByCode } from '@/features/nic/hooks'
+import { Lock, MapPin, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { useMapCompanies, usePincode } from '../hooks'
@@ -22,30 +23,62 @@ export function CompanyMapPage() {
   const [sp, setSp] = useSearchParams()
   const pincode = sp.get('pincode') ?? ''
   const radiusKm = Number(sp.get('radius_km') ?? '5')
-  const nicParentId = sp.get('nic_parent_id') ?? ''
+  // Multi-select NIC filter, kept in the URL as repeated `nic_parent_ids`
+  // params — same shape as the Companies list filter, so the deep link is
+  // shareable and the two screens' NIC filter behave identically.
+  const nicParentIds = sp.getAll('nic_parent_ids')
   const nicIncludeDescendants = sp.get('nic_include_descendants') !== 'false'
 
   const nicPrimary = useNicPrimary()
   const centroid = usePincode(pincode)
   const owned = useMapCompanies(pincode, radiusKm, {
-    nic_parent_id: nicParentId || undefined,
-    nic_include_descendants: nicParentId ? nicIncludeDescendants : undefined,
+    nic_parent_ids: nicParentIds.length ? nicParentIds : undefined,
+    nic_include_descendants: nicParentIds.length ? nicIncludeDescendants : undefined,
   })
 
-  // Manual NIC code entry (map page only) — a text-input alternative to the
-  // dropdown. Local UI state: the in-progress text and its resolution error
-  // are transient and belong here, not in the URL; the RESOLVED filter still
-  // lives in `nic_parent_id` like the dropdown, so the URL shape is unchanged.
+  // Label cache for chips — populated as NICs are picked (from the primary
+  // dropdown, which already carries code+description, or from a manual-code
+  // resolution). Lost on refresh, same as the Companies list filter — falls
+  // back to the raw id, which is still a working filter, just less readable.
+  const [nicLabels, setNicLabels] = useState<Record<string, string>>({})
+  const [nicSelectValue, setNicSelectValue] = useState('')
+
+  // Manual NIC code entry — a text-input alternative to the dropdown, adding
+  // to the same multi-select. Local UI state: the in-progress text and its
+  // resolution error are transient and belong here, not in the URL.
   const [manualNicCode, setManualNicCode] = useState('')
   const [manualNicError, setManualNicError] = useState<string | null>(null)
   const resolveNic = useResolveNicByCode()
 
+  // Admin-configured default NIC scope (Company Defaults) — surfaced as a
+  // read-only lock chip, same pattern as the Companies list filter, since the
+  // backend ANDs it with whatever is picked here (apply_defaults defaults to
+  // true) rather than silently overriding the analyst's own selection.
+  const companyDefaults = useCompanyDefaults()
+  const nicDefaultRow = companyDefaults.data?.find((d) => d.filter_key === 'nic_parent_id' && d.active)
+  const configNicId = parseNicDefaultId(nicDefaultRow?.value)
+  const configNic = useNicCode(configNicId)
+
+  function addNicParent(id: string, label?: string) {
+    if (!id || nicParentIds.includes(id)) return
+    if (label) setNicLabels((prev) => ({ ...prev, [id]: label }))
+    updateNicParentIds([...nicParentIds, id])
+  }
+
+  function removeNicParent(id: string) {
+    updateNicParentIds(nicParentIds.filter((x) => x !== id))
+  }
+
+  function updateNicParentIds(next: string[]) {
+    const params = new URLSearchParams(sp)
+    params.delete('nic_parent_ids')
+    for (const id of next) params.append('nic_parent_ids', id)
+    setSp(params)
+  }
+
   function handleManualNicChange(value: string) {
     setManualNicCode(value)
     setManualNicError(null)
-    // Typing clears the dropdown selection — only one input drives the
-    // active filter at a time.
-    if (nicParentId) update('nic_parent_id', '')
   }
 
   function submitManualNic() {
@@ -54,7 +87,8 @@ export function CompanyMapPage() {
     resolveNic.mutate(trimmed, {
       onSuccess: (nic) => {
         setManualNicError(null)
-        update('nic_parent_id', nic.id)
+        setManualNicCode('')
+        addNicParent(nic.id, `${nic.code} · ${nic.description}`)
       },
       onError: (err) => {
         setManualNicError(err instanceof Error ? err.message : `No NIC found for '${trimmed}'`)
@@ -63,10 +97,10 @@ export function CompanyMapPage() {
   }
 
   function handleDropdownNicChange(value: string) {
-    update('nic_parent_id', value)
-    // Picking from the dropdown clears the manual input.
-    setManualNicCode('')
-    setManualNicError(null)
+    setNicSelectValue('')
+    if (!value) return
+    const nic = nicPrimary.data?.find((n) => n.id === value)
+    addNicParent(value, nic ? `${nic.code} · ${nic.description}` : undefined)
   }
 
   const matchedNicCodeIds = owned.data?.matched_nic_code_ids ?? null
@@ -127,13 +161,15 @@ export function CompanyMapPage() {
             <Select
               id="map-nic"
               className="mt-1"
-              value={nicParentId}
+              value={nicSelectValue}
               onChange={(e) => handleDropdownNicChange(e.target.value)}
             >
-              <option value="">Any NIC</option>
-              {nicPrimary.data?.map((n) => (
-                <option key={n.id} value={n.id}>{n.code} · {n.description}</option>
-              ))}
+              <option value="">Add a NIC…</option>
+              {nicPrimary.data
+                ?.filter((n) => !nicParentIds.includes(n.id))
+                .map((n) => (
+                  <option key={n.id} value={n.id}>{n.code} · {n.description}</option>
+                ))}
             </Select>
           </div>
           <div className="min-w-[9rem]">
@@ -158,7 +194,7 @@ export function CompanyMapPage() {
               <p id="map-nic-manual-error" className="mt-1 text-xs text-destructive">{manualNicError}</p>
             ) : null}
           </div>
-          {nicParentId ? (
+          {nicParentIds.length > 0 ? (
             <label className="flex h-9 items-center gap-2 pb-1.5 text-sm text-foreground">
               <input
                 type="checkbox"
@@ -175,6 +211,27 @@ export function CompanyMapPage() {
             </div>
           ) : null}
         </div>
+
+        {(nicParentIds.length > 0 || configNicId) && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {configNicId && (
+              <span
+                className="inline-flex items-center gap-1 rounded-lg bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground"
+                title="Set in Companies · default filters — always ANDed with your selection above"
+              >
+                <Lock className="size-3" />
+                Config: {configNic.data ? `${configNic.data.code} · ${configNic.data.description}` : configNicId}
+              </span>
+            )}
+            {nicParentIds.map((id) => (
+              <FilterChip
+                key={id}
+                label={nicLabels[id] ?? id}
+                onRemove={() => removeNicParent(id)}
+              />
+            ))}
+          </div>
+        )}
 
         {unknown ? (
           <InlineTip tone="warning" className="mt-3">
@@ -247,6 +304,28 @@ export function CompanyMapPage() {
       </section>
     </div>
   )
+}
+
+function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-lg bg-primary/8 px-2.5 py-1 text-xs font-medium text-primary">
+      {label}
+      <button type="button" onClick={onRemove} className="hover:text-primary/70 transition-colors" aria-label={`Remove filter: ${label}`}>
+        <X className="size-3" />
+      </button>
+    </span>
+  )
+}
+
+/** The default filter's `value` is stored as raw JSON (e.g. `"<uuid>"`) — parse it defensively. */
+function parseNicDefaultId(raw: string | null | undefined): string | undefined {
+  if (!raw) return undefined
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return typeof parsed === 'string' && parsed ? parsed : undefined
+  } catch {
+    return undefined
+  }
 }
 
 const MAPS_KEY = import.meta.env.VITE_MAPS_JS_API_KEY as string | undefined

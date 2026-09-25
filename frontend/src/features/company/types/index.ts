@@ -130,7 +130,8 @@ export interface CompanyFilters {
   employee_max?: string
   gst_present?: boolean
   nic_code_id?: string
-  nic_parent_id?: string
+  /** Multi-select NIC parent ids — companies matching ANY of them qualify. */
+  nic_parent_ids?: string[]
   nic_include_descendants?: boolean
   has_contact_role_id?: string
   view?: 'grouped_by_nic'

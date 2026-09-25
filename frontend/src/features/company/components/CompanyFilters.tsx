@@ -3,8 +3,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { useContactRoles } from '@/features/contactrole/hooks'
-import { useNicPrimary } from '@/features/nic/hooks'
-import { RotateCw, Search, SlidersHorizontal, X } from 'lucide-react'
+import { useCompanyDefaults } from '@/features/companydefaults/hooks'
+import { useNicCode, useNicPrimary, useResolveNicByCode } from '@/features/nic/hooks'
+import { Lock, RotateCw, Search, SlidersHorizontal, X } from 'lucide-react'
 import { useState } from 'react'
 import type { CompanyFilters as Filters } from '../types'
 
@@ -20,6 +21,62 @@ export function CompanyFilters({ filters, onChange }: Props) {
   const nicPrimary = useNicPrimary()
   const contactRoles = useContactRoles(false)
   const [advanced, setAdvanced] = useState(false)
+
+  const selectedNicIds = filters.nic_parent_ids ?? []
+
+  // Label cache for chips — populated as NICs are picked (from the primary
+  // dropdown, which already carries code+description, or from a manual-code
+  // resolution). Lost on refresh, same as every other filter on this page
+  // (state here is component-local, not URL-backed) — falls back to the raw
+  // id, which is still a working filter, just a less readable chip.
+  const [nicLabels, setNicLabels] = useState<Record<string, string>>({})
+
+  const [nicSelectValue, setNicSelectValue] = useState('')
+  const [manualNicCode, setManualNicCode] = useState('')
+  const [manualNicError, setManualNicError] = useState<string | null>(null)
+  const resolveNic = useResolveNicByCode()
+
+  // Admin-configured default NIC scope (Company Defaults). When active it is
+  // ANDed with whatever the analyst picks here (server-side, in
+  // CompanyController) — surfaced as a read-only chip so that combination is
+  // visible rather than a silent server-side override.
+  const companyDefaults = useCompanyDefaults()
+  const nicDefaultRow = companyDefaults.data?.find((d) => d.filter_key === 'nic_parent_id' && d.active)
+  const configNicId = parseNicDefaultId(nicDefaultRow?.value)
+  const configNic = useNicCode(configNicId)
+
+  function addNicParent(id: string, label?: string) {
+    if (!id || selectedNicIds.includes(id)) return
+    if (label) setNicLabels((prev) => ({ ...prev, [id]: label }))
+    onChange({ ...filters, nic_parent_ids: [...selectedNicIds, id], page: 0 })
+  }
+
+  function removeNicParent(id: string) {
+    const next = selectedNicIds.filter((x) => x !== id)
+    onChange({ ...filters, nic_parent_ids: next.length ? next : undefined, page: 0 })
+  }
+
+  function handleDropdownNicChange(value: string) {
+    setNicSelectValue('')
+    if (!value) return
+    const nic = nicPrimary.data?.find((n) => n.id === value)
+    addNicParent(value, nic ? `${nic.code} · ${nic.description}` : undefined)
+  }
+
+  function submitManualNic() {
+    const trimmed = manualNicCode.trim()
+    if (!trimmed) return
+    resolveNic.mutate(trimmed, {
+      onSuccess: (nic) => {
+        setManualNicError(null)
+        setManualNicCode('')
+        addNicParent(nic.id, `${nic.code} · ${nic.description}`)
+      },
+      onError: (err) => {
+        setManualNicError(err instanceof Error ? err.message : `No NIC found for '${trimmed}'`)
+      },
+    })
+  }
 
   const activeCount = countActive(filters)
 
@@ -105,16 +162,56 @@ export function CompanyFilters({ filters, onChange }: Props) {
 
       {advanced && (
         <div id="advanced-filters" className="grid gap-3 rounded-xl border border-border bg-surface-1/50 p-4 md:grid-cols-4 animate-slide-up">
-          <FilterField label="NIC (with sub-codes)">
-            <Select
-              value={filters.nic_parent_id ?? ''}
-              onChange={(e) => onChange({ ...filters, nic_parent_id: e.target.value || undefined, page: 0 })}
-            >
-              <option value="">Any NIC</option>
-              {nicPrimary.data?.map((n) => (
-                <option key={n.id} value={n.id}>{n.code} · {n.description}</option>
-              ))}
-            </Select>
+          <FilterField label="NIC (with sub-codes)" className="md:col-span-2">
+            <div className="flex gap-2">
+              <Select
+                className="flex-1"
+                value={nicSelectValue}
+                onChange={(e) => handleDropdownNicChange(e.target.value)}
+              >
+                <option value="">Add a NIC…</option>
+                {nicPrimary.data
+                  ?.filter((n) => !selectedNicIds.includes(n.id))
+                  .map((n) => (
+                    <option key={n.id} value={n.id}>{n.code} · {n.description}</option>
+                  ))}
+              </Select>
+              <Input
+                className="w-32"
+                value={manualNicCode}
+                onChange={(e) => { setManualNicCode(e.target.value); setManualNicError(null) }}
+                onBlur={submitManualNic}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); submitManualNic() }
+                }}
+                placeholder="or type code"
+                aria-invalid={manualNicError ? true : undefined}
+                aria-describedby={manualNicError ? 'nic-manual-error' : undefined}
+              />
+            </div>
+            {manualNicError ? (
+              <p id="nic-manual-error" className="mt-1 text-xs text-destructive">{manualNicError}</p>
+            ) : null}
+            {(selectedNicIds.length > 0 || configNicId) && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {configNicId && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-lg bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground"
+                    title="Set in Companies · default filters — always ANDed with your selection above"
+                  >
+                    <Lock className="size-3" />
+                    Config: {configNic.data ? `${configNic.data.code} · ${configNic.data.description}` : configNicId}
+                  </span>
+                )}
+                {selectedNicIds.map((id) => (
+                  <FilterChip
+                    key={id}
+                    label={nicLabels[id] ?? id}
+                    onRemove={() => removeNicParent(id)}
+                  />
+                ))}
+              </div>
+            )}
           </FilterField>
           <FilterField label="Region">
             <Input value={filters.region ?? ''} onChange={(e) => onChange({ ...filters, region: e.target.value || undefined, page: 0 })} placeholder="e.g. South — TN" />
@@ -169,7 +266,7 @@ export function CompanyFilters({ filters, onChange }: Props) {
             </Select>
           </FilterField>
 
-          {filters.nic_parent_id ? (
+          {selectedNicIds.length > 0 ? (
             <>
               <FilterField label="Sub-codes">
                 <label className="flex h-9 items-center gap-2 text-sm text-foreground cursor-pointer">
@@ -186,6 +283,8 @@ export function CompanyFilters({ filters, onChange }: Props) {
                   Include descendants
                 </label>
               </FilterField>
+              {/* Grouped-by-NIC is inherently single-parent (docs 21 §4.3) — only offered with exactly one NIC selected. */}
+              {selectedNicIds.length === 1 && (
               <FilterField label="View">
                 <div className="flex gap-1">
                   <Button
@@ -200,6 +299,7 @@ export function CompanyFilters({ filters, onChange }: Props) {
                   >Grouped by NIC</Button>
                 </div>
               </FilterField>
+              )}
             </>
           ) : null}
         </div>
@@ -208,9 +308,9 @@ export function CompanyFilters({ filters, onChange }: Props) {
   )
 }
 
-function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
+function FilterField({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className="min-w-0 space-y-1">
+    <div className={`min-w-0 space-y-1 ${className ?? ''}`}>
       <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</Label>
       {children}
     </div>
@@ -232,15 +332,27 @@ function titleCase(s: string) {
   return s.toLowerCase().split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
+/** The default filter's `value` is stored as raw JSON (e.g. `"<uuid>"`) — parse it defensively. */
+function parseNicDefaultId(raw: string | null | undefined): string | undefined {
+  if (!raw) return undefined
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return typeof parsed === 'string' && parsed ? parsed : undefined
+  } catch {
+    return undefined
+  }
+}
+
 function countActive(f: Filters) {
   const keys: (keyof Filters)[] = [
     'q','city','state','pipeline_state','verification_status',
     'region','district','pincode','turnover_min','turnover_max',
-    'employee_min','employee_max','gst_present','nic_code_id','nic_parent_id',
+    'employee_min','employee_max','gst_present','nic_code_id',
     'has_contact_role_id',
   ]
-  return keys.filter((k) => {
+  const scalarCount = keys.filter((k) => {
     const v = f[k]
     return v !== undefined && v !== null && v !== ''
   }).length
+  return scalarCount + (f.nic_parent_ids?.length ?? 0)
 }

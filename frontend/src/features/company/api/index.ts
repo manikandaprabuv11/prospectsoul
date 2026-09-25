@@ -28,7 +28,11 @@ export const companyApi = {
         employee_max: filters.employee_max,
         gst_present: filters.gst_present,
         nic_code_id: filters.nic_code_id,
-        nic_parent_id: filters.nic_parent_id,
+        nic_parent_ids: filters.nic_parent_ids,
+        // grouped_by_nic is inherently single-parent on the backend — send
+        // the singular alias too so that view keeps working when exactly
+        // one NIC is selected (the UI only offers that view in that case).
+        nic_parent_id: filters.view === 'grouped_by_nic' ? filters.nic_parent_ids?.[0] : undefined,
         nic_include_descendants: filters.nic_include_descendants,
         has_contact_role_id: filters.has_contact_role_id,
         view: filters.view,

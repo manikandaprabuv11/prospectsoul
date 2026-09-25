@@ -83,16 +83,35 @@ public final class CompanySpecification {
                 predicates.add(cb.or(cb.isNull(root.get("gstNumber")), cb.equal(root.get("gstNumber"), "")));
 
             // NIC filtering — either a single code, or a descendant set that
-            // the caller already resolved via the recursive CTE.
+            // the caller already resolved via the recursive CTE (or an
+            // intersection of the page selection with a configured default —
+            // see CompanyController).
+            //
+            // A resolved-but-EMPTY set is not the same thing as "no NIC
+            // filter was requested": the caller explicitly asked for a NIC
+            // scope and it resolved to nothing (e.g. the configured default
+            // NIC and the analyst's page-level pick don't overlap, or a
+            // stale nic_parent_id points at a deleted code). That must still
+            // yield zero companies. Previously this branch was gated on
+            // `!nicSet.isEmpty()`, so an explicitly-empty set fell through
+            // and the NIC filter was silently dropped — the query then
+            // matched every company as if no NIC filter had been applied at
+            // all, which is worse than an empty result and easy to mistake
+            // for "pincode + NIC is broken" when it actually returns too
+            // much rather than too little.
             Collection<UUID> nicSet = f.nicCodeIds;
             if (nicSet == null && f.nicCodeId != null) nicSet = List.of(f.nicCodeId);
-            if (nicSet != null && !nicSet.isEmpty() && query != null) {
-                Subquery<UUID> sub = query.subquery(UUID.class);
-                var cnc = sub.from(CompanyNicCode.class);
-                sub.select(cnc.get("companyId"))
-                        .where(cnc.get("nicCode").get("id").in(nicSet));
-                predicates.add(root.get("id").in(sub));
-                query.distinct(true);
+            if (nicSet != null) {
+                if (nicSet.isEmpty()) {
+                    predicates.add(cb.disjunction());
+                } else if (query != null) {
+                    Subquery<UUID> sub = query.subquery(UUID.class);
+                    var cnc = sub.from(CompanyNicCode.class);
+                    sub.select(cnc.get("companyId"))
+                            .where(cnc.get("nicCode").get("id").in(nicSet));
+                    predicates.add(root.get("id").in(sub));
+                    query.distinct(true);
+                }
             }
 
             if (f.hasContactRoleId != null && query != null) {

@@ -25,6 +25,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -49,6 +50,7 @@ public class NicImportService {
     private final NicCodeRepository nicCodeRepository;
     private final NicTreeService nicTreeService;
     private final AuditService auditService;
+    private final JdbcTemplate jdbcTemplate;
 
     @Transactional
     public NicImportResultResponse importFile(MultipartFile file, String actor) {
@@ -71,6 +73,11 @@ public class NicImportService {
         }
 
         NicImportResultResponse result = applyRows(rows, actor);
+        // The backfill below runs as raw JDBC on the same connection/
+        // transaction — flush first so it sees the nic_codes rows applyRows
+        // just persisted through Hibernate, not only ones from a prior import.
+        nicCodeRepository.flush();
+        backfillCompanyNicResolution();
         nicTreeService.invalidate();
         auditService.record("NIC_MASTER_IMPORT", UUID.randomUUID(), actor,
                 "IMPORT", null, Map.of(
@@ -175,6 +182,52 @@ public class NicImportService {
 
         return new NicImportResultResponse(rows.size(), created, updated,
                 unresolvedParents, rejected.size(), rejected);
+    }
+
+    /**
+     * Root-cause fix for the "NIC filter combined with anything returns
+     * empty" bug on the Companies page and Map: {@code company_nic_codes}
+     * rows and {@code companies.primary_nic_code_id} are resolved to a real
+     * {@code nic_codes} FK at import time by exact raw-code match
+     * ({@link com.vyoog.prospectsoul_backend.imports.service.ImportProcessingService}).
+     * When companies are imported BEFORE the NIC master list is uploaded (or
+     * before it is re-uploaded to add/fix codes), that match silently misses
+     * and the FK is left {@code NULL} forever — every NIC-scoped query joins
+     * on that FK, so the company is invisible to NIC filtering even though
+     * its raw code (and pincode, industry, etc.) are all correct.
+     * <p>
+     * Re-running the NIC master import is the natural moment to reconcile:
+     * retroactively link any orphaned join rows whose raw code now matches a
+     * real {@code nic_codes.code}, then propagate the primary link onto the
+     * owning company. Both statements are idempotent (guarded by
+     * {@code IS NULL}) so re-importing the same file twice is a no-op the
+     * second time.
+     * <p>
+     * Package-private so tests can call it directly on top of
+     * {@link #applyRows} without staging a {@code MultipartFile} — same
+     * fixture-based pattern as {@code applyRows} itself.
+     */
+    void backfillCompanyNicResolution() {
+        int linked = jdbcTemplate.update("""
+                UPDATE company_nic_codes cnc
+                   SET nic_code_id = nc.id
+                  FROM nic_codes nc
+                 WHERE cnc.nic_code_raw = nc.code
+                   AND cnc.nic_code_id IS NULL
+                """);
+        int primaryLinked = jdbcTemplate.update("""
+                UPDATE companies c
+                   SET primary_nic_code_id = cnc.nic_code_id
+                  FROM company_nic_codes cnc
+                 WHERE cnc.company_id = c.id
+                   AND cnc.is_primary = true
+                   AND cnc.nic_code_id IS NOT NULL
+                   AND c.primary_nic_code_id IS NULL
+                """);
+        if (linked > 0 || primaryLinked > 0) {
+            log.info("NIC master import backfilled {} company_nic_codes row(s) and {} companies.primary_nic_code_id",
+                    linked, primaryLinked);
+        }
     }
 
     private UUID findLongestPrefixParentId(String childCode) {

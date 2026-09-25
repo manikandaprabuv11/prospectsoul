@@ -10,8 +10,12 @@ export const locationApi = {
       query: {
         pincode,
         radius_km: radiusKm,
-        nic_parent_id: filters?.nic_parent_id,
+        nic_parent_ids: filters?.nic_parent_ids,
         nic_include_descendants: filters?.nic_include_descendants,
+        // Same default as the Companies list — the configured NIC default is
+        // always ANDed with the analyst's own selection unless the caller
+        // opts out.
+        apply_defaults: filters?.apply_defaults ?? true,
       },
     })
   },
