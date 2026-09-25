@@ -4,8 +4,9 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { LoadingRows } from '@/components/feedback/LoadingRows'
 import { InlineTip } from '@/components/feedback/InlineTip'
-import { useNicPrimary, useResolveNicByCode } from '@/features/nic/hooks'
-import { MapPin } from 'lucide-react'
+import { useCompanyDefaults } from '@/features/companydefaults/hooks'
+import { useNicCode, useNicPrimary, useResolveNicByCode } from '@/features/nic/hooks'
+import { Lock, MapPin, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { useMapCompanies, usePincode } from '../hooks'
@@ -22,30 +23,62 @@ export function CompanyMapPage() {
   const [sp, setSp] = useSearchParams()
   const pincode = sp.get('pincode') ?? ''
   const radiusKm = Number(sp.get('radius_km') ?? '5')
-  const nicParentId = sp.get('nic_parent_id') ?? ''
+  // Multi-select NIC filter, kept in the URL as repeated `nic_parent_ids`
+  // params — same shape as the Companies list filter, so the deep link is
+  // shareable and the two screens' NIC filter behave identically.
+  const nicParentIds = sp.getAll('nic_parent_ids')
   const nicIncludeDescendants = sp.get('nic_include_descendants') !== 'false'
 
   const nicPrimary = useNicPrimary()
   const centroid = usePincode(pincode)
   const owned = useMapCompanies(pincode, radiusKm, {
-    nic_parent_id: nicParentId || undefined,
-    nic_include_descendants: nicParentId ? nicIncludeDescendants : undefined,
+    nic_parent_ids: nicParentIds.length ? nicParentIds : undefined,
+    nic_include_descendants: nicParentIds.length ? nicIncludeDescendants : undefined,
   })
 
-  // Manual NIC code entry (map page only) — a text-input alternative to the
-  // dropdown. Local UI state: the in-progress text and its resolution error
-  // are transient and belong here, not in the URL; the RESOLVED filter still
-  // lives in `nic_parent_id` like the dropdown, so the URL shape is unchanged.
+  // Label cache for chips — populated as NICs are picked (from the primary
+  // dropdown, which already carries code+description, or from a manual-code
+  // resolution). Lost on refresh, same as the Companies list filter — falls
+  // back to the raw id, which is still a working filter, just less readable.
+  const [nicLabels, setNicLabels] = useState<Record<string, string>>({})
+  const [nicSelectValue, setNicSelectValue] = useState('')
+
+  // Manual NIC code entry — a text-input alternative to the dropdown, adding
+  // to the same multi-select. Local UI state: the in-progress text and its
+  // resolution error are transient and belong here, not in the URL.
   const [manualNicCode, setManualNicCode] = useState('')
   const [manualNicError, setManualNicError] = useState<string | null>(null)
   const resolveNic = useResolveNicByCode()
 
+  // Admin-configured default NIC scope (Company Defaults) — surfaced as a
+  // read-only lock chip, same pattern as the Companies list filter, since the
+  // backend ANDs it with whatever is picked here (apply_defaults defaults to
+  // true) rather than silently overriding the analyst's own selection.
+  const companyDefaults = useCompanyDefaults()
+  const nicDefaultRow = companyDefaults.data?.find((d) => d.filter_key === 'nic_parent_id' && d.active)
+  const configNicId = parseNicDefaultId(nicDefaultRow?.value)
+  const configNic = useNicCode(configNicId)
+
+  function addNicParent(id: string, label?: string) {
+    if (!id || nicParentIds.includes(id)) return
+    if (label) setNicLabels((prev) => ({ ...prev, [id]: label }))
+    updateNicParentIds([...nicParentIds, id])
+  }
+
+  function removeNicParent(id: string) {
+    updateNicParentIds(nicParentIds.filter((x) => x !== id))
+  }
+
+  function updateNicParentIds(next: string[]) {
+    const params = new URLSearchParams(sp)
+    params.delete('nic_parent_ids')
+    for (const id of next) params.append('nic_parent_ids', id)
+    setSp(params)
+  }
+
   function handleManualNicChange(value: string) {
     setManualNicCode(value)
     setManualNicError(null)
-    // Typing clears the dropdown selection — only one input drives the
-    // active filter at a time.
-    if (nicParentId) update('nic_parent_id', '')
   }
 
   function submitManualNic() {
@@ -54,7 +87,8 @@ export function CompanyMapPage() {
     resolveNic.mutate(trimmed, {
       onSuccess: (nic) => {
         setManualNicError(null)
-        update('nic_parent_id', nic.id)
+        setManualNicCode('')
+        addNicParent(nic.id, `${nic.code} · ${nic.description}`)
       },
       onError: (err) => {
         setManualNicError(err instanceof Error ? err.message : `No NIC found for '${trimmed}'`)
@@ -63,10 +97,10 @@ export function CompanyMapPage() {
   }
 
   function handleDropdownNicChange(value: string) {
-    update('nic_parent_id', value)
-    // Picking from the dropdown clears the manual input.
-    setManualNicCode('')
-    setManualNicError(null)
+    setNicSelectValue('')
+    if (!value) return
+    const nic = nicPrimary.data?.find((n) => n.id === value)
+    addNicParent(value, nic ? `${nic.code} · ${nic.description}` : undefined)
   }
 
   const matchedNicCodeIds = owned.data?.matched_nic_code_ids ?? null
@@ -99,10 +133,10 @@ export function CompanyMapPage() {
         description="Plot ProspectSoul companies around any Indian pincode. The centroid is resolved on demand and cached."
       />
 
-      <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
+      <div className="rounded-xl border border-border bg-card p-4 shadow-card">
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[8rem]">
-            <label htmlFor="map-pincode" className="text-xs font-medium text-muted-foreground">Pincode</label>
+            <label htmlFor="map-pincode" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Pincode</label>
             <Input
               id="map-pincode"
               className="mt-1"
@@ -113,7 +147,7 @@ export function CompanyMapPage() {
             />
           </div>
           <div className="min-w-[8rem]">
-            <label htmlFor="map-radius" className="text-xs font-medium text-muted-foreground">Radius</label>
+            <label htmlFor="map-radius" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Radius</label>
             <Select id="map-radius" className="mt-1" value={String(radiusKm)} onChange={(e) => update('radius_km', e.target.value)}>
               <option value="2">2 km</option>
               <option value="5">5 km</option>
@@ -123,21 +157,23 @@ export function CompanyMapPage() {
             </Select>
           </div>
           <div className="min-w-[10rem]">
-            <label htmlFor="map-nic" className="text-xs font-medium text-muted-foreground">NIC (with sub-codes)</label>
+            <label htmlFor="map-nic" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">NIC (with sub-codes)</label>
             <Select
               id="map-nic"
               className="mt-1"
-              value={nicParentId}
+              value={nicSelectValue}
               onChange={(e) => handleDropdownNicChange(e.target.value)}
             >
-              <option value="">Any NIC</option>
-              {nicPrimary.data?.map((n) => (
-                <option key={n.id} value={n.id}>{n.code} · {n.description}</option>
-              ))}
+              <option value="">Add a NIC…</option>
+              {nicPrimary.data
+                ?.filter((n) => !nicParentIds.includes(n.id))
+                .map((n) => (
+                  <option key={n.id} value={n.id}>{n.code} · {n.description}</option>
+                ))}
             </Select>
           </div>
           <div className="min-w-[9rem]">
-            <label htmlFor="map-nic-manual" className="text-xs font-medium text-muted-foreground">Or type NIC code</label>
+            <label htmlFor="map-nic-manual" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Or type NIC code</label>
             <Input
               id="map-nic-manual"
               className="mt-1"
@@ -158,7 +194,7 @@ export function CompanyMapPage() {
               <p id="map-nic-manual-error" className="mt-1 text-xs text-destructive">{manualNicError}</p>
             ) : null}
           </div>
-          {nicParentId ? (
+          {nicParentIds.length > 0 ? (
             <label className="flex h-9 items-center gap-2 pb-1.5 text-sm text-foreground">
               <input
                 type="checkbox"
@@ -175,6 +211,27 @@ export function CompanyMapPage() {
             </div>
           ) : null}
         </div>
+
+        {(nicParentIds.length > 0 || configNicId) && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {configNicId && (
+              <span
+                className="inline-flex items-center gap-1 rounded-lg bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground"
+                title="Set in Companies · default filters — always ANDed with your selection above"
+              >
+                <Lock className="size-3" />
+                Config: {configNic.data ? `${configNic.data.code} · ${configNic.data.description}` : configNicId}
+              </span>
+            )}
+            {nicParentIds.map((id) => (
+              <FilterChip
+                key={id}
+                label={nicLabels[id] ?? id}
+                onRemove={() => removeNicParent(id)}
+              />
+            ))}
+          </div>
+        )}
 
         {unknown ? (
           <InlineTip tone="warning" className="mt-3">
@@ -211,7 +268,7 @@ export function CompanyMapPage() {
             {list.map((c) => {
               const chips = visibleNicCodes(c.nic_codes ?? [])
               return (
-                <li key={c.id} className="rounded-lg border border-border/70 bg-card p-3 shadow-sm hover:shadow-md transition-shadow flex items-start justify-between gap-2">
+                <li key={c.id} className="rounded-xl border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <Link to={`/companies/${c.id}`} className="font-medium text-foreground hover:text-primary transition-colors block truncate">
                       {c.canonical_name}
@@ -232,7 +289,7 @@ export function CompanyMapPage() {
                                 : 'bg-muted text-foreground border border-border')
                             }
                           >
-                            {n.primary ? <span className="text-amber-500">★</span> : null}
+                            {n.primary ? <span className="text-accent-amber">★</span> : null}
                             {n.code}
                           </span>
                         ))}
@@ -249,6 +306,28 @@ export function CompanyMapPage() {
   )
 }
 
+function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-lg bg-primary/8 px-2.5 py-1 text-xs font-medium text-primary">
+      {label}
+      <button type="button" onClick={onRemove} className="hover:text-primary/70 transition-colors" aria-label={`Remove filter: ${label}`}>
+        <X className="size-3" />
+      </button>
+    </span>
+  )
+}
+
+/** The default filter's `value` is stored as raw JSON (e.g. `"<uuid>"`) — parse it defensively. */
+function parseNicDefaultId(raw: string | null | undefined): string | undefined {
+  if (!raw) return undefined
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return typeof parsed === 'string' && parsed ? parsed : undefined
+  } catch {
+    return undefined
+  }
+}
+
 const MAPS_KEY = import.meta.env.VITE_MAPS_JS_API_KEY as string | undefined
 
 function MapView({ center, radiusKm, ownedCount }: { center: { lat: number; lng: number }; radiusKm: number; ownedCount: number }) {
@@ -260,7 +339,7 @@ function MapView({ center, radiusKm, ownedCount }: { center: { lat: number; lng:
     : `https://www.openstreetmap.org/export/embed.html?bbox=${bbox.join(',')}&layer=mapnik&marker=${center.lat},${center.lng}`
 
   return (
-    <div className="rounded-xl overflow-hidden border border-border/70 shadow-sm bg-card">
+    <div className="rounded-xl overflow-hidden border border-border shadow-card bg-card">
       <iframe
         src={src}
         title="Company map"
@@ -268,9 +347,9 @@ function MapView({ center, radiusKm, ownedCount }: { center: { lat: number; lng:
         loading="lazy"
         referrerPolicy="no-referrer-when-downgrade"
       />
-      <div className="flex items-center justify-between border-t border-border/70 px-3 py-2 text-xs text-muted-foreground">
+      <div className="flex items-center justify-between border-t border-border px-3 py-2 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-2">
-          <span className="inline-block w-3 h-3 rounded-full bg-teal-500" />
+          <span className="inline-block w-3 h-3 rounded-full bg-accent-teal" />
           Owned in ProspectSoul ({ownedCount})
         </span>
         {!MAPS_KEY ? (

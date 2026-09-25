@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Pagination } from '@/shared/components/Pagination'
-import { ArrowDown, ArrowUp } from 'lucide-react'
+import { ArrowDown, ArrowUp, Search } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { useAddedByOptions, useVerifiedCompanies } from '../hooks'
@@ -22,13 +22,6 @@ const SORTABLE = [
 
 type SortField = (typeof SORTABLE)[number]['field']
 
-/**
- * The Verify page's bottom table.
- *
- * <p>Reads `GET /api/v1/verifications/companies`, which returns companies whose
- * canonical status is VERIFIED and nothing else — the invariant is enforced in
- * SQL, so this table cannot show an unverified company.
- */
 export function VerifiedCompaniesTable() {
   const [search, setSearch] = useState('')
   const [appliedSearch, setAppliedSearch] = useState<string | undefined>(undefined)
@@ -83,103 +76,109 @@ export function VerifiedCompaniesTable() {
         <CardTitle>Verified Companies</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-48 flex-1 space-y-1">
-            <Label htmlFor="verified-search">Search</Label>
-            <Input
-              id="verified-search"
-              placeholder="Company, phone, city or email"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
+        <div className="rounded-xl border border-border bg-card p-4 shadow-card">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-48 flex-1 space-y-1">
+              <Label htmlFor="verified-search" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Search</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  id="verified-search"
+                  className="pl-9"
+                  placeholder="Company, phone, city or email"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      setAppliedSearch(search.trim() || undefined)
+                      setPage(0)
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="verified-by" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Verified by</Label>
+              <Select
+                id="verified-by"
+                className="w-44"
+                value={verifiedBy}
+                onChange={(event) => {
+                  setVerifiedBy(event.target.value)
+                  setPage(0)
+                }}
+              >
+                <option value="">Anyone</option>
+                {(people.data ?? []).map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="verified-added-by" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Added by</Label>
+              <Select
+                id="verified-added-by"
+                className="w-44"
+                value={addedBy}
+                onChange={(event) => {
+                  setAddedBy(event.target.value)
+                  setPage(0)
+                }}
+              >
+                <option value="">Anyone</option>
+                {(people.data ?? []).map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="verified-from" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">From</Label>
+              <Input
+                id="verified-from"
+                type="date"
+                className="w-40"
+                value={verifiedFrom}
+                onChange={(event) => {
+                  setVerifiedFrom(event.target.value)
+                  setPage(0)
+                }}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="verified-to" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">To</Label>
+              <Input
+                id="verified-to"
+                type="date"
+                className="w-40"
+                value={verifiedTo}
+                onChange={(event) => {
+                  setVerifiedTo(event.target.value)
+                  setPage(0)
+                }}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => {
                   setAppliedSearch(search.trim() || undefined)
                   setPage(0)
-                }
-              }}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="verified-by">Verified by</Label>
-            <Select
-              id="verified-by"
-              className="w-44"
-              value={verifiedBy}
-              onChange={(event) => {
-                setVerifiedBy(event.target.value)
-                setPage(0)
-              }}
-            >
-              <option value="">Anyone</option>
-              {(people.data ?? []).map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="verified-added-by">Added by</Label>
-            <Select
-              id="verified-added-by"
-              className="w-44"
-              value={addedBy}
-              onChange={(event) => {
-                setAddedBy(event.target.value)
-                setPage(0)
-              }}
-            >
-              <option value="">Anyone</option>
-              {(people.data ?? []).map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="verified-from">Verified from</Label>
-            <Input
-              id="verified-from"
-              type="date"
-              className="w-40"
-              value={verifiedFrom}
-              onChange={(event) => {
-                setVerifiedFrom(event.target.value)
-                setPage(0)
-              }}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="verified-to">Verified to</Label>
-            <Input
-              id="verified-to"
-              type="date"
-              className="w-40"
-              value={verifiedTo}
-              onChange={(event) => {
-                setVerifiedTo(event.target.value)
-                setPage(0)
-              }}
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => {
-                setAppliedSearch(search.trim() || undefined)
-                setPage(0)
-              }}
-            >
-              Search
-            </Button>
-            <Button variant="outline" onClick={resetFilters}>
-              Reset
-            </Button>
+                }}
+              >
+                Search
+              </Button>
+              <Button variant="outline" onClick={resetFilters}>
+                Reset
+              </Button>
+            </div>
           </div>
         </div>
 
         {dateRangeInvalid && (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="text-sm font-medium text-destructive">
             Verified from must not be after verified to.
           </p>
         )}
@@ -191,15 +190,12 @@ export function VerifiedCompaniesTable() {
             ))}
           </div>
         ) : companies.isError ? (
-          <div
-            role="alert"
-            className="rounded-lg border border-destructive/50 p-6 text-center text-sm text-destructive"
-          >
+          <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center text-sm font-medium text-destructive">
             {problemDetail(companies.error, 'Could not load verified companies.')}
           </div>
         ) : rows.length === 0 ? (
-          <div className="rounded-lg border p-10 text-center">
-            <p className="font-medium">No verified companies yet</p>
+          <div className="rounded-xl border border-dashed border-border bg-surface-1/50 py-12 text-center">
+            <p className="font-semibold">No verified companies yet</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Companies appear here once a verification confirms their phone is a valid mobile
               number. Start with <strong>Verify New Companies</strong> above.
@@ -207,16 +203,16 @@ export function VerifiedCompaniesTable() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-lg border">
+            <div className="overflow-x-auto rounded-xl border border-border shadow-card">
               <table className="w-full text-sm">
                 <caption className="sr-only">Companies with a verified phone number</caption>
                 <thead>
-                  <tr className="border-b bg-muted/50">
+                  <tr className="border-b border-border bg-surface-1">
                     {SORTABLE.map((column) => (
-                      <th key={column.field} scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">
+                      <th key={column.field} scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         <button
                           type="button"
-                          className="inline-flex items-center gap-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          className="inline-flex items-center gap-1 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           onClick={() => toggleSort(column.field)}
                           aria-label={`Sort by ${column.label}`}
                         >
@@ -230,29 +226,29 @@ export function VerifiedCompaniesTable() {
                         </button>
                       </th>
                     ))}
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Verified by</th>
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Added by</th>
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Phone</th>
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Line type</th>
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Carrier</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Verified by</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Added by</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Phone</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Line type</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Carrier</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border">
                   {rows.map((company) => (
-                    <tr key={company.id} className="border-b last:border-0 hover:bg-muted/30">
-                      <td className="px-3 py-2.5 text-muted-foreground">
+                    <tr key={company.id} className="group/row hover:bg-surface-1/50 transition-colors">
+                      <td className="px-3 py-2.5 text-muted-foreground tabular-nums">
                         {formatDateTime(company.verified_at)}
                       </td>
-                      <td className="px-3 py-2.5 font-medium">
-                        <Link to={`/companies/${company.id}`} className="text-primary hover:underline">
+                      <td className="px-3 py-2.5 font-semibold">
+                        <Link to={`/companies/${company.id}`} className="text-primary hover:underline transition-colors">
                           {company.canonical_name}
                         </Link>
                       </td>
                       <td className="px-3 py-2.5">{company.city ?? '—'}</td>
-                      <td className="px-3 py-2.5 text-muted-foreground">{formatDate(company.added_at)}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground tabular-nums">{formatDate(company.added_at)}</td>
                       <td className="px-3 py-2.5">{company.verified_by_name ?? '—'}</td>
                       <td className="px-3 py-2.5">{company.added_by_name ?? '—'}</td>
-                      <td className="px-3 py-2.5">{formatPhone(company.verified_phone)}</td>
+                      <td className="px-3 py-2.5 tabular-nums">{formatPhone(company.verified_phone)}</td>
                       <td className="px-3 py-2.5">{formatLineType(company.line_type)}</td>
                       <td className="px-3 py-2.5">{company.carrier_name ?? '—'}</td>
                     </tr>

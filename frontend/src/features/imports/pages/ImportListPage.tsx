@@ -42,12 +42,12 @@ export function ImportListPage() {
           }
         />
       ) : data ? (
-        <div className="space-y-3">
-          <div className="overflow-hidden rounded-lg border border-border/70 bg-card shadow-xs">
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
             <div className="overflow-x-auto">
               <table className="w-full text-sm" data-tabular="true">
-                <thead className="bg-muted/40">
-                  <tr className="border-b border-border/70">
+                <thead>
+                  <tr className="border-b border-border bg-surface-1">
                     <Th>File</Th>
                     <Th>Source</Th>
                     <Th>Status</Th>
@@ -59,55 +59,55 @@ export function ImportListPage() {
                     <Th className="text-right pr-4">&nbsp;</Th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/70">
+                <tbody className="divide-y divide-border">
                   {data.content.map((batch) => {
                     const pct = batch.total_rows > 0
                       ? Math.round((batch.processed_rows / batch.total_rows) * 100)
                       : batch.status === 'COMPLETED' ? 100 : 0
                     return (
-                      <tr key={batch.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-3 py-2.5 max-w-[280px]">
+                      <tr key={batch.id} className="hover:bg-accent/30 transition-colors duration-150 group/row">
+                        <td className="px-3 py-3 max-w-[280px]">
                           <Link
                             to={`/imports/${batch.id}`}
-                            className="font-medium text-foreground hover:text-primary transition-colors block truncate"
+                            className="font-medium text-foreground hover:text-primary transition-colors duration-200 block truncate"
                           >
                             {batch.file_name}
                           </Link>
-                          <p className="text-xs text-muted-foreground uppercase">{batch.file_type}</p>
+                          <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{batch.file_type}</p>
                         </td>
-                        <td className="px-3 py-2.5">
-                          <span className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium">
+                        <td className="px-3 py-3">
+                          <span className="inline-flex items-center rounded-md bg-primary/8 px-2 py-0.5 text-[11px] font-semibold text-primary">
                             {batch.source}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5 min-w-[160px]">
+                        <td className="px-3 py-3 min-w-[160px]">
                           <StatusChip kind="batch" value={batch.status} />
                           {batch.status === 'PROCESSING' && (
-                            <div className="mt-1.5 h-1 w-32 overflow-hidden rounded bg-muted">
+                            <div className="mt-2 h-1.5 w-32 overflow-hidden rounded-full bg-muted">
                               <div
-                                className="h-full rounded bg-primary transition-all duration-300"
+                                className="h-full rounded-full bg-primary transition-all duration-500"
                                 style={{ width: `${pct}%` }}
                               />
                             </div>
                           )}
                         </td>
-                        <td className="px-3 py-2.5 text-right tabular-nums">{batch.total_rows.toLocaleString()}</td>
-                        <td className="px-3 py-2.5 text-right tabular-nums text-emerald-600 dark:text-emerald-400 font-medium">
+                        <td className="px-3 py-3 text-right tabular-nums font-medium">{batch.total_rows.toLocaleString()}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-accent-emerald font-semibold">
                           {batch.created_rows.toLocaleString()}
                         </td>
-                        <td className="px-3 py-2.5 text-right tabular-nums text-amber-700 dark:text-amber-400">
+                        <td className="px-3 py-3 text-right tabular-nums text-accent-amber font-medium">
                           {batch.duplicate_rows.toLocaleString()}
                         </td>
-                        <td className="px-3 py-2.5 text-right tabular-nums text-red-600 dark:text-red-400">
+                        <td className="px-3 py-3 text-right tabular-nums text-accent-rose font-medium">
                           {batch.rejected_rows.toLocaleString()}
                         </td>
-                        <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">
+                        <td className="px-3 py-3 whitespace-nowrap text-muted-foreground text-[13px]">
                           {new Date(batch.created_at).toLocaleString(undefined, {
                             year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
                           })}
                         </td>
-                        <td className="px-3 py-2.5 text-right pr-4">
-                          <Button variant="ghost" size="sm" asChild>
+                        <td className="px-3 py-3 text-right pr-4">
+                          <Button variant="ghost" size="sm" className="opacity-60 group-hover/row:opacity-100 transition-opacity" asChild>
                             <Link to={`/imports/${batch.id}`}>Open</Link>
                           </Button>
                         </td>
@@ -134,7 +134,7 @@ export function ImportListPage() {
 
 function Th({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <th scope="col" className={`px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground ${className ?? ''}`}>
+    <th scope="col" className={`px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap ${className ?? ''}`}>
       {children}
     </th>
   )

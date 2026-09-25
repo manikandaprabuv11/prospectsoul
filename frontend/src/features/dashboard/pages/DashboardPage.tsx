@@ -5,18 +5,10 @@ import { usePermissions } from '@/auth/usePermissions'
 import { cn } from '@/lib/utils'
 import {
   ArrowRight, Building2, FileUp, MapPin, ShieldCheck, Users, ListTree,
-  UserSquare2, Sparkles, TrendingUp,
+  UserSquare2, Sparkles, TrendingUp, Layers,
 } from 'lucide-react'
 import { Link } from 'react-router'
 
-/**
- * Dashboard — brand-forward landing screen.
- *
- *   • Hero card with the brand gradient, greeting and primary CTAs.
- *   • KPI stat row — accent-striped tiles in the feature palette.
- *   • Quick-action grid — coloured icon chips per module, hover shifts
- *     the card up and shows a chevron.
- */
 export function DashboardPage() {
   const { user, roles } = useAuth()
   const permissions = usePermissions()
@@ -31,32 +23,35 @@ export function DashboardPage() {
         aria-labelledby="hero-title"
         className="relative overflow-hidden rounded-2xl bg-brand-gradient text-white shadow-primary"
       >
-        <div className="absolute -top-16 -right-16 size-64 rounded-full bg-white/10 blur-3xl" aria-hidden="true" />
-        <div className="absolute -bottom-16 -left-16 size-64 rounded-full bg-white/10 blur-3xl" aria-hidden="true" />
-        <div className="relative px-6 py-8 sm:px-10 sm:py-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="min-w-0 space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/15 backdrop-blur px-2.5 py-1 text-xs font-semibold uppercase tracking-wider">
-              <Sparkles className="size-3.5" /> {primaryRole} · ProspectSoul
+        {/* Decorative orbs */}
+        <div className="absolute -top-20 -right-20 size-72 rounded-full bg-white/8 blur-3xl" aria-hidden="true" />
+        <div className="absolute -bottom-20 -left-20 size-64 rounded-full bg-white/6 blur-3xl" aria-hidden="true" />
+        <div className="absolute top-1/2 left-1/3 size-48 rounded-full bg-white/5 blur-3xl" aria-hidden="true" />
+
+        <div className="relative px-6 py-10 sm:px-10 sm:py-12 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0 space-y-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/12 backdrop-blur-sm px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider border border-white/10">
+              <Sparkles className="size-3.5" /> {primaryRole}
             </div>
-            <h1 id="hero-title" className="text-3xl sm:text-4xl font-bold tracking-tight">
+            <h1 id="hero-title" className="text-3xl sm:text-4xl font-bold tracking-tight leading-[1.1]">
               {greeting}{first ? `, ${first}` : ''}
             </h1>
-            <p className="text-white/85 max-w-2xl leading-relaxed">
-              A single view of every prospect. Filter, verify, enrich and export — with a
+            <p className="text-white/75 max-w-xl leading-relaxed text-[15px]">
+              Your single view of every prospect. Filter, verify, enrich and export — with a
               full audit trail behind every mutation.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {permissions.canRead ? (
-              <Button variant="secondary" className="bg-white text-primary hover:bg-white/90 shadow-md" asChild>
+          <div className="flex flex-wrap gap-2.5">
+            {permissions.canRead && (
+              <Button variant="secondary" className="bg-white/95 text-primary hover:bg-white shadow-md border-0 font-semibold" asChild>
                 <Link to="/companies"><Building2 /> Browse companies</Link>
               </Button>
-            ) : null}
-            {permissions.canMutate ? (
-              <Button className="bg-black/25 hover:bg-black/35 text-white backdrop-blur border border-white/25" asChild>
+            )}
+            {permissions.canMutate && (
+              <Button className="bg-white/15 hover:bg-white/25 text-white backdrop-blur-sm border border-white/20 shadow-none" asChild>
                 <Link to="/imports/new"><FileUp /> Start import</Link>
               </Button>
-            ) : null}
+            )}
           </div>
         </div>
       </section>
@@ -69,39 +64,39 @@ export function DashboardPage() {
             label="Prospect companies"
             value="—"
             hint={<span className="inline-flex items-center gap-1"><TrendingUp className="size-3" /> Managed in ProspectSoul</span>}
-            icon={<Building2 className="size-4" />}
+            icon={<Building2 className="size-4.5" />}
             accent="teal"
           />
           <StatCard
             label="Import batches"
             value="—"
             hint="Uploaded this month"
-            icon={<FileUp className="size-4" />}
+            icon={<FileUp className="size-4.5" />}
             accent="violet"
           />
           <StatCard
             label="Verified"
             value="—"
             hint="Phones confirmed by Twilio"
-            icon={<ShieldCheck className="size-4" />}
+            icon={<ShieldCheck className="size-4.5" />}
             accent="emerald"
           />
           <StatCard
             label="NIC codes"
             value="—"
             hint="Master data seeded"
-            icon={<ListTree className="size-4" />}
+            icon={<ListTree className="size-4.5" />}
             accent="amber"
           />
         </div>
       </section>
 
       {/* Quick actions */}
-      <section aria-labelledby="quick-heading" className="space-y-4">
+      <section aria-labelledby="quick-heading" className="space-y-5">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <h2 id="quick-heading" className="text-lg font-semibold tracking-tight">Quick actions</h2>
-            <p className="text-sm text-muted-foreground">Every module at your fingertips.</p>
+            <h2 id="quick-heading" className="text-lg font-bold tracking-tight">Quick actions</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">Every module at your fingertips.</p>
           </div>
         </div>
 
@@ -140,6 +135,15 @@ export function DashboardPage() {
               title="Verify phones"
               description="Batch-verify contact numbers through Twilio Lookup with a live queue."
               accent="emerald"
+            />
+          )}
+          {permissions.canRead && (
+            <ActionCard
+              to="/enrichment/jobs"
+              icon={<Layers className="size-5" />}
+              title="Enrichment"
+              description="Run enrichment against Google Places, website and phone providers."
+              accent="sky"
             />
           )}
           {permissions.canConfigure && (
@@ -195,21 +199,22 @@ function ActionCard({
     <Link
       to={to}
       className={cn(
-        "accent-stripe group relative flex flex-col justify-between gap-4 rounded-xl border border-border/70 bg-card p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5",
+        "accent-stripe group relative flex flex-col justify-between gap-4 rounded-xl border border-border bg-card p-5",
+        "shadow-card transition-all duration-200 hover:shadow-card-hover hover:-translate-y-1",
         cls,
       )}
     >
       <div className="space-y-3">
-        <div className={cn("accent-chip-bg flex size-11 items-center justify-center rounded-lg", cls)}>
+        <div className={cn("accent-chip-bg flex size-11 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110", cls)}>
           {icon}
         </div>
         <div>
-          <h3 className="text-base font-semibold tracking-tight">{title}</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed mt-1">{description}</p>
+          <h3 className="text-[15px] font-semibold tracking-tight">{title}</h3>
+          <p className="text-[13px] text-muted-foreground leading-relaxed mt-1">{description}</p>
         </div>
       </div>
-      <span className="inline-flex items-center gap-1 text-sm font-medium text-primary group-hover:gap-1.5 transition-all">
-        Open <ArrowRight className="size-4 group-hover:translate-x-0.5 transition-transform" />
+      <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary group-hover:gap-2 transition-all duration-200">
+        Open <ArrowRight className="size-4 group-hover:translate-x-0.5 transition-transform duration-200" />
       </span>
     </Link>
   )

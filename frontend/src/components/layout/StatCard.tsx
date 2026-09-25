@@ -22,29 +22,28 @@ const accentClass: Record<Accent, string> = {
   sky:     "accent-sky",
 }
 
-/**
- * KPI tile with a coloured accent stripe on the top edge and a matching
- * chip behind the icon. All hues live in `index.css` at the same
- * OKLCH lightness, so a row of tiles feels varied without becoming noisy.
- */
 export function StatCard({ label, value, hint, icon, accent = "indigo", className }: StatCardProps) {
   return (
     <div
       className={cn(
-        "accent-stripe relative rounded-xl border border-border/70 bg-card shadow-sm p-4 flex items-start justify-between gap-3 transition-all hover:shadow-md hover:-translate-y-0.5",
+        "accent-stripe group relative rounded-xl border border-border bg-card p-5 flex items-start justify-between gap-3",
+        "shadow-card transition-all duration-200 hover:shadow-card-hover hover:-translate-y-0.5",
         accentClass[accent],
         className,
       )}
     >
-      <div className="min-w-0 space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+      <div className="min-w-0 space-y-1.5">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
         <p data-tabular="true" className="text-2xl font-bold tracking-tight leading-none text-foreground">
           {value}
         </p>
         {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
       </div>
       {icon ? (
-        <div className={cn("accent-chip-bg flex size-10 shrink-0 items-center justify-center rounded-lg", accentClass[accent])}>
+        <div className={cn(
+          "accent-chip-bg flex size-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105",
+          accentClass[accent],
+        )}>
           {icon}
         </div>
       ) : null}

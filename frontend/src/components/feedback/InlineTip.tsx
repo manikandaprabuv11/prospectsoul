@@ -1,11 +1,7 @@
-import { Info } from "lucide-react"
+import { Info, AlertTriangle, CheckCircle2 } from "lucide-react"
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-/**
- * Small inline callout for hints and micro-explanations. Uses the info
- * palette so it never competes with real errors.
- */
 export function InlineTip({
   children,
   className,
@@ -17,19 +13,27 @@ export function InlineTip({
 }) {
   const styles =
     tone === "warning"
-      ? "border-amber-300/60 bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200"
+      ? "border-accent-amber/30 bg-accent-amber/5 text-foreground"
       : tone === "success"
-        ? "border-emerald-300/60 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200"
-        : "border-blue-300/60 bg-blue-50 text-blue-800 dark:bg-blue-500/10 dark:text-blue-200"
+        ? "border-accent-emerald/30 bg-accent-emerald/5 text-foreground"
+        : "border-accent-sky/30 bg-accent-sky/5 text-foreground"
+  const Icon =
+    tone === "warning" ? AlertTriangle
+      : tone === "success" ? CheckCircle2
+        : Info
+  const iconColor =
+    tone === "warning" ? "text-accent-amber"
+      : tone === "success" ? "text-accent-emerald"
+        : "text-accent-sky"
   return (
     <div
       className={cn(
-        "flex items-start gap-2 rounded-md border px-3 py-2 text-xs",
+        "flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm leading-relaxed",
         styles,
         className,
       )}
     >
-      <Info className="size-4 shrink-0 mt-0.5" aria-hidden="true" />
+      <Icon className={cn("size-4 shrink-0 mt-0.5", iconColor)} aria-hidden="true" />
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   )

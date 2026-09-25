@@ -34,8 +34,12 @@ export class ApiError extends Error {
 }
 
 export interface RequestOptions extends Omit<RequestInit, 'body' | 'method'> {
-  /** Query string parameters; `undefined` and `null` values are dropped. */
-  query?: Record<string, string | number | boolean | undefined | null>
+  /**
+   * Query string parameters; `undefined`, `null` and `[]` are dropped. An
+   * array value is sent as a repeated param (`key=a&key=b`) — the shape
+   * Spring MVC binds to a `List<T>` `@RequestParam` on the backend.
+   */
+  query?: Record<string, string | number | boolean | undefined | null | (string | number)[]>
   /** JSON request payload. Mutually exclusive with `formData`. */
   body?: unknown
   /** Multipart payload; the browser sets the boundary itself. */
@@ -78,7 +82,9 @@ function buildUrl(path: string, query: RequestOptions['query']): string {
   const url = new URL(requestPath, baseUrl)
 
   for (const [key, value] of Object.entries(query ?? {})) {
-    if (value !== undefined && value !== null) {
+    if (Array.isArray(value)) {
+      for (const item of value) url.searchParams.append(key, String(item))
+    } else if (value !== undefined && value !== null) {
       url.searchParams.append(key, String(value))
     }
   }

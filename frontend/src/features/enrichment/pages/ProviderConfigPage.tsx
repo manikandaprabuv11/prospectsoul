@@ -35,29 +35,29 @@ function ProviderCard({ config }: { config: ProviderConfig }) {
   }
 
   return (
-    <Card>
+    <Card className="group hover:shadow-card-hover transition-shadow duration-200">
       <CardHeader className="border-b-0 pb-2">
         <CardTitle className="flex items-center justify-between text-sm">
-          <span>{config.provider_key}</span>
+          <span className="font-bold">{config.provider_key}</span>
           <Badge variant={config.enabled ? 'default' : 'secondary'}>
             {config.enabled ? 'Enabled' : 'Disabled'}
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-2 space-y-3">
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-          <dt className="text-muted-foreground">Max retries</dt>
-          <dd>{config.max_retries}</dd>
-          <dt className="text-muted-foreground">Idempotency</dt>
-          <dd>{config.idempotency_window_hours}h</dd>
-          <dt className="text-muted-foreground">Cost/call</dt>
-          <dd>${config.cost_per_call_usd}</dd>
-          <dt className="text-muted-foreground">Rate (sec)</dt>
-          <dd>{config.rate_limit_per_sec ?? '—'}</dd>
-          <dt className="text-muted-foreground">Rate (day)</dt>
-          <dd>{config.rate_limit_per_day ?? '—'}</dd>
-          <dt className="text-muted-foreground">Timeout</dt>
-          <dd>{config.timeout_ms}ms</dd>
+      <CardContent className="pt-2 space-y-4">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm">
+          <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Max retries</dt>
+          <dd className="font-medium">{config.max_retries}</dd>
+          <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Idempotency</dt>
+          <dd className="font-medium">{config.idempotency_window_hours}h</dd>
+          <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Cost/call</dt>
+          <dd className="font-medium tabular-nums">${config.cost_per_call_usd}</dd>
+          <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Rate (sec)</dt>
+          <dd className="font-medium tabular-nums">{config.rate_limit_per_sec ?? <span className="text-muted-foreground/60">—</span>}</dd>
+          <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Rate (day)</dt>
+          <dd className="font-medium tabular-nums">{config.rate_limit_per_day ?? <span className="text-muted-foreground/60">—</span>}</dd>
+          <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Timeout</dt>
+          <dd className="font-medium tabular-nums">{config.timeout_ms}ms</dd>
         </dl>
         <Button variant="outline" size="sm" className="w-full" onClick={toggleEnabled}>
           {config.enabled ? 'Disable' : 'Enable'}

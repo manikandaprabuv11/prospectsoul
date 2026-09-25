@@ -34,6 +34,16 @@ export function useNicPrimary() {
   return useQuery({ queryKey: KEYS.primary(), queryFn: () => nicApi.primary() })
 }
 
+/** Single NIC code lookup by id — used to label an id the caller already has
+ * (e.g. a configured default) that may not be in the "primary" list. */
+export function useNicCode(id: string | undefined) {
+  return useQuery({
+    queryKey: KEYS.detail(id ?? ''),
+    queryFn: () => nicApi.getById(id!),
+    enabled: !!id,
+  })
+}
+
 /**
  * Resolves a manually-typed NIC code (e.g. "22199") to its id, for screens
  * that want a text-entry alternative to picking from a dropdown (Companies

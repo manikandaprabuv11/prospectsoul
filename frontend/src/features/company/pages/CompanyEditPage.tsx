@@ -27,7 +27,7 @@ export function CompanyEditPage() {
     <div className="space-y-6">
       <PageHeader
         breadcrumb={
-          <Link to={`/companies/${id}`} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+          <Link to={`/companies/${id}`} className="inline-flex items-center gap-1 hover:text-foreground transition-colors duration-200">
             <ArrowLeft className="size-3.5" /> Back to company
           </Link>
         }

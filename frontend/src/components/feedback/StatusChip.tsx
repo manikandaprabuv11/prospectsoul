@@ -1,10 +1,9 @@
 import { Badge } from "@/components/ui/badge"
+import {
+  Archive, CheckCircle2, Circle, Clock, Download, FileSearch, Loader2,
+  ShieldAlert, ShieldCheck, ShieldX, XCircle, AlertTriangle,
+} from 'lucide-react'
 
-/**
- * Consistent representation of every pipeline / verification / batch
- * state used across the app. Prefer this over ad-hoc badges so the
- * same status always looks the same everywhere.
- */
 type Tone = "success" | "warning" | "destructive" | "info" | "neutral" | "default" | "secondary"
 
 function toneFor(kind: "pipeline" | "verification" | "batch" | "row", value: string): Tone {
@@ -43,7 +42,6 @@ function toneFor(kind: "pipeline" | "verification" | "batch" | "row", value: str
       default:                       return "secondary"
     }
   }
-  // row
   switch (v) {
     case "CREATED":   return "success"
     case "DUPLICATE": return "warning"
@@ -51,6 +49,48 @@ function toneFor(kind: "pipeline" | "verification" | "batch" | "row", value: str
     case "FAILED":    return "destructive"
     case "PENDING":   return "neutral"
     default:          return "secondary"
+  }
+}
+
+function iconFor(kind: "pipeline" | "verification" | "batch" | "row", value: string) {
+  const v = value?.toUpperCase()
+  const cls = "size-3"
+  if (kind === "pipeline") {
+    switch (v) {
+      case "IMPORTED":      return <Download className={cls} />
+      case "TRIAGE":        return <FileSearch className={cls} />
+      case "RESEARCH":      return <FileSearch className={cls} />
+      case "QUALIFICATION": return <Clock className={cls} />
+      case "READY":         return <CheckCircle2 className={cls} />
+      case "EXPORTED":      return <Download className={cls} />
+      case "DISQUALIFIED":  return <XCircle className={cls} />
+      case "ARCHIVED":      return <Archive className={cls} />
+      default:              return <Circle className={cls} />
+    }
+  }
+  if (kind === "verification") {
+    switch (v) {
+      case "VERIFIED":    return <ShieldCheck className={cls} />
+      case "UNVERIFIED":  return <ShieldAlert className={cls} />
+      case "INVALIDATED": return <ShieldX className={cls} />
+      default:            return <Circle className={cls} />
+    }
+  }
+  if (kind === "batch") {
+    switch (v) {
+      case "COMPLETED":             return <CheckCircle2 className={cls} />
+      case "COMPLETED_WITH_ERRORS": return <AlertTriangle className={cls} />
+      case "PROCESSING":            return <Loader2 className={`${cls} animate-spin`} />
+      case "FAILED":                return <XCircle className={cls} />
+      default:                      return <Clock className={cls} />
+    }
+  }
+  switch (v) {
+    case "CREATED":   return <CheckCircle2 className={cls} />
+    case "DUPLICATE": return <AlertTriangle className={cls} />
+    case "REJECTED":
+    case "FAILED":    return <XCircle className={cls} />
+    default:          return <Clock className={cls} />
   }
 }
 
@@ -69,5 +109,10 @@ interface StatusChipProps {
 }
 
 export function StatusChip({ kind, value }: StatusChipProps) {
-  return <Badge variant={toneFor(kind, value) as any}>{labelFor(value)}</Badge>
+  return (
+    <Badge variant={toneFor(kind, value) as any}>
+      {iconFor(kind, value)}
+      {labelFor(value)}
+    </Badge>
+  )
 }

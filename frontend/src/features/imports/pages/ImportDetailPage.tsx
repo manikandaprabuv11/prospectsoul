@@ -39,13 +39,15 @@ export function ImportDetailPage() {
     <div className="space-y-6">
       <PageHeader
         breadcrumb={
-          <Link to="/imports" className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+          <Link to="/imports" className="inline-flex items-center gap-1 hover:text-foreground transition-colors duration-200">
             <ArrowLeft className="size-3.5" /> Back to imports
           </Link>
         }
         title={
           <span className="flex items-center gap-3 flex-wrap min-w-0">
-            <FileSpreadsheet className="size-6 text-muted-foreground shrink-0" aria-hidden="true" />
+            <div className="flex size-8 items-center justify-center rounded-lg bg-accent-violet/12 text-accent-violet shrink-0">
+              <FileSpreadsheet className="size-4" />
+            </div>
             <span className="truncate">{batch.file_name}</span>
             <StatusChip kind="batch" value={batch.status} />
           </span>
@@ -53,8 +55,7 @@ export function ImportDetailPage() {
         description={`${batch.file_type} · Source: ${batch.source}`}
       />
 
-      {/* KPI row */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           label="Total rows"
           value={batch.total_rows.toLocaleString()}
@@ -80,11 +81,14 @@ export function ImportDetailPage() {
       </div>
 
       {batch.status === 'PROCESSING' && (
-        <div className="rounded-lg border border-border/70 bg-card p-4 space-y-3 shadow-xs">
+        <div className="rounded-xl border border-border bg-card p-5 space-y-3 shadow-card">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
-            <div className="flex items-center gap-2 min-w-0">
-              <Loader2 className="size-4 text-primary animate-spin shrink-0" aria-hidden="true" />
-              <span className="font-medium">Processing</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-primary/20 animate-pulse-ring" />
+                <Loader2 className="size-4 text-primary animate-spin relative" />
+              </div>
+              <span className="font-semibold">Processing</span>
               <span className="text-muted-foreground tabular-nums">
                 · {batch.processed_rows.toLocaleString()} of {batch.total_rows.toLocaleString()} rows · {pct}%
               </span>
@@ -93,9 +97,9 @@ export function ImportDetailPage() {
               Runs on the server — safe to close this tab.
             </div>
           </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+          <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-1">
             <div
-              className="h-full rounded-full bg-primary transition-all duration-300"
+              className="h-full rounded-full bg-brand-gradient transition-all duration-500"
               style={{ width: `${pct}%` }}
               role="progressbar"
               aria-valuemin={0}
@@ -115,7 +119,7 @@ export function ImportDetailPage() {
         <CardHeader className="border-b-0 pb-2 flex-row items-center justify-between">
           <CardTitle>Rows</CardTitle>
           {isLive && (
-            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary">
               <span className="relative flex size-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex size-2 rounded-full bg-primary"></span>
@@ -130,24 +134,24 @@ export function ImportDetailPage() {
           ) : rows.content.length === 0 ? (
             <EmptyState title="No rows yet" description="Once the batch is processed, each row shows its outcome here." />
           ) : (
-            <div className="overflow-hidden rounded-md border border-border/70">
+            <div className="overflow-hidden rounded-xl border border-border">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm" data-tabular="true">
-                  <thead className="bg-muted/40">
-                    <tr>
+                  <thead>
+                    <tr className="border-b border-border bg-surface-1">
                       <Th>#</Th>
                       <Th>Status</Th>
                       <Th>Reason</Th>
                       <Th>Error</Th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border/70">
+                  <tbody className="divide-y divide-border">
                     {rows.content.map((r) => (
-                      <tr key={r.id} className="hover:bg-muted/30">
-                        <td className="px-3 py-2 tabular-nums text-muted-foreground w-12">{r.row_number}</td>
-                        <td className="px-3 py-2"><StatusChip kind="row" value={r.status} /></td>
-                        <td className="px-3 py-2 text-xs text-muted-foreground max-w-[240px] truncate">{r.outcome_reason ?? '—'}</td>
-                        <td className="px-3 py-2 text-xs text-red-600 dark:text-red-400 max-w-[420px] truncate">{r.error_message ?? '—'}</td>
+                      <tr key={r.id} className="hover:bg-accent/30 transition-colors duration-150">
+                        <td className="px-3 py-2.5 tabular-nums text-muted-foreground w-12 font-medium">{r.row_number}</td>
+                        <td className="px-3 py-2.5"><StatusChip kind="row" value={r.status} /></td>
+                        <td className="px-3 py-2.5 text-xs text-muted-foreground max-w-[240px] truncate">{r.outcome_reason ?? <span className="text-muted-foreground/50">—</span>}</td>
+                        <td className="px-3 py-2.5 text-xs text-accent-rose max-w-[420px] truncate">{r.error_message ?? <span className="text-muted-foreground/50">—</span>}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -155,8 +159,8 @@ export function ImportDetailPage() {
               </div>
 
               {rows.total_pages > 1 && (
-                <div className="flex items-center justify-between px-3 py-2 border-t border-border/70 text-xs text-muted-foreground tabular-nums">
-                  <span>Page {rows.page + 1} of {rows.total_pages}</span>
+                <div className="flex items-center justify-between px-4 py-3 border-t border-border text-xs text-muted-foreground tabular-nums bg-surface-1/50">
+                  <span>Page <span className="font-semibold text-foreground">{rows.page + 1}</span> of <span className="font-semibold text-foreground">{rows.total_pages}</span></span>
                   <div className="flex gap-2">
                     <Button variant="outline" size="xs" disabled={rows.page === 0} onClick={() => setRowPage((p) => p - 1)}>Prev</Button>
                     <Button variant="outline" size="xs" disabled={rows.page >= rows.total_pages - 1} onClick={() => setRowPage((p) => p + 1)}>Next</Button>
@@ -180,7 +184,7 @@ export function ImportDetailPage() {
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th scope="col" className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+    <th scope="col" className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
       {children}
     </th>
   )

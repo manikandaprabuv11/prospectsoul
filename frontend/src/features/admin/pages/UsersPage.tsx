@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { ApiError } from '@/api/client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { LoadingRows } from '@/components/feedback/LoadingRows'
 import { usersApi } from '../api/usersApi'
 import type { UserListParams } from '../api/usersApi'
 import { RoleBadge } from '../components/RoleBadge'
 import { StatusBadge } from '../components/StatusBadge'
 import { UserDetailModal } from '../components/UserDetailModal'
 import type { UserResponse, UsersPageResponse } from '../types/user'
-import './UsersPage.css'
+import { Pencil, Plus, Search, ShieldCheck, ShieldX, Users } from 'lucide-react'
 
 const ROLE_FILTERS = [
   { value: '', label: 'All roles' },
@@ -49,6 +53,15 @@ function formatDate(iso: string | null): string {
 
 function formatCreatedDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+const AVATAR_COLORS: Record<string, string> = {
+  PS_ANALYST: 'bg-accent-sky/15 text-accent-sky',
+  PS_SALES_LEAD: 'bg-accent-violet/15 text-accent-violet',
+  PS_ADMIN: 'bg-accent-amber/15 text-accent-amber',
+  PS_VIEWER: 'bg-accent-emerald/15 text-accent-emerald',
+  PS_COO: 'bg-accent-rose/15 text-accent-rose',
+  PS_TELECALLER: 'bg-accent-teal/15 text-accent-teal',
 }
 
 type FetchState =
@@ -93,35 +106,13 @@ export function UsersPage() {
   const error = fetchState.status === 'error' ? fetchState.message : null
   const data = fetchState.status === 'success' ? fetchState.data : null
 
-  const handleSearch = (value: string) => {
-    setSearch(value)
-    setPage(0)
-  }
+  const handleSearch = (value: string) => { setSearch(value); setPage(0) }
+  const handleRoleFilter = (value: string) => { setRoleFilter(value); setPage(0) }
+  const handleStatusFilter = (value: boolean | undefined) => { setStatusFilter(value); setPage(0) }
 
-  const handleRoleFilter = (value: string) => {
-    setRoleFilter(value)
-    setPage(0)
-  }
-
-  const handleStatusFilter = (value: boolean | undefined) => {
-    setStatusFilter(value)
-    setPage(0)
-  }
-
-  const openCreateModal = () => {
-    setModalUser(null)
-    setModalError(null)
-  }
-
-  const openEditModal = (user: UserResponse) => {
-    setModalUser(user)
-    setModalError(null)
-  }
-
-  const closeModal = () => {
-    setModalUser(undefined)
-    setModalError(null)
-  }
+  const openCreateModal = () => { setModalUser(null); setModalError(null) }
+  const openEditModal = (user: UserResponse) => { setModalUser(user); setModalError(null) }
+  const closeModal = () => { setModalUser(undefined); setModalError(null) }
 
   const handleSave = async (formData: { username: string; fullName: string; email: string; password: string; role: string }) => {
     setModalSaving(true)
@@ -171,58 +162,70 @@ export function UsersPage() {
   const showTo = Math.min((page + 1) * 25, totalElements)
 
   return (
-    <div className="users-page">
-      <div className="page-header">
-        <h2>Users & Roles</h2>
-        <button type="button" className="btn-add" onClick={openCreateModal}>
-          <svg viewBox="0 0 16 16" fill="none">
-            <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          Add user
-        </button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Users & Roles"
+        description="Manage user accounts and their role assignments."
+        actions={
+          <Button onClick={openCreateModal}><Plus /> Add user</Button>
+        }
+      />
 
-      <div className="tabs">
-        <button type="button" className="tab-btn active">
-          Users <span className="tab-count">{totalElements}</span>
+      <div className="flex gap-1 border-b border-border">
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 border-b-2 border-primary px-4 py-2.5 text-sm font-semibold text-primary"
+        >
+          <Users className="size-4" />
+          Users
+          <span className="inline-flex items-center justify-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold tabular-nums">
+            {totalElements}
+          </span>
         </button>
-        <Link to="/settings/roles" className="tab-btn">
+        <Link
+          to="/settings/roles"
+          className="inline-flex items-center gap-2 border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
           Roles
         </Link>
       </div>
 
-      {/* Toolbar */}
-      <div className="toolbar">
-        <div className="search-box">
-          <svg viewBox="0 0 16 16" fill="none">
-            <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5"/>
-            <path d="M11 11l3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Search users by name or email…"
+      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4 shadow-card">
+        <div className="relative min-w-[260px] flex-1">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
+          <Input
+            placeholder="Search users by name or email..."
+            className="pl-8"
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
           />
         </div>
-        <div className="filter-group">
+        <div className="flex gap-0.5 rounded-lg border border-border bg-surface-1 p-0.5">
           {ROLE_FILTERS.map((f) => (
             <button
               key={f.value}
               type="button"
-              className={`filter-btn${roleFilter === f.value ? ' active' : ''}`}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+                roleFilter === f.value
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
               onClick={() => handleRoleFilter(f.value)}
             >
               {f.label}
             </button>
           ))}
         </div>
-        <div className="filter-group">
+        <div className="flex gap-0.5 rounded-lg border border-border bg-surface-1 p-0.5">
           {STATUS_FILTERS.map((f) => (
             <button
               key={String(f.value)}
               type="button"
-              className={`filter-btn${statusFilter === f.value ? ' active' : ''}`}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+                statusFilter === f.value
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
               onClick={() => handleStatusFilter(f.value)}
             >
               {f.label}
@@ -231,118 +234,104 @@ export function UsersPage() {
         </div>
       </div>
 
-      {/* Error */}
       {error && (
-        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm font-medium text-destructive">{error}</div>
       )}
 
-      {/* Data table */}
-      <div className="data-card">
-        <table>
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Last login</th>
-              <th>Created</th>
-              <th style={{ width: 80 }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="skeleton-row">
-                  <td><div className="skeleton-bar" style={{ width: 180 }} /></td>
-                  <td><div className="skeleton-bar" style={{ width: 80 }} /></td>
-                  <td><div className="skeleton-bar" style={{ width: 60 }} /></td>
-                  <td><div className="skeleton-bar" style={{ width: 80 }} /></td>
-                  <td><div className="skeleton-bar" style={{ width: 80 }} /></td>
-                  <td />
-                </tr>
-              ))
-            ) : users.length === 0 ? (
-              <tr>
-                <td colSpan={6}>
-                  <div className="empty-state">
-                    <p>No users found</p>
-                    <p className="sub">
-                      {search || roleFilter || statusFilter !== undefined
-                        ? 'Try adjusting your filters'
-                        : 'Add users to get started'}
-                    </p>
-                  </div>
-                </td>
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-surface-1">
+                <th className="py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">User</th>
+                <th className="py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Role</th>
+                <th className="py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                <th className="py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Last login</th>
+                <th className="py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Created</th>
+                <th className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: 80 }}></th>
               </tr>
-            ) : (
-              users.map((user) => (
-                <tr key={user.id}>
-                  <td>
-                    <div className="user-cell">
-                      <div className={`user-avatar avatar-${user.role}`}>
-                        {userInitials(user.full_name, user.username)}
-                      </div>
-                      <div>
-                        <div className="user-name">{user.full_name}</div>
-                        <div className="user-email">{user.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <RoleBadge role={user.role} displayName={user.role_display_name} />
-                  </td>
-                  <td>
-                    <StatusBadge active={user.active} />
-                  </td>
-                  <td className="meta-text">{formatDate(user.last_login_at)}</td>
-                  <td className="meta-text">{formatCreatedDate(user.created_at)}</td>
-                  <td>
-                    <div className="row-actions">
-                      <button
-                        type="button"
-                        className="action-btn"
-                        title="Edit"
-                        onClick={() => openEditModal(user)}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                          <path d="M11.5 2.5l2 2L5 13H3v-2l8.5-8.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </button>
-                      <button
-                        type="button"
-                        className="action-btn"
-                        title={user.active ? 'Deactivate' : 'Activate'}
-                        onClick={() => handleToggleActive(user)}
-                      >
-                        {user.active ? (
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3"/>
-                            <path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                          </svg>
-                        ) : (
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3"/>
-                            <path d="M5.5 8l2 2 3-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        )}
-                      </button>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {loading ? (
+                <tr><td colSpan={6} className="p-4"><LoadingRows count={5} /></td></tr>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={6}>
+                    <div className="py-16 text-center">
+                      <p className="font-semibold">No users found</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {search || roleFilter || statusFilter !== undefined
+                          ? 'Try adjusting your filters'
+                          : 'Add users to get started'}
+                      </p>
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                users.map((user) => (
+                  <tr key={user.id} className="hover:bg-accent/30 transition-colors duration-150 group/row">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`flex size-9 items-center justify-center rounded-xl text-xs font-bold ${AVATAR_COLORS[user.role] ?? 'bg-surface-1 text-muted-foreground'}`}>
+                          {userInitials(user.full_name, user.username)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-semibold truncate">{user.full_name}</div>
+                          <div className="text-xs text-muted-foreground truncate">{user.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <RoleBadge role={user.role} displayName={user.role_display_name} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge active={user.active} />
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground text-[13px]">{formatDate(user.last_login_at)}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-[13px]">{formatCreatedDate(user.created_at)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => openEditModal(user)}
+                          aria-label="Edit user"
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => handleToggleActive(user)}
+                          aria-label={user.active ? 'Deactivate' : 'Activate'}
+                          className={user.active ? 'text-muted-foreground hover:text-accent-rose' : 'text-muted-foreground hover:text-accent-emerald'}
+                        >
+                          {user.active ? <ShieldX className="size-4" /> : <ShieldCheck className="size-4" />}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
         {!loading && totalElements > 0 && (
-          <div className="pagination">
-            <span>Showing {showFrom}–{showTo} of {totalElements} users</span>
-            <div className="page-btns">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-surface-1/50 text-sm">
+            <span className="text-muted-foreground">
+              Showing <span className="font-semibold text-foreground tabular-nums">{showFrom}–{showTo}</span> of <span className="font-semibold text-foreground tabular-nums">{totalElements}</span> users
+            </span>
+            <div className="flex gap-1">
               {Array.from({ length: totalPages }).map((_, i) => (
                 <button
                   key={i}
                   type="button"
-                  className={`page-btn${page === i ? ' active' : ''}`}
+                  className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-all duration-200 ${
+                    page === i
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  }`}
                   onClick={() => setPage(i)}
                 >
                   {i + 1}
@@ -353,7 +342,6 @@ export function UsersPage() {
         )}
       </div>
 
-      {/* Create/Edit Modal */}
       {modalUser !== undefined && (
         <UserDetailModal
           user={modalUser}

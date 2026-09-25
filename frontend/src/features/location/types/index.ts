@@ -35,8 +35,13 @@ export interface MapCompaniesResponse {
 }
 
 export interface MapCompaniesFilters {
-  nic_parent_id?: string
+  // Preferred multi-select filter — sent as repeated `nic_parent_ids` query
+  // params. `nic_parent_id` (singular) stays as the backwards-compatible
+  // alias other callers may still use; this feature always sends the plural
+  // form once any NIC is selected.
+  nic_parent_ids?: string[]
   nic_include_descendants?: boolean
+  apply_defaults?: boolean
 }
 
 

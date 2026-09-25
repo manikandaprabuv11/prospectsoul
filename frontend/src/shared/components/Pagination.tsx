@@ -4,23 +4,14 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 
 interface PaginationProps {
-  /** Zero-indexed current page, matching the backend envelope's `page` field. */
   page: number
   totalPages: number
   totalElements?: number
-  /** Noun used in the summary text, e.g. "companies", "jobs". Defaults to "items". */
   itemLabel?: string
   onPageChange: (page: number) => void
   className?: string
 }
 
-/**
- * Shared pagination bar: Previous / Next, numbered page buttons (windowed
- * with ellipses once there are many pages) and a jump-to-page input for
- * long lists. Every list table in the app should use this instead of
- * hand-rolling its own Previous/Next pair, so page navigation looks and
- * behaves the same everywhere.
- */
 export function Pagination({ page, totalPages, totalElements, itemLabel = 'items', onPageChange, className }: PaginationProps) {
   const [jumpValue, setJumpValue] = useState('')
   const clampedTotalPages = Math.max(1, totalPages)
@@ -44,14 +35,14 @@ export function Pagination({ page, totalPages, totalElements, itemLabel = 'items
   const showJump = clampedTotalPages > 7
 
   return (
-    <div className={`flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between text-sm ${className ?? ''}`}>
+    <div className={`flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-border bg-card px-4 py-3 shadow-card text-sm ${className ?? ''}`}>
       <p className="text-muted-foreground" data-tabular="true">
-        Page <span className="font-medium text-foreground">{page + 1}</span> of{' '}
-        <span className="font-medium text-foreground">{clampedTotalPages}</span>
+        Page <span className="font-semibold text-foreground tabular-nums">{page + 1}</span> of{' '}
+        <span className="font-semibold text-foreground tabular-nums">{clampedTotalPages}</span>
         {typeof totalElements === 'number' && (
           <>
             {' · '}
-            <span className="font-medium text-foreground">{totalElements.toLocaleString()}</span> {itemLabel}
+            <span className="font-semibold text-foreground tabular-nums">{totalElements.toLocaleString()}</span> {itemLabel}
           </>
         )}
       </p>
@@ -62,25 +53,27 @@ export function Pagination({ page, totalPages, totalElements, itemLabel = 'items
           size="sm"
           disabled={page === 0}
           onClick={() => goTo(page - 1)}
+          className="gap-1"
         >
-          <ChevronLeft className="size-4" />
+          <ChevronLeft className="size-3.5" />
           Previous
         </Button>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           {pageNumbers.map((entry, index) =>
             entry === 'ellipsis' ? (
-              <span key={`ellipsis-${index}`} className="px-1.5 text-muted-foreground select-none">
-                …
+              <span key={`ellipsis-${index}`} className="px-1.5 text-muted-foreground/60 select-none">
+                ...
               </span>
             ) : (
               <Button
                 key={entry}
-                variant={entry === page ? 'default' : 'outline'}
+                variant={entry === page ? 'default' : 'ghost'}
                 size="icon-sm"
                 onClick={() => goTo(entry)}
                 aria-label={`Page ${entry + 1}`}
                 aria-current={entry === page ? 'page' : undefined}
+                className={entry === page ? 'shadow-sm' : 'text-muted-foreground hover:text-foreground'}
               >
                 {entry + 1}
               </Button>
@@ -93,20 +86,21 @@ export function Pagination({ page, totalPages, totalElements, itemLabel = 'items
           size="sm"
           disabled={page >= clampedTotalPages - 1}
           onClick={() => goTo(page + 1)}
+          className="gap-1"
         >
           Next
-          <ChevronRight className="size-4" />
+          <ChevronRight className="size-3.5" />
         </Button>
 
         {showJump && (
           <form
-            className="flex items-center gap-1.5 pl-1"
+            className="flex items-center gap-1.5 pl-2 border-l border-border ml-1"
             onSubmit={(event) => {
               event.preventDefault()
               submitJump()
             }}
           >
-            <label htmlFor="pagination-jump" className="text-xs text-muted-foreground">
+            <label htmlFor="pagination-jump" className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
               Go to
             </label>
             <Input
@@ -126,11 +120,6 @@ export function Pagination({ page, totalPages, totalElements, itemLabel = 'items
   )
 }
 
-/**
- * Windows the page numbers around the current page (2 either side) plus the
- * first and last page, collapsing gaps into an ellipsis marker. Keeps the
- * control usable at 200+ pages instead of rendering every button.
- */
 function buildPageWindow(current: number, totalPages: number): (number | 'ellipsis')[] {
   const window = 2
   const pages = new Set<number>()

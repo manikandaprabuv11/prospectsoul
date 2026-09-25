@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Pagination } from '@/shared/components/Pagination'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CheckCircle2, Loader2, Sparkles, XCircle } from 'lucide-react'
+import { CheckCircle2, Loader2, Search, Sparkles, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useCompanies } from '@/features/company/hooks'
 import type { Company } from '@/features/company/types'
@@ -23,7 +23,6 @@ import { enrichmentApi } from '../api'
 
 const PAGE_SIZE = 25
 
-/** Same provider set the single-company Enrich button offers. */
 const PROVIDERS = [
   { key: 'GOOGLE_PLACES', label: 'Google Places' },
   { key: 'WEBSITE', label: 'Website (Firecrawl)' },
@@ -45,30 +44,18 @@ const RUN_STATUS_LABEL: Record<RunStatus, string> = {
   failed: 'Failed',
 }
 
-const RUN_STATUS_COLOR: Record<RunStatus, string> = {
-  queued: 'bg-gray-100 text-gray-800',
-  running: 'bg-blue-100 text-blue-800',
-  success: 'bg-green-100 text-green-800',
-  partial: 'bg-yellow-100 text-yellow-800',
-  failed: 'bg-red-100 text-red-800',
+const RUN_STATUS_STYLES: Record<RunStatus, string> = {
+  queued: 'bg-surface-1 text-muted-foreground border border-border',
+  running: 'bg-accent-sky/10 text-accent-sky border border-accent-sky/20',
+  success: 'bg-accent-emerald/10 text-accent-emerald border border-accent-emerald/20',
+  partial: 'bg-accent-amber/10 text-accent-amber border border-accent-amber/20',
+  failed: 'bg-accent-rose/10 text-accent-rose border border-accent-rose/20',
 }
 
 interface Props {
-  /** False for read-only roles: the panel explains instead of offering to run. */
   canRun: boolean
 }
 
-/**
- * "Run Enrichment" selection panel — mirrors the Verify workspace's
- * VerifyNewCompaniesPanel pattern: filter a paginated company table,
- * multi-select with checkboxes, then run in bulk with a confirmation
- * dialog and visible per-company progress.
- *
- * <p>The backend only exposes a single-company enrich endpoint
- * (`POST /api/v1/companies/{id}/enrich`), so a "batch" here is N client-side
- * calls, one per selected company, run with limited concurrency and tracked
- * individually so a failure on one company never hides the others.
- */
 export function BatchEnrichPanel({ canRun }: Props) {
   const [search, setSearch] = useState('')
   const [appliedSearch, setAppliedSearch] = useState<string | undefined>(undefined)
@@ -131,7 +118,6 @@ export function BatchEnrichPanel({ canRun }: Props) {
     })
   }
 
-  /** Runs enrichment for every selected company, CONCURRENCY at a time. */
   async function runBatch() {
     const ids = [...selected]
     const providerKeys = [...providers]
@@ -186,33 +172,35 @@ export function BatchEnrichPanel({ canRun }: Props) {
         <Badge variant="secondary">{selected.size} selected</Badge>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* --- filters --- */}
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-48 flex-1 space-y-1">
-            <Label htmlFor="enrich-search">Search</Label>
-            <Input
-              id="enrich-search"
-              placeholder="Company name, city or website"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') applySearch()
-              }}
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={applySearch}>Apply</Button>
-            <Button variant="outline" onClick={resetSearch}>
-              Reset
-            </Button>
+        <div className="rounded-xl border border-border bg-card p-4 shadow-card">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-48 flex-1 space-y-1">
+              <Label htmlFor="enrich-search" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Search</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  id="enrich-search"
+                  className="pl-9"
+                  placeholder="Company name, city or website"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') applySearch()
+                  }}
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={applySearch}>Apply</Button>
+              <Button variant="outline" onClick={resetSearch}>Reset</Button>
+            </div>
           </div>
         </div>
 
-        {/* --- provider selection --- */}
-        <div className="flex flex-wrap items-center gap-4 rounded-md border p-3">
-          <span className="text-sm font-medium">Providers</span>
+        <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-surface-1/50 p-3">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Providers</span>
           {PROVIDERS.map((provider) => (
-            <label key={provider.key} className="flex items-center gap-2 text-sm">
+            <label key={provider.key} className="flex items-center gap-2 text-sm cursor-pointer">
               <Checkbox
                 checked={providers.has(provider.key)}
                 onCheckedChange={(checked) => toggleProvider(provider.key, checked === true)}
@@ -223,7 +211,6 @@ export function BatchEnrichPanel({ canRun }: Props) {
           ))}
         </div>
 
-        {/* --- table --- */}
         {companies.isLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, index) => (
@@ -231,21 +218,21 @@ export function BatchEnrichPanel({ canRun }: Props) {
             ))}
           </div>
         ) : companies.isError ? (
-          <div role="alert" className="rounded-lg border border-destructive/50 p-6 text-center text-sm text-destructive">
+          <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center text-sm font-medium text-destructive">
             {companies.error instanceof Error ? companies.error.message : 'Could not load companies.'}
           </div>
         ) : rows.length === 0 ? (
-          <div className="rounded-lg border p-10 text-center">
-            <p className="font-medium">No companies match this search</p>
+          <div className="rounded-xl border border-dashed border-border bg-surface-1/50 py-12 text-center">
+            <p className="font-semibold">No companies match this search</p>
             <p className="mt-1 text-sm text-muted-foreground">Try a different name, city or website.</p>
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-lg border">
+            <div className="overflow-x-auto rounded-xl border border-border shadow-card">
               <table className="w-full text-sm">
                 <caption className="sr-only">Companies available for enrichment</caption>
                 <thead>
-                  <tr className="border-b bg-muted/50">
+                  <tr className="border-b border-border bg-surface-1">
                     <th scope="col" className="w-10 px-3 py-2.5 text-left">
                       <Checkbox
                         checked={allSelected ? true : someSelected ? 'indeterminate' : false}
@@ -254,20 +241,20 @@ export function BatchEnrichPanel({ canRun }: Props) {
                         aria-label="Select all companies on this page"
                       />
                     </th>
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Company</th>
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Location</th>
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Industry</th>
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Last enriched</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Company</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Location</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Industry</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Last enriched</th>
                     {hasRunResults && (
-                      <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Result</th>
+                      <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Result</th>
                     )}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border">
                   {rows.map((row) => {
                     const runState = runStates.get(row.id)
                     return (
-                      <tr key={row.id} className="border-b last:border-0 hover:bg-muted/30">
+                      <tr key={row.id} className="group/row hover:bg-surface-1/50 transition-colors">
                         <td className="px-3 py-2.5">
                           <Checkbox
                             checked={selected.has(row.id)}
@@ -276,20 +263,20 @@ export function BatchEnrichPanel({ canRun }: Props) {
                             aria-label={`Select ${row.canonical_name}`}
                           />
                         </td>
-                        <td className="px-3 py-2.5 font-medium">{row.canonical_name}</td>
+                        <td className="px-3 py-2.5 font-semibold">{row.canonical_name}</td>
                         <td className="px-3 py-2.5">{row.city ?? '—'}</td>
                         <td className="px-3 py-2.5">{row.industry ?? '—'}</td>
-                        <td className="px-3 py-2.5 text-xs text-muted-foreground">{lastEnrichedSummary(row)}</td>
+                        <td className="px-3 py-2.5 text-xs text-muted-foreground tabular-nums">{lastEnrichedSummary(row)}</td>
                         {hasRunResults && (
                           <td className="px-3 py-2.5">
                             {runState ? (
                               <div className="flex items-center gap-1.5">
-                                {runState.status === 'running' && <Loader2 className="size-3 animate-spin" />}
-                                {runState.status === 'success' && <CheckCircle2 className="size-3 text-green-600" />}
-                                {runState.status === 'failed' && <XCircle className="size-3 text-red-600" />}
-                                <Badge className={`text-xs ${RUN_STATUS_COLOR[runState.status]}`}>
+                                {runState.status === 'running' && <Loader2 className="size-3 animate-spin text-accent-sky" />}
+                                {runState.status === 'success' && <CheckCircle2 className="size-3 text-accent-emerald" />}
+                                {runState.status === 'failed' && <XCircle className="size-3 text-accent-rose" />}
+                                <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ${RUN_STATUS_STYLES[runState.status]}`}>
                                   {RUN_STATUS_LABEL[runState.status]}
-                                </Badge>
+                                </span>
                                 {runState.detail && (
                                   <span className="text-xs text-muted-foreground">{runState.detail}</span>
                                 )}
@@ -307,7 +294,7 @@ export function BatchEnrichPanel({ canRun }: Props) {
             </div>
 
             <div className="flex items-center gap-3">
-              <p aria-live="polite" className="text-sm font-medium">
+              <p aria-live="polite" className="text-sm font-semibold">
                 {selected.size === 0
                   ? 'No companies selected'
                   : `${selected.size} ${selected.size === 1 ? 'company' : 'companies'} selected`}
@@ -364,15 +351,13 @@ export function BatchEnrichPanel({ canRun }: Props) {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 text-sm">
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground leading-relaxed">
               Each company is enriched independently — a failure on one does not stop the others. Progress and
               per-company results appear in the table once started.
             </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirming(false)}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setConfirming(false)}>Cancel</Button>
             <Button onClick={runBatch}>Run Enrichment</Button>
           </DialogFooter>
         </DialogContent>

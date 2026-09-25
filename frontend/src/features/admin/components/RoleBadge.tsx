@@ -1,11 +1,12 @@
 import { cn } from '@/lib/utils'
 
 const ROLE_STYLES: Record<string, string> = {
-  PS_ANALYST: 'bg-[#e8f0fc] text-[#2d5fa3]',
-  PS_SALES_LEAD: 'bg-[#ede8fc] text-[#5a44a3]',
-  PS_ADMIN: 'bg-[#f8ead5] text-[#96592b]',
-  PS_VIEWER: 'bg-[#e8f5ee] text-[#1e6b44]',
-  PS_COO: 'bg-[#fce8ed] text-[#963b4a]',
+  PS_ANALYST: 'bg-accent-sky/10 text-accent-sky border border-accent-sky/20',
+  PS_SALES_LEAD: 'bg-accent-violet/10 text-accent-violet border border-accent-violet/20',
+  PS_ADMIN: 'bg-accent-amber/10 text-accent-amber border border-accent-amber/20',
+  PS_VIEWER: 'bg-accent-emerald/10 text-accent-emerald border border-accent-emerald/20',
+  PS_COO: 'bg-accent-rose/10 text-accent-rose border border-accent-rose/20',
+  PS_TELECALLER: 'bg-accent-teal/10 text-accent-teal border border-accent-teal/20',
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -14,14 +15,15 @@ const ROLE_LABELS: Record<string, string> = {
   PS_ADMIN: 'Admin',
   PS_VIEWER: 'Viewer',
   PS_COO: 'COO',
+  PS_TELECALLER: 'Telecaller',
 }
 
 export function RoleBadge({ role, displayName }: { role: string; displayName?: string }) {
-  const style = ROLE_STYLES[role] ?? 'bg-gray-100 text-gray-600'
+  const style = ROLE_STYLES[role] ?? 'bg-surface-1 text-muted-foreground border border-border'
   const label = displayName ?? ROLE_LABELS[role] ?? role
 
   return (
-    <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold', style)}>
+    <span className={cn('inline-flex items-center rounded-md px-2.5 py-0.5 text-[11px] font-semibold', style)}>
       {label}
     </span>
   )

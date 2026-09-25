@@ -57,7 +57,7 @@ export function CompanyListPage() {
         }
       />
 
-      <div className="rounded-lg border border-border/70 bg-card p-4 shadow-xs">
+      <div className="rounded-xl border border-border bg-card p-4 shadow-card">
         <CompanyFilters filters={filters} onChange={setFilters} />
       </div>
 
@@ -66,7 +66,7 @@ export function CompanyListPage() {
       ) : isError ? (
         <ErrorState message={error instanceof Error ? error.message : 'Failed to load companies'} />
       ) : data ? (
-        <>
+        <div className="space-y-4">
           <CompanyTable
             companies={data.content}
             onSort={handleSort}
@@ -80,7 +80,7 @@ export function CompanyListPage() {
             itemLabel="companies"
             onPageChange={(page) => setFilters((f) => ({ ...f, page }))}
           />
-        </>
+        </div>
       ) : null}
 
       <DownloadModal

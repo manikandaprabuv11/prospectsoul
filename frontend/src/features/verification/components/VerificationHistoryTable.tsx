@@ -21,7 +21,6 @@ const STATUSES = [
   'CANCELLED',
 ] as const
 
-/** "Previous Verification Jobs" — every batch, with its filter snapshot. */
 export function VerificationHistoryTable() {
   const [status, setStatus] = useState('')
   const [requestedBy, setRequestedBy] = useState('')
@@ -47,7 +46,7 @@ export function VerificationHistoryTable() {
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1">
-            <Label htmlFor="history-status">Status</Label>
+            <Label htmlFor="history-status" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</Label>
             <Select
               id="history-status"
               className="w-52"
@@ -66,7 +65,7 @@ export function VerificationHistoryTable() {
             </Select>
           </div>
           <div className="space-y-1">
-            <Label htmlFor="history-requested-by">Requested by</Label>
+            <Label htmlFor="history-requested-by" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Requested by</Label>
             <Select
               id="history-requested-by"
               className="w-48"
@@ -93,50 +92,47 @@ export function VerificationHistoryTable() {
             ))}
           </div>
         ) : batches.isError ? (
-          <div
-            role="alert"
-            className="rounded-lg border border-destructive/50 p-6 text-center text-sm text-destructive"
-          >
+          <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center text-sm font-medium text-destructive">
             {problemDetail(batches.error, 'Could not load verification jobs.')}
           </div>
         ) : rows.length === 0 ? (
-          <div className="rounded-lg border p-10 text-center">
-            <p className="font-medium">No verification jobs yet</p>
+          <div className="rounded-xl border border-dashed border-border bg-surface-1/50 py-12 text-center">
+            <p className="font-semibold">No verification jobs yet</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Completed and running jobs appear here with their filters and statistics.
             </p>
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-lg border">
+            <div className="overflow-x-auto rounded-xl border border-border shadow-card">
               <table className="w-full text-sm">
                 <caption className="sr-only">Previous verification jobs</caption>
                 <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Started</th>
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Requested by</th>
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Filter</th>
-                    <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground">Total</th>
-                    <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground">Verified</th>
-                    <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground">Failed</th>
-                    <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground">Skipped</th>
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Duration</th>
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Status</th>
+                  <tr className="border-b border-border bg-surface-1">
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Started</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Requested by</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Filter</th>
+                    <th scope="col" className="px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Total</th>
+                    <th scope="col" className="px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Verified</th>
+                    <th scope="col" className="px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Failed</th>
+                    <th scope="col" className="px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Skipped</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Duration</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border">
                   {rows.map((batch) => (
-                    <tr key={batch.id} className="border-b last:border-0 hover:bg-muted/30">
+                    <tr key={batch.id} className="group/row hover:bg-surface-1/50 transition-colors">
                       <td className="px-3 py-2.5 font-medium">
-                        <Link to={`/verify/${batch.id}`} className="text-primary hover:underline">
+                        <Link to={`/verify/${batch.id}`} className="text-primary hover:underline transition-colors">
                           {formatDateTime(batch.started_at ?? batch.created_at)}
                         </Link>
                       </td>
                       <td className="px-3 py-2.5">{batch.requested_by_name ?? batch.requested_by}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{filterSummary(batch)}</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums">{batch.total_count}</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-emerald-600">{batch.verified_count}</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-red-600">{batch.failed_count}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums font-medium">{batch.total_count}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-accent-emerald font-medium">{batch.verified_count}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-accent-rose font-medium">{batch.failed_count}</td>
                       <td className="px-3 py-2.5 text-right tabular-nums">{batch.skipped_count}</td>
                       <td className="px-3 py-2.5 text-muted-foreground tabular-nums">
                         {formatElapsed(batch.elapsed_seconds)}
@@ -164,7 +160,6 @@ export function VerificationHistoryTable() {
   )
 }
 
-/** The filter snapshot the batch was created under, e.g. "Mani · 01–09 Sep". */
 function filterSummary(batch: VerificationBatch): string {
   const who = batch.filter_added_by_name ?? (batch.filter_added_by ? batch.filter_added_by : 'All')
   if (!batch.filter_date_from && !batch.filter_date_to) {

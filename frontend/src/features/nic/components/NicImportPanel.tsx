@@ -1,12 +1,9 @@
 import { Button } from '@/components/ui/button'
+import { FileUp, Loader2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useImportNicFile } from '../hooks'
 import type { NicImportResultResponse } from '../types'
 
-/**
- * Import panel for the NIC master. Reference-data import — deliberately does
- * NOT create import_batches / import_rows rows (Kickoff constraint 6).
- */
 export function NicImportPanel() {
   const inputRef = useRef<HTMLInputElement>(null)
   const [result, setResult] = useState<NicImportResultResponse | null>(null)
@@ -28,16 +25,16 @@ export function NicImportPanel() {
   }
 
   return (
-    <div className="rounded-md border p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-medium">Import NIC master (.xlsx / .csv)</h3>
-          <p className="text-xs text-muted-foreground">
+    <div className="rounded-xl border border-border bg-card p-4 shadow-card space-y-3">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold">Import NIC master (.xlsx / .csv)</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
             Re-import is idempotent. Existing codes are updated; new codes are added; parents are resolved by longest existing prefix.
           </p>
         </div>
-        <Button size="sm" onClick={() => inputRef.current?.click()} disabled={mutation.isPending}>
-          {mutation.isPending ? 'Importing…' : 'Choose file'}
+        <Button size="sm" onClick={() => inputRef.current?.click()} disabled={mutation.isPending} className="shrink-0">
+          {mutation.isPending ? <><Loader2 className="size-3.5 animate-spin" /> Importing…</> : <><FileUp className="size-3.5" /> Choose file</>}
         </Button>
         <input
           ref={inputRef}
@@ -47,16 +44,27 @@ export function NicImportPanel() {
           onChange={(e) => handle(e.target.files?.[0] ?? null)}
         />
       </div>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm font-medium text-destructive">{error}</div>
+      ) : null}
       {result ? (
-        <div className="text-xs text-muted-foreground grid grid-cols-5 gap-3">
-          <div>Rows read: <span className="font-semibold text-foreground">{result.rows_read}</span></div>
-          <div>Created: <span className="font-semibold text-foreground">{result.created}</span></div>
-          <div>Updated: <span className="font-semibold text-foreground">{result.updated}</span></div>
-          <div>Unresolved parents: <span className="font-semibold text-foreground">{result.unresolved_parents}</span></div>
-          <div>Rejected: <span className="font-semibold text-foreground">{result.rejected}</span></div>
+        <div className="grid grid-cols-5 gap-3 rounded-xl border border-border bg-surface-1/50 p-3">
+          <StatItem label="Rows read" value={result.rows_read} />
+          <StatItem label="Created" value={result.created} accent="text-accent-emerald" />
+          <StatItem label="Updated" value={result.updated} accent="text-accent-sky" />
+          <StatItem label="Unresolved" value={result.unresolved_parents} accent="text-accent-amber" />
+          <StatItem label="Rejected" value={result.rejected} accent="text-accent-rose" />
         </div>
       ) : null}
+    </div>
+  )
+}
+
+function StatItem({ label, value, accent }: { label: string; value: number; accent?: string }) {
+  return (
+    <div>
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={`text-lg font-bold tabular-nums ${accent ?? 'text-foreground'}`}>{value}</div>
     </div>
   )
 }

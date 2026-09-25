@@ -1,35 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { Eye, EyeOff, AlertCircle, Layers, Loader2 } from 'lucide-react'
 import type { LoginFn } from './AuthContext'
-import './LoginPage.css'
-
-const LogoSvg = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-)
-
-const EyeSvg = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-    <path d="M1.5 10s3-6 8.5-6 8.5 6 8.5 6-3 6-8.5 6-8.5-6-8.5-6z" stroke="currentColor" strokeWidth="1.5"/>
-    <circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5"/>
-  </svg>
-)
-
-const EyeOffSvg = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-    <path d="M1.5 10s3-6 8.5-6 8.5 6 8.5 6-3 6-8.5 6-8.5-6-8.5-6z" stroke="currentColor" strokeWidth="1.5"/>
-    <circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5"/>
-    <path d="M3 3l14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-)
-
-const ErrorIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-    <circle cx="9" cy="9" r="8" stroke="currentColor" strokeWidth="1.5"/>
-    <path d="M9 5.5v4M9 12h.007" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-)
 
 export function LoginPage({ onLogin, onForgotPassword }: { onLogin: LoginFn; onForgotPassword: () => void }) {
   const [username, setUsername] = useState('')
@@ -54,62 +26,75 @@ export function LoginPage({ onLogin, onForgotPassword }: { onLogin: LoginFn; onF
   }
 
   return (
-    <div className="login-shell">
+    <div className="grid min-h-screen grid-cols-1 bg-surface-0 lg:grid-cols-2">
       {/* LEFT: Brand panel */}
-      <div className="brand-panel">
-        <div className="logo-row">
-          <div className="logo-mark">
-            <LogoSvg />
+      <div className="relative hidden flex-col justify-between overflow-hidden bg-brand-gradient p-12 text-white lg:flex">
+        <div className="absolute -top-24 -right-24 size-80 rounded-full bg-white/8 blur-3xl" aria-hidden="true" />
+        <div className="absolute -bottom-32 -left-24 size-72 rounded-full bg-white/6 blur-3xl" aria-hidden="true" />
+        <div className="absolute top-1/2 left-1/3 size-56 rounded-full bg-white/5 blur-3xl" aria-hidden="true" />
+
+        <div className="relative flex items-center gap-3.5">
+          <div className="flex size-11 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
+            <Layers className="size-5.5" />
           </div>
-          <span className="logo-text">ProspectSoul</span>
+          <span className="text-[22px] font-bold tracking-tight">ProspectSoul</span>
         </div>
 
-        <div className="brand-hero">
-          <h1>Your company intelligence starts here</h1>
-          <p>One record per company. Every research decision tracked. Every qualification backed by evidence. No prospect ever re-researched from zero.</p>
+        <div className="relative max-w-sm space-y-5">
+          <h1 className="text-4xl font-bold leading-[1.15] tracking-tight">
+            Your company intelligence starts here
+          </h1>
+          <p className="text-[15px] leading-relaxed text-white/70">
+            One record per company. Every research decision tracked. Every qualification backed by evidence. No prospect ever re-researched from zero.
+          </p>
         </div>
 
-        <div className="brand-stats">
-          <div className="stat-item">
-            <div className="stat-num">100k</div>
-            <div className="stat-label">companies tracked</div>
+        <div className="relative flex gap-10">
+          <div>
+            <div className="text-3xl font-bold text-white/90">100k</div>
+            <div className="mt-0.5 text-[13px] text-white/50">companies tracked</div>
           </div>
-          <div className="stat-item">
-            <div className="stat-num">6</div>
-            <div className="stat-label">pipeline stages</div>
+          <div>
+            <div className="text-3xl font-bold text-white/90">6</div>
+            <div className="mt-0.5 text-[13px] text-white/50">pipeline stages</div>
           </div>
-          <div className="stat-item">
-            <div className="stat-num">10s</div>
-            <div className="stat-label">to answer &quot;seen before?&quot;</div>
+          <div>
+            <div className="text-3xl font-bold text-white/90">10s</div>
+            <div className="mt-0.5 text-[13px] text-white/50">to answer &quot;seen before?&quot;</div>
           </div>
         </div>
       </div>
 
       {/* RIGHT: Form panel */}
-      <div className="form-panel">
-        <div className="form-container">
-          <div className="mobile-brand">
-            <div className="logo-mark">
-              <LogoSvg />
+      <div className="flex items-center justify-center px-6 py-12 sm:px-12">
+        <div className="w-full max-w-[400px]">
+          {/* Mobile brand */}
+          <div className="mb-8 flex items-center gap-2.5 lg:hidden">
+            <div className="flex size-9 items-center justify-center rounded-lg bg-brand-gradient text-white">
+              <Layers className="size-4.5" />
             </div>
-            <span className="logo-text-dark">ProspectSoul</span>
+            <span className="text-lg font-bold tracking-tight">ProspectSoul</span>
           </div>
 
-          <div className="form-header">
-            <h2>Sign in</h2>
-            <p>Enter your credentials to access the platform</p>
+          <div className="mb-10">
+            <h2 className="text-[28px] font-bold tracking-tight">Sign in</h2>
+            <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
+              Enter your credentials to access the platform
+            </p>
           </div>
 
           {error && (
-            <div className="login-error">
-              <ErrorIcon />
+            <div className="mb-6 flex items-center gap-2.5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm font-medium text-destructive">
+              <AlertCircle className="size-4.5 shrink-0" />
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
-            <div className="field-group">
-              <label htmlFor="username">Username or email</label>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <label htmlFor="username" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Username or email
+              </label>
               <input
                 type="text"
                 id="username"
@@ -118,12 +103,15 @@ export function LoginPage({ onLogin, onForgotPassword }: { onLogin: LoginFn; onF
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={submitting}
+                className="h-12 w-full rounded-lg border border-input bg-background px-4 text-[15px] shadow-sm transition-shadow placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring/40 disabled:opacity-60"
               />
             </div>
 
-            <div className="field-group">
-              <label htmlFor="password">Password</label>
-              <div className="password-wrap">
+            <div className="space-y-1.5">
+              <label htmlFor="password" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Password
+              </label>
+              <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"
@@ -132,39 +120,47 @@ export function LoginPage({ onLogin, onForgotPassword }: { onLogin: LoginFn; onF
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={submitting}
+                  className="h-12 w-full rounded-lg border border-input bg-background px-4 pr-12 text-[15px] shadow-sm transition-shadow placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring/40 disabled:opacity-60"
                 />
                 <button
                   type="button"
-                  className="password-toggle"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground"
                   tabIndex={-1}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <EyeOffSvg /> : <EyeSvg />}
+                  {showPassword ? <EyeOff className="size-4.5" /> : <Eye className="size-4.5" />}
                 </button>
               </div>
             </div>
 
-            <div className="options-row">
-              <label className="remember-me">
+            <div className="flex items-center justify-between">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
+                  className="size-4 rounded accent-primary"
                 />
                 Remember me
               </label>
-              <button type="button" className="forgot-link" onClick={onForgotPassword}>Forgot password?</button>
+              <button
+                type="button"
+                className="text-sm font-medium text-primary transition-colors hover:text-primary/80 hover:underline"
+                onClick={onForgotPassword}
+              >
+                Forgot password?
+              </button>
             </div>
 
             <button
               type="submit"
-              className="btn-login"
+              className="flex h-[50px] w-full items-center justify-center gap-2 rounded-lg bg-brand-gradient text-[15px] font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
               disabled={submitting || !username.trim() || !password}
             >
               {submitting ? (
                 <>
-                  <span className="spinner" />
+                  <Loader2 className="size-4.5 animate-spin" />
                   Signing in…
                 </>
               ) : (
@@ -173,7 +169,7 @@ export function LoginPage({ onLogin, onForgotPassword }: { onLogin: LoginFn; onF
             </button>
           </form>
 
-          <div className="form-footer">
+          <div className="mt-9 text-center text-[13px] text-muted-foreground">
             Vyoog Information Private Limited — internal use only
           </div>
         </div>

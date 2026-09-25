@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ShieldCheck } from 'lucide-react'
+import { ShieldCheck, Loader2 } from 'lucide-react'
 import { Link } from 'react-router'
 import type { VerificationBatch } from '../types'
 import { isBatchRunning } from '../types'
@@ -14,13 +14,6 @@ interface Props {
   error: unknown
 }
 
-/**
- * The "Current Verification" card.
- *
- * <p>Renders whatever `GET /api/v1/verifications/active` returned. It holds no
- * progress state of its own, which is exactly why the card reconstructs itself
- * after a route change, a browser refresh or a backend restart.
- */
 export function CurrentVerificationCard({ batch, isLoading, error }: Props) {
   if (isLoading) {
     return (
@@ -44,9 +37,9 @@ export function CurrentVerificationCard({ batch, isLoading, error }: Props) {
           <CardTitle>Current Verification</CardTitle>
         </CardHeader>
         <CardContent>
-          <p role="alert" className="text-sm text-destructive">
+          <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm font-medium text-destructive">
             {problemDetail(error, 'Could not load the current verification.')}
-          </p>
+          </div>
         </CardContent>
       </Card>
     )
@@ -59,12 +52,14 @@ export function CurrentVerificationCard({ batch, isLoading, error }: Props) {
           <CardTitle>Current Verification</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-start gap-1 py-2">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <ShieldCheck className="size-4 text-muted-foreground" />
+          <div className="flex flex-col items-start gap-2 py-2">
+            <div className="flex items-center gap-2.5 text-sm font-semibold">
+              <div className="flex size-8 items-center justify-center rounded-lg bg-surface-1 text-muted-foreground">
+                <ShieldCheck className="size-4" />
+              </div>
               No verification is running
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Pick unverified companies in <strong>Verify New Companies</strong> above and start a
               batch. Verification runs in the background, so you can leave this page.
             </p>
@@ -81,7 +76,18 @@ export function CurrentVerificationCard({ batch, isLoading, error }: Props) {
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-3 pb-3">
         <CardTitle>Current Verification</CardTitle>
-        <BatchStatusBadge status={batch.status} />
+        <div className="flex items-center gap-2">
+          {running && (
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+              <span className="relative flex size-2">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-50" />
+                <span className="relative inline-flex size-2 rounded-full bg-primary" />
+              </span>
+              Live
+            </span>
+          )}
+          <BatchStatusBadge status={batch.status} />
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -89,26 +95,29 @@ export function CurrentVerificationCard({ batch, isLoading, error }: Props) {
             <p className="text-sm font-medium">
               {processed} / {batch.total_count} companies processed
             </p>
-            <p className="text-sm font-semibold tabular-nums">{batch.progress_percent}%</p>
+            <p className="text-sm font-bold tabular-nums">{batch.progress_percent}%</p>
           </div>
           <Progress value={batch.progress_percent} label="Verification progress" />
         </div>
 
         <dl className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <Counter label="Verified" value={batch.verified_count} className="text-emerald-600" />
-          <Counter label="Processing" value={batch.processing_count} className="text-amber-600" />
+          <Counter label="Verified" value={batch.verified_count} className="text-accent-emerald" />
+          <Counter label="Processing" value={batch.processing_count} className="text-accent-amber" />
           <Counter label="Queued" value={batch.queued_count} />
-          <Counter label="Failed" value={batch.failed_count} className="text-red-600" />
+          <Counter label="Failed" value={batch.failed_count} className="text-accent-rose" />
           <Counter label="Skipped" value={batch.skipped_count} />
         </dl>
 
         {batch.current_item ? (
-          <div className="rounded-lg border bg-muted/30 p-3">
-            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              Currently verifying
-            </p>
-            <p className="mt-1 text-sm font-medium">
-              <Link to={`/companies/${batch.current_item.company_id}`} className="text-primary hover:underline">
+          <div className="rounded-xl border border-border bg-surface-1/50 p-3">
+            <div className="flex items-center gap-2">
+              <Loader2 className="size-3.5 animate-spin text-primary" />
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Currently verifying
+              </p>
+            </div>
+            <p className="mt-1.5 text-sm font-semibold">
+              <Link to={`/companies/${batch.current_item.company_id}`} className="text-primary hover:underline transition-colors">
                 {batch.current_item.company_name ?? batch.current_item.company_id}
               </Link>
             </p>
@@ -129,14 +138,12 @@ export function CurrentVerificationCard({ batch, isLoading, error }: Props) {
             {running ? 'Elapsed' : 'Took'} {formatElapsed(batch.elapsed_seconds)}
           </span>
           <span>Requested by {batch.requested_by_name ?? batch.requested_by}</span>
-          <Link to={`/verify/${batch.id}`} className="text-primary hover:underline">
+          <Link to={`/verify/${batch.id}`} className="text-primary font-medium hover:underline transition-colors">
             View details
           </Link>
         </div>
 
-        {/* Doc 13 §7: a Lookup proves the line is valid and mobile — not that
-            anyone owns or answered the number. */}
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground leading-relaxed">
           Verification confirms that a number is valid and on a mobile line. It does not confirm
           ownership or that anyone answered.
         </p>
@@ -148,8 +155,8 @@ export function CurrentVerificationCard({ batch, isLoading, error }: Props) {
 function Counter({ label, value, className }: { label: string; value: number; className?: string }) {
   return (
     <div>
-      <dt className="text-xs tracking-wide text-muted-foreground uppercase">{label}</dt>
-      <dd className={`text-lg font-semibold tabular-nums ${className ?? ''}`}>{value}</dd>
+      <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</dt>
+      <dd className={`text-lg font-bold tabular-nums ${className ?? ''}`}>{value}</dd>
     </div>
   )
 }
