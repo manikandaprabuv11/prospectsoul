@@ -16,17 +16,6 @@ interface Props {
   sortDir: string
 }
 
-/**
- * Columns shown in the collapsed row — the fields analysts scan a list by:
- *   1. Company (name + pipeline/verification status)  2. Location
- *   3. Industry / NIC                                  4. Phone
- *   5. Website                                          6. Status
- *
- * Everything else (contact details, full address, business/financial
- * fields, enrichment data) is available by expanding the row via the
- * chevron in the first column, grouped into the same sub-sections the
- * company detail page uses.
- */
 export function CompanyTable({ companies, onSort, sortField, sortDir }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
@@ -60,12 +49,12 @@ export function CompanyTable({ companies, onSort, sortField, sortDir }: Props) {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border/70 bg-card shadow-sm">
+    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
       <div className="overflow-x-auto">
         <table className="w-full text-sm" data-tabular="true">
-          <thead className="bg-muted/40 sticky top-0">
-            <tr className="border-b border-border/70">
-              <th scope="col" className="w-9 px-2 py-2.5">
+          <thead>
+            <tr className="border-b border-border bg-surface-1">
+              <th scope="col" className="w-9 px-2 py-3">
                 <span className="sr-only">Expand</span>
               </th>
               <SortableTh label="Company" sortKey="canonicalName" {...{ sortField, sortDir, onSort }} />
@@ -74,21 +63,21 @@ export function CompanyTable({ companies, onSort, sortField, sortDir }: Props) {
               <Th>Phone</Th>
               <Th>Website</Th>
               <Th>Status</Th>
-              <th scope="col" className="px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <th scope="col" className="px-3 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border/70">
+          <tbody className="divide-y divide-border">
             {companies.map((c) => {
               const isExpanded = expanded.has(c.id)
               return (
                 <Fragment key={c.id}>
-                  <tr className="hover:bg-muted/30 transition-colors align-top">
-                    <td className="px-2 py-2.5">
+                  <tr className="hover:bg-accent/30 transition-colors duration-150 align-top group/row">
+                    <td className="px-2 py-3">
                       <Button
                         variant="ghost"
-                        size="icon-sm"
+                        size="icon-xs"
                         onClick={() => toggle(c.id)}
                         aria-expanded={isExpanded}
                         aria-label={isExpanded ? `Collapse ${c.canonical_name}` : `Expand ${c.canonical_name}`}
@@ -96,89 +85,82 @@ export function CompanyTable({ companies, onSort, sortField, sortDir }: Props) {
                         {isExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                       </Button>
                     </td>
-                    {/* Company */}
-                    <td className="px-3 py-2.5 max-w-[220px]">
+                    <td className="px-3 py-3 max-w-[220px]">
                       <Link
                         to={`/companies/${c.id}`}
-                        className="font-medium text-foreground hover:text-primary transition-colors block truncate"
+                        className="font-medium text-foreground hover:text-primary transition-colors duration-200 block truncate"
                       >
                         {c.canonical_name}
                       </Link>
                     </td>
-                    {/* Location */}
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      <div>{c.city ?? '—'}</div>
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <div className="text-foreground">{c.city ?? '—'}</div>
                       <div className="text-[11px] text-muted-foreground">{c.district ?? c.state ?? ''}</div>
                     </td>
-                    {/* Industry / NIC */}
-                    <td className="px-3 py-2.5 max-w-[220px]">
+                    <td className="px-3 py-3 max-w-[220px]">
                       <div className="truncate">{c.industry ?? '—'}</div>
                       {c.nic_codes && c.nic_codes.length > 0 ? (
-                        <div className="mt-1 flex flex-wrap gap-1">
+                        <div className="mt-1.5 flex flex-wrap gap-1">
                           {c.nic_codes.slice(0, 2).map((n) => (
                             <span
                               key={n.code}
                               title={n.description}
                               className={
-                                'inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium ' +
+                                'inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ' +
                                 (n.primary
                                   ? 'bg-primary/10 text-primary border border-primary/20'
                                   : 'bg-muted text-foreground border border-border')
                               }
                             >
-                              {n.primary ? <span className="text-amber-500">★</span> : null}
+                              {n.primary ? <span className="text-accent-amber">★</span> : null}
                               {n.code}
                             </span>
                           ))}
                           {c.nic_codes.length > 2 ? (
-                            <span className="text-[11px] text-muted-foreground">+{c.nic_codes.length - 2}</span>
+                            <span className="text-[10px] text-muted-foreground self-center">+{c.nic_codes.length - 2}</span>
                           ) : null}
                         </div>
                       ) : null}
                     </td>
-                    {/* Phone */}
-                    <td className="px-3 py-2.5 whitespace-nowrap">
+                    <td className="px-3 py-3 whitespace-nowrap">
                       {c.primary_contact_phone ? (
-                        <a href={`tel:${c.primary_contact_phone}`} className="inline-flex items-center gap-1 text-foreground hover:text-primary">
+                        <a href={`tel:${c.primary_contact_phone}`} className="inline-flex items-center gap-1.5 text-foreground hover:text-primary transition-colors">
                           <Phone className="size-3 text-muted-foreground" />
                           {c.primary_contact_phone}
                         </a>
                       ) : c.primary_phone_normalized ? (
-                        <span className="inline-flex items-center gap-1 text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
                           <Phone className="size-3" />
                           {c.primary_phone_normalized}
                         </span>
                       ) : '—'}
                     </td>
-                    {/* Website */}
-                    <td className="px-3 py-2.5 max-w-[180px]">
+                    <td className="px-3 py-3 max-w-[180px]">
                       {c.website_domain ? (
                         <a
                           href={`https://${c.website_domain}`}
                           target="_blank" rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-foreground hover:text-primary truncate"
+                          className="inline-flex items-center gap-1 text-foreground hover:text-primary transition-colors truncate"
                         >
                           <span className="truncate">{c.website_domain}</span>
-                          <ExternalLink className="size-3 shrink-0 opacity-60" />
+                          <ExternalLink className="size-3 shrink-0 opacity-50" />
                         </a>
                       ) : '—'}
                     </td>
-                    {/* Status */}
-                    <td className="px-3 py-2.5">
-                      <div className="flex flex-col gap-1 items-start">
+                    <td className="px-3 py-3">
+                      <div className="flex flex-col gap-1.5 items-start">
                         <StatusChip kind="pipeline" value={c.pipeline_state} />
                         <StatusChip kind="verification" value={c.verification_status} />
                       </div>
                     </td>
-                    {/* Actions */}
-                    <td className="px-3 py-2.5">
-                      <div className="flex items-center justify-end gap-0.5">
-                        <Button variant="ghost" size="icon-sm" asChild>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover/row:opacity-100 transition-opacity duration-200">
+                        <Button variant="ghost" size="icon-xs" asChild>
                           <Link to={`/companies/${c.id}`} aria-label="View">
                             <Eye className="size-4" />
                           </Link>
                         </Button>
-                        <Button variant="ghost" size="icon-sm" asChild>
+                        <Button variant="ghost" size="icon-xs" asChild>
                           <Link to={`/companies/${c.id}/edit`} aria-label="Edit">
                             <Pencil className="size-4" />
                           </Link>
@@ -187,7 +169,7 @@ export function CompanyTable({ companies, onSort, sortField, sortDir }: Props) {
                     </td>
                   </tr>
                   {isExpanded && (
-                    <tr className="bg-muted/20">
+                    <tr className="bg-surface-1/60">
                       <td colSpan={8} className="px-4 py-4">
                         <CompanyDetailsPanel company={c} />
                       </td>
@@ -205,7 +187,7 @@ export function CompanyTable({ companies, onSort, sortField, sortDir }: Props) {
 
 function CompanyDetailsPanel({ company: c }: { company: Company }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 animate-slide-up">
       <DetailSection title="Contact Details">
         <DetailRow label="Contact person" value={c.primary_contact_name} icon={<User className="size-3" />} />
         <DetailRow label="Role" value={c.primary_contact_role} />
@@ -238,20 +220,20 @@ function CompanyDetailsPanel({ company: c }: { company: Company }) {
         <DetailRow label="Completeness" value={`${c.completeness_score}%`} />
         {c.nic_codes && c.nic_codes.length > 0 && (
           <div className="pt-1">
-            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-1">NIC codes</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">NIC codes</div>
             <div className="flex flex-wrap gap-1">
               {c.nic_codes.map((n) => (
                 <span
                   key={n.code}
                   title={n.description}
                   className={
-                    'inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium ' +
+                    'inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ' +
                     (n.primary
                       ? 'bg-primary/10 text-primary border border-primary/20'
                       : 'bg-muted text-foreground border border-border')
                   }
                 >
-                  {n.primary ? <span className="text-amber-500">★</span> : null}
+                  {n.primary ? <span className="text-accent-amber">★</span> : null}
                   {n.code}
                 </span>
               ))}
@@ -265,7 +247,7 @@ function CompanyDetailsPanel({ company: c }: { company: Company }) {
         <DetailRow label="Website title" value={c.website_title} />
         <DetailRow label="Phone status" value={c.primary_phone_status} />
         <DetailRow label="Phone carrier" value={c.primary_phone_carrier} />
-        <div className="flex flex-wrap gap-2 pt-1">
+        <div className="flex flex-wrap gap-1.5 pt-1">
           <SocialLink href={c.social_linkedin} icon={<Link2 className="size-3.5" />} label="LinkedIn" />
           <SocialLink href={c.social_facebook} icon={<Link2 className="size-3.5" />} label="Facebook" />
           <SocialLink href={c.social_instagram} icon={<Link2 className="size-3.5" />} label="Instagram" />
@@ -279,9 +261,9 @@ function CompanyDetailsPanel({ company: c }: { company: Company }) {
 
 function DetailSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-border/60 bg-card p-3">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">{title}</h4>
-      <div className="space-y-1.5 text-sm">{children}</div>
+    <div className="rounded-xl border border-border bg-card p-3.5 shadow-xs">
+      <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">{title}</h4>
+      <div className="space-y-2 text-sm">{children}</div>
     </div>
   )
 }
@@ -297,14 +279,14 @@ function DetailRow({
   if (value === null || value === undefined || value === '') return null
   return (
     <div className="flex items-start justify-between gap-2">
-      <span className="text-muted-foreground shrink-0">{label}</span>
+      <span className="text-muted-foreground shrink-0 text-[13px]">{label}</span>
       {href ? (
-        <a href={href} className="inline-flex items-center gap-1 text-right text-foreground hover:text-primary truncate">
+        <a href={href} className="inline-flex items-center gap-1 text-right text-foreground hover:text-primary transition-colors truncate text-[13px]">
           {icon}
           {value}
         </a>
       ) : (
-        <span className="inline-flex items-center gap-1 text-right font-medium truncate">
+        <span className="inline-flex items-center gap-1 text-right font-medium truncate text-[13px]">
           {icon}
           {value}
         </span>
@@ -320,7 +302,7 @@ function SocialLink({ href, icon, label }: { href?: string | null; icon: React.R
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-2 py-1 text-xs text-foreground hover:text-primary"
+      className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface-1 px-2 py-1 text-xs font-medium text-foreground hover:text-primary hover:border-primary/30 transition-all duration-200"
     >
       {icon}
       {label}
@@ -330,7 +312,7 @@ function SocialLink({ href, icon, label }: { href?: string | null; icon: React.R
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th scope="col" className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">
+    <th scope="col" className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
       {children}
     </th>
   )
@@ -347,11 +329,11 @@ function SortableTh({
 }) {
   const active = sortField === sortKey
   return (
-    <th scope="col" className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">
+    <th scope="col" className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
       <button
         type="button"
         onClick={() => onSort(sortKey)}
-        className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+        className="inline-flex items-center gap-1 hover:text-foreground transition-colors duration-200"
       >
         <span>{label}</span>
         {active ? (

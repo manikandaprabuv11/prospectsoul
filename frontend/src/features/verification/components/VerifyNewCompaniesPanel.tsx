@@ -15,6 +15,7 @@ import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Pagination } from '@/shared/components/Pagination'
+import { Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useAddedByOptions, useEligibleCompanies, useStartVerification } from '../hooks'
 import type { EligibleCompany } from '../types'
@@ -23,20 +24,10 @@ import { defaultDateRange, formatDate, formatPhone, problemDetail } from './form
 const PAGE_SIZE = 25
 
 interface Props {
-  /** False for read-only roles: the panel explains instead of offering to start. */
   canStart: boolean
-  /** True while a batch is already running; a second batch is not offered. */
   batchRunning: boolean
 }
 
-/**
- * "Verify New Companies" — filter, select, confirm, start.
- *
- * <p>The filters are sent to the server on every change, so selection always
- * happens over the real eligible set rather than a page filtered in the
- * browser. Rows already being verified by another batch, and rows whose phone
- * cannot be looked up, are shown but not selectable.
- */
 export function VerifyNewCompaniesPanel({ canStart, batchRunning }: Props) {
   const initialRange = useMemo(() => defaultDateRange(), [])
 
@@ -46,8 +37,6 @@ export function VerifyNewCompaniesPanel({ canStart, batchRunning }: Props) {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
 
-  // Applied filters are separate from the inputs so typing does not refetch on
-  // every keystroke; Apply commits them.
   const [applied, setApplied] = useState({
     added_by: undefined as string | undefined,
     date_from: initialRange.from as string | undefined,
@@ -85,7 +74,6 @@ export function VerifyNewCompaniesPanel({ canStart, batchRunning }: Props) {
       q: search.trim() || undefined,
     })
     setPage(0)
-    // Filters define eligibility, so a stale selection must not survive them.
     setSelected(new Set())
   }
 
@@ -152,73 +140,77 @@ export function VerifyNewCompaniesPanel({ canStart, batchRunning }: Props) {
         <Badge variant="secondary">Unverified only</Badge>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* --- filters --- */}
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1">
-            <Label htmlFor="verify-added-by">Added by</Label>
-            <Select
-              id="verify-added-by"
-              className="w-48"
-              value={addedBy}
-              onChange={(event) => setAddedBy(event.target.value)}
-            >
-              <option value="">All</option>
-              {(addedByOptions.data ?? []).map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name} ({option.company_count})
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="verify-date-from">Date from</Label>
-            <Input
-              id="verify-date-from"
-              type="date"
-              className="w-40"
-              value={dateFrom}
-              onChange={(event) => setDateFrom(event.target.value)}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="verify-date-to">Date to</Label>
-            <Input
-              id="verify-date-to"
-              type="date"
-              className="w-40"
-              value={dateTo}
-              onChange={(event) => setDateTo(event.target.value)}
-            />
-          </div>
-          <div className="min-w-48 flex-1 space-y-1">
-            <Label htmlFor="verify-search">Search</Label>
-            <Input
-              id="verify-search"
-              placeholder="Company name or phone"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') apply()
-              }}
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={apply} disabled={dateRangeInvalid}>
-              Apply
-            </Button>
-            <Button variant="outline" onClick={reset}>
-              Reset
-            </Button>
+        <div className="rounded-xl border border-border bg-card p-4 shadow-card">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="verify-added-by" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Added by</Label>
+              <Select
+                id="verify-added-by"
+                className="w-48"
+                value={addedBy}
+                onChange={(event) => setAddedBy(event.target.value)}
+              >
+                <option value="">All</option>
+                {(addedByOptions.data ?? []).map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name} ({option.company_count})
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="verify-date-from" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">From</Label>
+              <Input
+                id="verify-date-from"
+                type="date"
+                className="w-40"
+                value={dateFrom}
+                onChange={(event) => setDateFrom(event.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="verify-date-to" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">To</Label>
+              <Input
+                id="verify-date-to"
+                type="date"
+                className="w-40"
+                value={dateTo}
+                onChange={(event) => setDateTo(event.target.value)}
+              />
+            </div>
+            <div className="min-w-48 flex-1 space-y-1">
+              <Label htmlFor="verify-search" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Search</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  id="verify-search"
+                  className="pl-9"
+                  placeholder="Company name or phone"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') apply()
+                  }}
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={apply} disabled={dateRangeInvalid}>
+                Apply
+              </Button>
+              <Button variant="outline" onClick={reset}>
+                Reset
+              </Button>
+            </div>
           </div>
         </div>
 
         {dateRangeInvalid && (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="text-sm font-medium text-destructive">
             Date from must not be after date to.
           </p>
         )}
 
-        {/* --- table --- */}
         {eligible.isLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, index) => (
@@ -226,15 +218,12 @@ export function VerifyNewCompaniesPanel({ canStart, batchRunning }: Props) {
             ))}
           </div>
         ) : eligible.isError ? (
-          <div
-            role="alert"
-            className="rounded-lg border border-destructive/50 p-6 text-center text-sm text-destructive"
-          >
+          <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center text-sm font-medium text-destructive">
             {problemDetail(eligible.error, 'Could not load companies.')}
           </div>
         ) : rows.length === 0 ? (
-          <div className="rounded-lg border p-10 text-center">
-            <p className="font-medium">No unverified companies match these filters</p>
+          <div className="rounded-xl border border-dashed border-border bg-surface-1/50 py-12 text-center">
+            <p className="font-semibold">No unverified companies match these filters</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Every company added by this user in this date range is already verified, or nothing
               was added in the range. Widen the dates or choose <strong>All</strong> under Added by.
@@ -245,13 +234,13 @@ export function VerifyNewCompaniesPanel({ canStart, batchRunning }: Props) {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-lg border">
+            <div className="overflow-x-auto rounded-xl border border-border shadow-card">
               <table className="w-full text-sm">
                 <caption className="sr-only">
                   Unverified companies matching the selected filters
                 </caption>
                 <thead>
-                  <tr className="border-b bg-muted/50">
+                  <tr className="border-b border-border bg-surface-1">
                     <th scope="col" className="w-10 px-3 py-2.5 text-left">
                       <Checkbox
                         checked={
@@ -266,18 +255,18 @@ export function VerifyNewCompaniesPanel({ canStart, batchRunning }: Props) {
                         aria-label="Select all companies on this page"
                       />
                     </th>
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Company</th>
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Added by</th>
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Added date</th>
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Phone</th>
-                    <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Status</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Company</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Added by</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Added date</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Phone</th>
+                    <th scope="col" className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border">
                   {rows.map((row) => {
                     const selectable = isSelectable(row)
                     return (
-                      <tr key={row.id} className="border-b last:border-0 hover:bg-muted/30">
+                      <tr key={row.id} className="group/row hover:bg-surface-1/50 transition-colors">
                         <td className="px-3 py-2.5">
                           <Checkbox
                             checked={selected.has(row.id)}
@@ -286,10 +275,10 @@ export function VerifyNewCompaniesPanel({ canStart, batchRunning }: Props) {
                             aria-label={`Select ${row.canonical_name}`}
                           />
                         </td>
-                        <td className="px-3 py-2.5 font-medium">{row.canonical_name}</td>
+                        <td className="px-3 py-2.5 font-semibold">{row.canonical_name}</td>
                         <td className="px-3 py-2.5">{row.added_by_name ?? '—'}</td>
-                        <td className="px-3 py-2.5 text-muted-foreground">{formatDate(row.added_at)}</td>
-                        <td className="px-3 py-2.5">{formatPhone(row.primary_phone_normalized)}</td>
+                        <td className="px-3 py-2.5 text-muted-foreground tabular-nums">{formatDate(row.added_at)}</td>
+                        <td className="px-3 py-2.5 tabular-nums">{formatPhone(row.primary_phone_normalized)}</td>
                         <td className="px-3 py-2.5">
                           {row.in_flight ? (
                             <Badge variant="warning">Being verified</Badge>
@@ -308,9 +297,8 @@ export function VerifyNewCompaniesPanel({ canStart, batchRunning }: Props) {
               </table>
             </div>
 
-            {/* --- selection summary and pagination --- */}
             <div className="flex items-center gap-3">
-              <p aria-live="polite" className="text-sm font-medium">
+              <p aria-live="polite" className="text-sm font-semibold">
                 {selected.size === 0
                   ? 'No companies selected'
                   : `${selected.size} ${selected.size === 1 ? 'company' : 'companies'} selected`}
@@ -353,16 +341,12 @@ export function VerifyNewCompaniesPanel({ canStart, batchRunning }: Props) {
         )}
 
         {startErrorDetail && (
-          <div
-            role="alert"
-            className="rounded-lg border border-destructive/50 p-3 text-sm text-destructive"
-          >
+          <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm font-medium text-destructive">
             {startErrorDetail}
           </div>
         )}
       </CardContent>
 
-      {/* --- confirmation --- */}
       <Dialog open={confirming} onOpenChange={(open) => !open && setConfirming(false)}>
         <DialogContent>
           <DialogHeader>
@@ -374,12 +358,12 @@ export function VerifyNewCompaniesPanel({ canStart, batchRunning }: Props) {
           </DialogHeader>
 
           <div className="space-y-3 text-sm">
-            <p>
+            <p className="leading-relaxed">
               Verification runs in the background on the server. You can leave this page, navigate
               elsewhere or close the browser — progress keeps going and is restored when you come
               back.
             </p>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground leading-relaxed">
               A company is marked <strong>Verified</strong> only when the provider reports a valid
               number on a mobile line. Everything else is recorded as a failure with its reason, and
               the company stays unverified. This does not confirm ownership of the number.
@@ -404,11 +388,6 @@ export function VerifyNewCompaniesPanel({ canStart, batchRunning }: Props) {
   )
 }
 
-/**
- * A row can be selected only when it would actually be verified: an in-flight
- * company would be rejected with 409, and one without a usable phone would be
- * skipped with NO_PHONE.
- */
 function isSelectable(row: EligibleCompany): boolean {
   return row.phone_usable && !row.in_flight
 }

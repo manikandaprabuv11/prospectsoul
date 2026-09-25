@@ -21,7 +21,9 @@ export function CandidatesPanel({ companyId }: CandidatesPanelProps) {
           <CardTitle className="text-sm">Enrichment Candidates</CardTitle>
         </CardHeader>
         <CardContent className="pt-2">
-          <div className="text-sm text-muted-foreground">Loading…</div>
+          <div className="space-y-2">
+            {[0, 1].map((i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-surface-1" />)}
+          </div>
         </CardContent>
       </Card>
     )
@@ -38,31 +40,31 @@ export function CandidatesPanel({ companyId }: CandidatesPanelProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-2">
-        <div className="space-y-3">
+        <div className="space-y-2">
           {candidates.map((c) => (
-            <div key={c.id} className="flex items-start justify-between gap-4 rounded-md border p-3">
+            <div key={c.id} className="flex items-start justify-between gap-4 rounded-xl border border-border bg-card p-3 transition-shadow hover:shadow-card">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 text-sm">
-                  <Badge variant="outline" className="text-xs">{c.provider_key}</Badge>
-                  <span className="font-medium">{formatFieldName(c.field_name)}</span>
-                  <Badge variant="secondary" className="text-xs">{c.candidate_type}</Badge>
+                  <Badge variant="outline">{c.provider_key}</Badge>
+                  <span className="font-semibold">{formatFieldName(c.field_name)}</span>
+                  <Badge variant="secondary">{c.candidate_type}</Badge>
                 </div>
-                <div className="mt-1 text-sm">
-                  <span className="text-muted-foreground">Proposed: </span>
-                  <span className="font-mono text-xs">{c.proposed_value}</span>
+                <div className="mt-1.5 text-sm">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Proposed: </span>
+                  <span className="rounded bg-surface-1 px-1.5 py-0.5 font-mono text-xs">{c.proposed_value}</span>
                 </div>
                 {c.current_value && (
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Current: </span>
-                    <span className="font-mono text-xs">{c.current_value}</span>
+                  <div className="mt-1 text-sm">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Current: </span>
+                    <span className="rounded bg-surface-1 px-1.5 py-0.5 font-mono text-xs">{c.current_value}</span>
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 text-green-600 hover:text-green-700"
+                  className="h-7 text-accent-emerald hover:text-accent-emerald hover:bg-accent-emerald/10 hover:border-accent-emerald/30"
                   disabled={resolveMutation.isPending}
                   onClick={() => resolveMutation.mutate({ candidateId: c.id, data: { action: 'ACCEPTED' } })}
                 >
@@ -72,7 +74,7 @@ export function CandidatesPanel({ companyId }: CandidatesPanelProps) {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 text-red-600 hover:text-red-700"
+                  className="h-7 text-accent-rose hover:text-accent-rose hover:bg-accent-rose/10 hover:border-accent-rose/30"
                   disabled={resolveMutation.isPending}
                   onClick={() => resolveMutation.mutate({ candidateId: c.id, data: { action: 'REJECTED' } })}
                 >

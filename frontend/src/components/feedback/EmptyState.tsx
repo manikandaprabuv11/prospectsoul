@@ -9,29 +9,24 @@ interface EmptyStateProps {
   className?: string
 }
 
-/**
- * Consistent empty state block. Used whenever a list, table or search
- * returns zero rows — encourages the next action instead of an
- * apologetic "No data".
- */
 export function EmptyState({ icon, title, description, action, className }: EmptyStateProps) {
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center text-center py-14 px-6 rounded-lg border border-dashed border-border/70 bg-muted/30",
+        "flex flex-col items-center justify-center text-center py-16 px-6 rounded-xl border border-dashed border-border bg-surface-1/50",
         className,
       )}
     >
       {icon ? (
-        <div className="flex size-12 items-center justify-center rounded-full bg-background border border-border/70 text-muted-foreground mb-3">
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/8 text-primary mb-4 animate-float">
           {icon}
         </div>
       ) : null}
       <h3 className="text-sm font-semibold text-foreground">{title}</h3>
       {description ? (
-        <p className="text-sm text-muted-foreground max-w-sm mt-1">{description}</p>
+        <p className="text-sm text-muted-foreground max-w-sm mt-1.5 leading-relaxed">{description}</p>
       ) : null}
-      {action ? <div className="mt-4">{action}</div> : null}
+      {action ? <div className="mt-5">{action}</div> : null}
     </div>
   )
 }

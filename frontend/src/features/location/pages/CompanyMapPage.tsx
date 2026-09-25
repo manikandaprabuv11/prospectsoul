@@ -99,10 +99,10 @@ export function CompanyMapPage() {
         description="Plot ProspectSoul companies around any Indian pincode. The centroid is resolved on demand and cached."
       />
 
-      <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
+      <div className="rounded-xl border border-border bg-card p-4 shadow-card">
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[8rem]">
-            <label htmlFor="map-pincode" className="text-xs font-medium text-muted-foreground">Pincode</label>
+            <label htmlFor="map-pincode" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Pincode</label>
             <Input
               id="map-pincode"
               className="mt-1"
@@ -113,7 +113,7 @@ export function CompanyMapPage() {
             />
           </div>
           <div className="min-w-[8rem]">
-            <label htmlFor="map-radius" className="text-xs font-medium text-muted-foreground">Radius</label>
+            <label htmlFor="map-radius" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Radius</label>
             <Select id="map-radius" className="mt-1" value={String(radiusKm)} onChange={(e) => update('radius_km', e.target.value)}>
               <option value="2">2 km</option>
               <option value="5">5 km</option>
@@ -123,7 +123,7 @@ export function CompanyMapPage() {
             </Select>
           </div>
           <div className="min-w-[10rem]">
-            <label htmlFor="map-nic" className="text-xs font-medium text-muted-foreground">NIC (with sub-codes)</label>
+            <label htmlFor="map-nic" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">NIC (with sub-codes)</label>
             <Select
               id="map-nic"
               className="mt-1"
@@ -137,7 +137,7 @@ export function CompanyMapPage() {
             </Select>
           </div>
           <div className="min-w-[9rem]">
-            <label htmlFor="map-nic-manual" className="text-xs font-medium text-muted-foreground">Or type NIC code</label>
+            <label htmlFor="map-nic-manual" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Or type NIC code</label>
             <Input
               id="map-nic-manual"
               className="mt-1"
@@ -211,7 +211,7 @@ export function CompanyMapPage() {
             {list.map((c) => {
               const chips = visibleNicCodes(c.nic_codes ?? [])
               return (
-                <li key={c.id} className="rounded-lg border border-border/70 bg-card p-3 shadow-sm hover:shadow-md transition-shadow flex items-start justify-between gap-2">
+                <li key={c.id} className="rounded-xl border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <Link to={`/companies/${c.id}`} className="font-medium text-foreground hover:text-primary transition-colors block truncate">
                       {c.canonical_name}
@@ -232,7 +232,7 @@ export function CompanyMapPage() {
                                 : 'bg-muted text-foreground border border-border')
                             }
                           >
-                            {n.primary ? <span className="text-amber-500">★</span> : null}
+                            {n.primary ? <span className="text-accent-amber">★</span> : null}
                             {n.code}
                           </span>
                         ))}
@@ -260,7 +260,7 @@ function MapView({ center, radiusKm, ownedCount }: { center: { lat: number; lng:
     : `https://www.openstreetmap.org/export/embed.html?bbox=${bbox.join(',')}&layer=mapnik&marker=${center.lat},${center.lng}`
 
   return (
-    <div className="rounded-xl overflow-hidden border border-border/70 shadow-sm bg-card">
+    <div className="rounded-xl overflow-hidden border border-border shadow-card bg-card">
       <iframe
         src={src}
         title="Company map"
@@ -268,9 +268,9 @@ function MapView({ center, radiusKm, ownedCount }: { center: { lat: number; lng:
         loading="lazy"
         referrerPolicy="no-referrer-when-downgrade"
       />
-      <div className="flex items-center justify-between border-t border-border/70 px-3 py-2 text-xs text-muted-foreground">
+      <div className="flex items-center justify-between border-t border-border px-3 py-2 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-2">
-          <span className="inline-block w-3 h-3 rounded-full bg-teal-500" />
+          <span className="inline-block w-3 h-3 rounded-full bg-accent-teal" />
           Owned in ProspectSoul ({ownedCount})
         </span>
         {!MAPS_KEY ? (

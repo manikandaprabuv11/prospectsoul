@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
+import { X } from 'lucide-react'
 import type { UserResponse } from '../types/user'
-import './UserDetailModal.css'
 
 const ROLES = [
   { value: 'PS_ANALYST', label: 'Research Analyst' },
@@ -48,27 +52,33 @@ export function UserDetailModal({ user, onClose, onSave, saving, error }: UserDe
     : form.username.trim() && form.fullName.trim() && form.email.trim() && form.password.length >= 8 && form.role
 
   return (
-    <div className="um-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="um-modal">
-        <div className="um-modal-header">
-          <h3>{isEdit ? 'Edit user' : 'Add new user'}</h3>
-          <button type="button" className="um-modal-close" onClick={onClose}>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
+    <div
+      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl animate-scale-in">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h3 className="text-lg font-bold tracking-tight">{isEdit ? 'Edit user' : 'Add new user'}</h3>
+          <button
+            type="button"
+            className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-200"
+            onClick={onClose}
+          >
+            <X className="size-4" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="um-modal-body">
+          <div className="px-6 py-5 space-y-4">
             {error && (
-              <div className="um-modal-error">{error}</div>
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm font-medium text-destructive">
+                {error}
+              </div>
             )}
 
-            <div className="um-modal-field">
-              <label htmlFor="um-fullname">Full name</label>
-              <input
-                type="text"
+            <div className="space-y-1.5">
+              <Label htmlFor="um-fullname" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Full name</Label>
+              <Input
                 id="um-fullname"
                 placeholder="Kavitha Sundaram"
                 value={form.fullName}
@@ -77,11 +87,11 @@ export function UserDetailModal({ user, onClose, onSave, saving, error }: UserDe
               />
             </div>
 
-            <div className="um-modal-field">
-              <label htmlFor="um-email">Email address</label>
-              <input
-                type="email"
+            <div className="space-y-1.5">
+              <Label htmlFor="um-email" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Email address</Label>
+              <Input
                 id="um-email"
+                type="email"
                 placeholder="kavitha@vyoog.com"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -91,57 +101,56 @@ export function UserDetailModal({ user, onClose, onSave, saving, error }: UserDe
 
             {!isEdit && (
               <>
-                <div className="um-modal-field">
-                  <label htmlFor="um-username">Username</label>
-                  <input
-                    type="text"
+                <div className="space-y-1.5">
+                  <Label htmlFor="um-username" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Username</Label>
+                  <Input
                     id="um-username"
                     placeholder="kavitha"
                     value={form.username}
                     onChange={(e) => setForm({ ...form, username: e.target.value })}
                     disabled={saving}
                   />
-                  <div className="um-hint">Used for login. Cannot be changed later.</div>
+                  <p className="text-[11px] text-muted-foreground">Used for login. Cannot be changed later.</p>
                 </div>
 
-                <div className="um-modal-field">
-                  <label htmlFor="um-password">Temporary password</label>
-                  <input
-                    type="password"
+                <div className="space-y-1.5">
+                  <Label htmlFor="um-password" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Temporary password</Label>
+                  <Input
                     id="um-password"
+                    type="password"
                     placeholder="Minimum 8 characters"
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     disabled={saving}
                   />
-                  <div className="um-hint">User will be prompted to change on first login.</div>
+                  <p className="text-[11px] text-muted-foreground">User will be prompted to change on first login.</p>
                 </div>
               </>
             )}
 
-            <div className="um-modal-field">
-              <label htmlFor="um-role">Role</label>
-              <select
+            <div className="space-y-1.5">
+              <Label htmlFor="um-role" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Role</Label>
+              <Select
                 id="um-role"
                 value={form.role}
                 onChange={(e) => setForm({ ...form, role: e.target.value })}
                 disabled={saving}
               >
-                <option value="">Select a role…</option>
+                <option value="">Select a role...</option>
                 {ROLES.map((r) => (
                   <option key={r.value} value={r.value}>{r.label}</option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
 
-          <div className="um-modal-footer">
-            <button type="button" className="um-btn-cancel" onClick={onClose} disabled={saving}>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-border">
+            <Button variant="outline" type="button" onClick={onClose} disabled={saving}>
               Cancel
-            </button>
-            <button type="submit" className="um-btn-save" disabled={saving || !canSubmit}>
-              {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create user'}
-            </button>
+            </Button>
+            <Button type="submit" disabled={saving || !canSubmit}>
+              {saving ? 'Saving...' : isEdit ? 'Save changes' : 'Create user'}
+            </Button>
           </div>
         </form>
       </div>

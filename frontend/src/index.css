@@ -1,15 +1,9 @@
-/* ProspectSoul — global styles.
+/* ProspectSoul — Premium Design System
  *
- * Design language:
- *   • Rich indigo→violet primary gradient for hero surfaces and the
- *     brand mark; solid indigo for controls.
- *   • Feature-specific accent hues (teal Companies · violet Imports ·
- *     emerald Verify · amber Map · rose Admin) applied on stat tiles
- *     and category cards, coherent because every hue sits on the same
- *     lightness/chroma scale in OKLCH.
- *   • Typography: Inter for UI, JetBrains Mono for code/IDs; tabular
- *     numerals on tables and stat cards.
- *   • Motion: 120/180 ms curves; respects prefers-reduced-motion.
+ * A colorful-luxury SaaS design language built on OKLCH color science.
+ * Indigo→violet primary gradient, 7 feature accent hues at matched
+ * lightness/chroma, individually designed light and dark modes,
+ * layered surface hierarchy, and polished micro-interactions.
  */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
 @import "tailwindcss";
@@ -17,102 +11,174 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ═══════════════════════════════════════════════════════════════════
+   LIGHT MODE — clean, bright, premium, spacious
+   ═══════════════════════════════════════════════════════════════════ */
 :root {
-  --radius:        0.5rem;
-  --radius-lg:     0.75rem;
-  --radius-xl:     1rem;
+  --radius:        0.625rem;
+  --radius-lg:     0.875rem;
+  --radius-xl:     1.125rem;
 
-  /* Ground — very subtly tinted so it never looks sterile-white */
-  --background:            oklch(0.995 0.005 260);
-  --foreground:            oklch(0.16 0.02 260);
-  --muted:                 oklch(0.965 0.008 260);
-  --muted-foreground:      oklch(0.48 0.02 260);
+  /* Ground — warm off-white, never sterile */
+  --background:            oklch(0.985 0.004 265);
+  --foreground:            oklch(0.145 0.02 265);
+  --muted:                 oklch(0.96 0.006 265);
+  --muted-foreground:      oklch(0.46 0.02 265);
   --card:                  oklch(1 0 0);
-  --card-foreground:       oklch(0.16 0.02 260);
+  --card-foreground:       oklch(0.145 0.02 265);
   --popover:               oklch(1 0 0);
-  --popover-foreground:    oklch(0.16 0.02 260);
+  --popover-foreground:    oklch(0.145 0.02 265);
 
-  /* Primary — refined indigo, gradient partner is violet */
-  --primary:               oklch(0.53 0.19 265);
-  --primary-foreground:    oklch(0.99 0.005 260);
-  --primary-strong:        oklch(0.44 0.2 265);
-  --primary-soft:          oklch(0.95 0.03 265);
-  --gradient-start:        oklch(0.55 0.2 260);
-  --gradient-end:          oklch(0.5 0.22 300);
+  /* Primary — vibrant indigo, gradient partner is violet */
+  --primary:               oklch(0.55 0.2 265);
+  --primary-foreground:    oklch(0.99 0.005 265);
+  --primary-strong:        oklch(0.45 0.22 265);
+  --primary-soft:          oklch(0.955 0.025 265);
+  --primary-muted:         oklch(0.92 0.04 265);
 
-  --secondary:             oklch(0.955 0.008 260);
-  --secondary-foreground:  oklch(0.22 0.02 260);
-  --accent:                oklch(0.955 0.012 260);
-  --accent-foreground:     oklch(0.22 0.02 260);
+  /* Gradient — hero surfaces, brand mark */
+  --gradient-start:        oklch(0.56 0.22 258);
+  --gradient-mid:          oklch(0.52 0.24 280);
+  --gradient-end:          oklch(0.52 0.24 302);
 
-  /* Feature accents — every hue at similar L/C so they harmonise */
-  --accent-teal:      oklch(0.6  0.13 200);
+  /* Secondary / Accent surfaces */
+  --secondary:             oklch(0.96 0.006 265);
+  --secondary-foreground:  oklch(0.2 0.02 265);
+  --accent:                oklch(0.96 0.01 265);
+  --accent-foreground:     oklch(0.2 0.02 265);
+
+  /* Feature accent palette — all at L≈0.6, C≈0.15 for harmony */
+  --accent-teal:      oklch(0.62 0.14 195);
   --accent-violet:    oklch(0.58 0.2  300);
-  --accent-emerald:   oklch(0.62 0.15 155);
-  --accent-amber:     oklch(0.72 0.16 75);
-  --accent-rose:      oklch(0.65 0.19 15);
-  --accent-sky:       oklch(0.63 0.16 235);
+  --accent-emerald:   oklch(0.64 0.16 155);
+  --accent-amber:     oklch(0.74 0.17 72);
+  --accent-rose:      oklch(0.62 0.2  15);
+  --accent-sky:       oklch(0.64 0.15 238);
+  --accent-cyan:      oklch(0.72 0.12 205);
 
   /* Semantic */
-  --success:               oklch(0.63 0.15 155);
+  --success:               oklch(0.62 0.17 155);
   --success-foreground:    oklch(0.99 0 0);
-  --warning:               oklch(0.75 0.15 75);
-  --warning-foreground:    oklch(0.22 0.03 60);
-  --info:                  oklch(0.62 0.15 235);
+  --warning:               oklch(0.75 0.16 72);
+  --warning-foreground:    oklch(0.2 0.04 60);
+  --info:                  oklch(0.62 0.16 238);
   --info-foreground:       oklch(0.99 0 0);
-  --destructive:           oklch(0.58 0.22 25);
+  --destructive:           oklch(0.57 0.22 25);
   --destructive-foreground:oklch(0.99 0 0);
 
-  --border:                oklch(0.92 0.008 260);
-  --border-strong:         oklch(0.85 0.012 260);
-  --input:                 oklch(0.92 0.008 260);
-  --ring:                  oklch(0.53 0.19 265);
+  /* Borders — subtle warm gray */
+  --border:                oklch(0.925 0.006 265);
+  --border-strong:         oklch(0.86 0.01 265);
+  --input:                 oklch(0.91 0.006 265);
+  --ring:                  oklch(0.55 0.2 265);
 
-  --surface-1:             oklch(0.985 0.006 260);
-  --surface-2:             oklch(0.975 0.008 260);
+  /* Surface hierarchy — subtle depth layers */
+  --surface-0:             oklch(0.975 0.005 265);
+  --surface-1:             oklch(0.99 0.003 265);
+  --surface-2:             oklch(1 0 0);
+  --surface-3:             oklch(1 0 0);
 
-  /* Shadows — coloured, short-throw, so cards feel layered */
-  --shadow-xs: 0 1px 2px 0 rgb(15 23 42 / 0.04);
-  --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.06), 0 1px 1px -1px rgb(15 23 42 / 0.04);
-  --shadow-md: 0 4px 8px -2px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.05);
-  --shadow-lg: 0 12px 24px -8px rgb(15 23 42 / 0.14), 0 6px 8px -4px rgb(15 23 42 / 0.06);
-  --shadow-primary: 0 8px 24px -8px oklch(0.53 0.19 265 / 0.35);
+  /* Sidebar */
+  --sidebar:               oklch(0.98 0.006 265);
+  --sidebar-foreground:    oklch(0.3 0.02 265);
+  --sidebar-border:        oklch(0.93 0.006 265);
+  --sidebar-accent:        oklch(0.955 0.01 265);
+  --sidebar-muted:         oklch(0.5 0.02 265);
+
+  /* Shadows — cool-tinted, layered for depth */
+  --shadow-xs:  0 1px 2px 0 oklch(0.2 0.02 265 / 0.04);
+  --shadow-sm:  0 1px 3px 0 oklch(0.2 0.02 265 / 0.06), 0 1px 2px -1px oklch(0.2 0.02 265 / 0.04);
+  --shadow-md:  0 4px 6px -2px oklch(0.2 0.02 265 / 0.06), 0 2px 4px -2px oklch(0.2 0.02 265 / 0.04);
+  --shadow-lg:  0 10px 20px -6px oklch(0.2 0.02 265 / 0.1), 0 4px 8px -2px oklch(0.2 0.02 265 / 0.04);
+  --shadow-xl:  0 20px 40px -10px oklch(0.2 0.02 265 / 0.14), 0 8px 16px -4px oklch(0.2 0.02 265 / 0.04);
+  --shadow-primary: 0 8px 24px -6px oklch(0.55 0.2 265 / 0.3);
+  --shadow-glow: 0 0 20px oklch(0.55 0.2 265 / 0.15);
+  --shadow-card: 0 1px 3px oklch(0.2 0.02 265 / 0.05), 0 0 0 1px oklch(0.2 0.02 265 / 0.03);
+  --shadow-card-hover: 0 8px 24px -8px oklch(0.2 0.02 265 / 0.12), 0 0 0 1px oklch(0.2 0.02 265 / 0.05);
+
+  /* Motion */
+  --duration-fast:   120ms;
+  --duration-normal: 200ms;
+  --duration-slow:   350ms;
+  --ease-out:        cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring:     cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   DARK MODE — premium, sophisticated, layered surfaces
+   ═══════════════════════════════════════════════════════════════════ */
 .dark {
-  --background:            oklch(0.14 0.02 260);
-  --foreground:            oklch(0.98 0.004 260);
-  --muted:                 oklch(0.22 0.02 260);
-  --muted-foreground:      oklch(0.68 0.02 260);
-  --card:                  oklch(0.19 0.02 260);
-  --card-foreground:       oklch(0.98 0.004 260);
-  --popover:               oklch(0.2 0.02 260);
-  --popover-foreground:    oklch(0.98 0.004 260);
-  --primary:               oklch(0.68 0.19 265);
-  --primary-foreground:    oklch(0.14 0.02 260);
-  --primary-strong:        oklch(0.75 0.19 265);
-  --primary-soft:          oklch(0.28 0.06 265);
-  --gradient-start:        oklch(0.55 0.2 260);
-  --gradient-end:          oklch(0.55 0.22 300);
-  --secondary:             oklch(0.26 0.02 260);
-  --secondary-foreground:  oklch(0.98 0.004 260);
-  --accent:                oklch(0.26 0.02 260);
-  --accent-foreground:     oklch(0.98 0.004 260);
-  --success:               oklch(0.7 0.17 155);
-  --success-foreground:    oklch(0.15 0.02 155);
-  --warning:               oklch(0.8 0.17 75);
-  --warning-foreground:    oklch(0.2 0.03 60);
-  --info:                  oklch(0.72 0.17 235);
-  --info-foreground:       oklch(0.15 0.02 235);
-  --destructive:           oklch(0.68 0.2 25);
-  --border:                oklch(1 0 0 / 12%);
-  --border-strong:         oklch(1 0 0 / 20%);
-  --input:                 oklch(1 0 0 / 12%);
-  --ring:                  oklch(0.68 0.19 265);
-  --surface-1:             oklch(0.19 0.02 260);
-  --surface-2:             oklch(0.23 0.02 260);
+  --background:            oklch(0.115 0.015 265);
+  --foreground:            oklch(0.96 0.005 265);
+  --muted:                 oklch(0.18 0.015 265);
+  --muted-foreground:      oklch(0.62 0.02 265);
+  --card:                  oklch(0.155 0.015 265);
+  --card-foreground:       oklch(0.96 0.005 265);
+  --popover:               oklch(0.17 0.015 265);
+  --popover-foreground:    oklch(0.96 0.005 265);
+
+  --primary:               oklch(0.7 0.18 265);
+  --primary-foreground:    oklch(0.12 0.02 265);
+  --primary-strong:        oklch(0.76 0.18 265);
+  --primary-soft:          oklch(0.22 0.05 265);
+  --primary-muted:         oklch(0.2 0.04 265);
+
+  --gradient-start:        oklch(0.52 0.2 258);
+  --gradient-mid:          oklch(0.48 0.22 280);
+  --gradient-end:          oklch(0.48 0.22 302);
+
+  --secondary:             oklch(0.2 0.015 265);
+  --secondary-foreground:  oklch(0.96 0.005 265);
+  --accent:                oklch(0.2 0.015 265);
+  --accent-foreground:     oklch(0.96 0.005 265);
+
+  --accent-teal:      oklch(0.72 0.12 195);
+  --accent-violet:    oklch(0.72 0.16 300);
+  --accent-emerald:   oklch(0.72 0.14 155);
+  --accent-amber:     oklch(0.78 0.15 72);
+  --accent-rose:      oklch(0.72 0.17 15);
+  --accent-sky:       oklch(0.72 0.13 238);
+  --accent-cyan:      oklch(0.78 0.1 205);
+
+  --success:               oklch(0.72 0.16 155);
+  --success-foreground:    oklch(0.12 0.02 155);
+  --warning:               oklch(0.8 0.15 72);
+  --warning-foreground:    oklch(0.15 0.03 60);
+  --info:                  oklch(0.72 0.16 238);
+  --info-foreground:       oklch(0.12 0.02 238);
+  --destructive:           oklch(0.68 0.19 25);
+  --destructive-foreground:oklch(0.99 0 0);
+
+  --border:                oklch(1 0 0 / 9%);
+  --border-strong:         oklch(1 0 0 / 16%);
+  --input:                 oklch(1 0 0 / 9%);
+  --ring:                  oklch(0.7 0.18 265);
+
+  --surface-0:             oklch(0.1 0.015 265);
+  --surface-1:             oklch(0.14 0.015 265);
+  --surface-2:             oklch(0.17 0.015 265);
+  --surface-3:             oklch(0.2 0.015 265);
+
+  --sidebar:               oklch(0.125 0.015 265);
+  --sidebar-foreground:    oklch(0.82 0.01 265);
+  --sidebar-border:        oklch(1 0 0 / 8%);
+  --sidebar-accent:        oklch(0.18 0.02 265);
+  --sidebar-muted:         oklch(0.55 0.02 265);
+
+  --shadow-xs:  0 1px 2px 0 oklch(0 0 0 / 0.2);
+  --shadow-sm:  0 1px 3px 0 oklch(0 0 0 / 0.25), 0 1px 2px -1px oklch(0 0 0 / 0.2);
+  --shadow-md:  0 4px 6px -2px oklch(0 0 0 / 0.3), 0 2px 4px -2px oklch(0 0 0 / 0.2);
+  --shadow-lg:  0 10px 20px -6px oklch(0 0 0 / 0.35), 0 4px 8px -2px oklch(0 0 0 / 0.2);
+  --shadow-xl:  0 20px 40px -10px oklch(0 0 0 / 0.4), 0 8px 16px -4px oklch(0 0 0 / 0.2);
+  --shadow-primary: 0 8px 24px -6px oklch(0.55 0.2 265 / 0.25);
+  --shadow-glow: 0 0 24px oklch(0.7 0.18 265 / 0.12);
+  --shadow-card: 0 1px 3px oklch(0 0 0 / 0.2), 0 0 0 1px oklch(1 0 0 / 0.05);
+  --shadow-card-hover: 0 8px 24px -8px oklch(0 0 0 / 0.3), 0 0 0 1px oklch(1 0 0 / 0.08);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   THEME BRIDGE — expose tokens to Tailwind v4
+   ═══════════════════════════════════════════════════════════════════ */
 @theme inline {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
                Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -144,8 +210,15 @@
   --color-border:               var(--border);
   --color-input:                var(--input);
   --color-ring:                 var(--ring);
+  --color-surface-0:            var(--surface-0);
   --color-surface-1:            var(--surface-1);
   --color-surface-2:            var(--surface-2);
+  --color-surface-3:            var(--surface-3);
+  --color-sidebar:              var(--sidebar);
+  --color-sidebar-foreground:   var(--sidebar-foreground);
+  --color-sidebar-border:       var(--sidebar-border);
+  --color-sidebar-accent:       var(--sidebar-accent);
+  --color-sidebar-muted:        var(--sidebar-muted);
 
   --color-accent-teal:    var(--accent-teal);
   --color-accent-violet:  var(--accent-violet);
@@ -153,8 +226,12 @@
   --color-accent-amber:   var(--accent-amber);
   --color-accent-rose:    var(--accent-rose);
   --color-accent-sky:     var(--accent-sky);
+  --color-accent-cyan:    var(--accent-cyan);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   BASE LAYER
+   ═══════════════════════════════════════════════════════════════════ */
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -165,45 +242,40 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
   }
 
-  /* App background: a very subtle wash so the shell doesn't feel flat.
-   * Radial spots pinned to the top corners give the app a "sunlit"
-   * quality that reads premium without shouting.
-   */
+  html.dark {
+    color-scheme: dark;
+  }
+
   body {
     @apply text-foreground font-sans;
-    background:
-      radial-gradient(1200px 800px at -10% -20%,
-        color-mix(in oklch, var(--gradient-start) 12%, transparent) 0%,
-        transparent 55%),
-      radial-gradient(1000px 700px at 110% -10%,
-        color-mix(in oklch, var(--gradient-end) 10%, transparent) 0%,
-        transparent 55%),
-      var(--background);
-    background-attachment: fixed;
+    background: var(--background);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    transition: background-color var(--duration-slow) var(--ease-out),
+                color var(--duration-slow) var(--ease-out);
   }
 
   table, [data-tabular="true"], .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
 
-  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-thumb {
-    background: color-mix(in oklch, var(--muted-foreground) 22%, transparent);
+    background: color-mix(in oklch, var(--muted-foreground) 18%, transparent);
     border-radius: 8px;
     border: 2px solid transparent;
     background-clip: content-box;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in oklch, var(--muted-foreground) 44%, transparent);
+    background: color-mix(in oklch, var(--muted-foreground) 35%, transparent);
     background-clip: content-box;
   }
   ::-webkit-scrollbar-track { background: transparent; }
 
   ::selection {
-    background: color-mix(in oklch, var(--primary) 22%, transparent);
+    background: color-mix(in oklch, var(--primary) 20%, transparent);
     color: var(--foreground);
   }
 
@@ -215,32 +287,53 @@
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   UTILITIES
+   ═══════════════════════════════════════════════════════════════════ */
 @layer utilities {
-  /* Signature brand gradient — used on the brand mark and hero CTAs */
+  /* Brand gradients */
   .bg-brand-gradient {
     background: linear-gradient(135deg,
       var(--gradient-start) 0%,
+      var(--gradient-mid) 50%,
       var(--gradient-end) 100%);
+  }
+  .bg-brand-gradient-subtle {
+    background: linear-gradient(135deg,
+      color-mix(in oklch, var(--gradient-start) 12%, var(--background)) 0%,
+      color-mix(in oklch, var(--gradient-end) 8%, var(--background)) 100%);
   }
   .text-brand-gradient {
     background: linear-gradient(135deg,
       var(--gradient-start) 0%,
+      var(--gradient-mid) 50%,
       var(--gradient-end) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
-  .shadow-primary { box-shadow: var(--shadow-primary); }
+  .border-brand-gradient {
+    border-image: linear-gradient(135deg,
+      var(--gradient-start) 0%,
+      var(--gradient-end) 100%) 1;
+  }
 
-  /* Feature accent utilities — used as border-top stripes and icon tints */
+  /* Shadows */
+  .shadow-primary { box-shadow: var(--shadow-primary); }
+  .shadow-glow    { box-shadow: var(--shadow-glow); }
+  .shadow-card    { box-shadow: var(--shadow-card); }
+
+  /* Feature accent utilities */
   .accent-teal    { --accent-hue: var(--accent-teal); }
   .accent-violet  { --accent-hue: var(--accent-violet); }
   .accent-emerald { --accent-hue: var(--accent-emerald); }
   .accent-amber   { --accent-hue: var(--accent-amber); }
   .accent-rose    { --accent-hue: var(--accent-rose); }
   .accent-sky     { --accent-hue: var(--accent-sky); }
+  .accent-cyan    { --accent-hue: var(--accent-cyan); }
   .accent-indigo  { --accent-hue: var(--primary); }
 
+  /* Accent stripe — gradient top border for cards */
   .accent-stripe {
     position: relative;
     overflow: hidden;
@@ -252,22 +345,158 @@
     height: 3px;
     background: linear-gradient(90deg,
       var(--accent-hue),
-      color-mix(in oklch, var(--accent-hue) 40%, transparent));
+      color-mix(in oklch, var(--accent-hue) 30%, transparent));
     border-top-left-radius: inherit;
     border-top-right-radius: inherit;
   }
 
+  /* Accent chip — tinted background for icon badges */
   .accent-chip-bg {
-    background: color-mix(in oklch, var(--accent-hue) 13%, transparent);
+    background: color-mix(in oklch, var(--accent-hue) 12%, transparent);
     color: var(--accent-hue);
+  }
+
+  /* Accent left bar — vertical indicator */
+  .accent-left-bar {
+    position: relative;
+  }
+  .accent-left-bar::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--accent-hue);
+  }
+
+  /* Glass effect */
+  .glass {
+    background: color-mix(in oklch, var(--card) 80%, transparent);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+  }
+
+  /* Subtle pattern overlay */
+  .pattern-dots {
+    background-image: radial-gradient(
+      color-mix(in oklch, var(--foreground) 4%, transparent) 1px,
+      transparent 1px
+    );
+    background-size: 20px 20px;
+  }
+
+  /* Hover lift effect */
+  .hover-lift {
+    transition: transform var(--duration-normal) var(--ease-out),
+                box-shadow var(--duration-normal) var(--ease-out);
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  /* Subtle background noise texture (pure CSS) */
+  .noise {
+    position: relative;
+  }
+  .noise::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.02;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Smooth transition for theme changes */
+  .theme-transition,
+  .theme-transition *,
+  .theme-transition *::before,
+  .theme-transition *::after {
+    transition: background-color var(--duration-slow) var(--ease-out),
+                border-color var(--duration-slow) var(--ease-out),
+                color var(--duration-normal) var(--ease-out),
+                box-shadow var(--duration-slow) var(--ease-out) !important;
   }
 }
 
-/* Legacy CSS bridge — admin (users/roles) and auth screens use their own
- * scoped .css files. These overrides pull them onto the shared design
- * tokens so buttons, focus rings and cards feel consistent with the rest
- * of the app without a full rewrite.
- */
+/* ═══════════════════════════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════════════════════════ */
+@layer utilities {
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-6px); }
+  }
+
+  @keyframes pulse-ring {
+    0% { transform: scale(0.95); opacity: 1; }
+    100% { transform: scale(1.3); opacity: 0; }
+  }
+
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slide-down {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in oklch, var(--primary) 6%, transparent) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-slide-up {
+    animation: slide-up var(--duration-normal) var(--ease-out) both;
+  }
+
+  .animate-slide-down {
+    animation: slide-down var(--duration-normal) var(--ease-out) both;
+  }
+
+  .animate-fade-in {
+    animation: fade-in var(--duration-normal) var(--ease-out) both;
+  }
+
+  .animate-scale-in {
+    animation: scale-in var(--duration-normal) var(--ease-out) both;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LEGACY CSS BRIDGE — admin + auth pages
+   ═══════════════════════════════════════════════════════════════════ */
 .users-page, .roles-page {
   font-family: var(--font-sans);
   padding: 0;
@@ -287,7 +516,7 @@
   background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)) !important;
   color: var(--primary-foreground) !important;
   border-radius: var(--radius) !important;
-  transition: transform .12s, box-shadow .15s, opacity .15s;
+  transition: transform var(--duration-fast), box-shadow var(--duration-normal), opacity var(--duration-normal);
   box-shadow: var(--shadow-sm);
 }
 .users-page .btn-add:hover,
@@ -303,11 +532,11 @@
 .roles-page input[type=email],
 .users-page select, .roles-page select {
   border-radius: var(--radius);
-  transition: border-color .15s, box-shadow .15s;
+  transition: border-color var(--duration-normal), box-shadow var(--duration-normal);
 }
 .users-page input:focus, .roles-page input:focus,
 .users-page select:focus, .roles-page select:focus {
   outline: none;
   border-color: var(--ring);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 25%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 20%, transparent);
 }

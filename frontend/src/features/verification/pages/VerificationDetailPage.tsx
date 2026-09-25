@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Search } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import {
@@ -24,10 +24,6 @@ import { useVerificationBatch, useVerificationItems } from '../hooks'
 const PAGE_SIZE = 25
 const ITEM_STATUSES = ['QUEUED', 'PROCESSING', 'VERIFIED', 'FAILED', 'SKIPPED'] as const
 
-/**
- * `/verify/:id` — one job's summary statistics and its per-company results,
- * including the reason every failure or skip happened.
- */
 export function VerificationDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [status, setStatus] = useState('')
@@ -48,9 +44,9 @@ export function VerificationDetailPage() {
   if (batch.isLoading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-8 w-64 rounded-lg" />
+        <Skeleton className="h-40 w-full rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-xl" />
       </div>
     )
   }
@@ -62,7 +58,7 @@ export function VerificationDetailPage() {
         <BackLink />
         <div
           role="alert"
-          className="rounded-lg border border-destructive/50 p-8 text-center text-sm text-destructive"
+          className="rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center text-sm text-destructive"
         >
           {message}
         </div>
@@ -78,7 +74,7 @@ export function VerificationDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        breadcrumb={<Link to="/verify" className="inline-flex items-center gap-1 hover:text-foreground transition-colors"><ArrowLeft className="size-3.5" /> Back to verify</Link>}
+        breadcrumb={<Link to="/verify" className="inline-flex items-center gap-1 hover:text-foreground transition-colors duration-200"><ArrowLeft className="size-3.5" /> Back to verify</Link>}
         title={<span className="flex items-center gap-3 flex-wrap">Verification job <BatchStatusBadge status={job.status} /></span>}
         description={<>Started {formatDateTime(job.started_at ?? job.created_at)} by {job.requested_by_name ?? job.requested_by}</>}
       />
@@ -87,49 +83,49 @@ export function VerificationDetailPage() {
         <CardHeader className="pb-3">
           <CardTitle>Summary</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5">
           <div className="space-y-2">
             <div className="flex items-baseline justify-between">
-              <p className="text-sm font-medium">
+              <p className="text-sm font-semibold">
                 {job.verified_count + job.failed_count + job.skipped_count} / {job.total_count}{' '}
                 companies processed
               </p>
-              <p className="text-sm font-semibold tabular-nums">{job.progress_percent}%</p>
+              <p className="text-sm font-bold tabular-nums text-primary">{job.progress_percent}%</p>
             </div>
             <Progress value={job.progress_percent} label="Job progress" />
           </div>
 
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
             <Stat label="Total" value={job.total_count} />
-            <Stat label="Verified" value={job.verified_count} className="text-emerald-600" />
-            <Stat label="Failed" value={job.failed_count} className="text-red-600" />
+            <Stat label="Verified" value={job.verified_count} className="text-accent-emerald" />
+            <Stat label="Failed" value={job.failed_count} className="text-accent-rose" />
             <Stat label="Skipped" value={job.skipped_count} />
             <Stat label="Queued" value={job.queued_count} />
-            <Stat label="Processing" value={job.processing_count} className="text-amber-600" />
+            <Stat label="Processing" value={job.processing_count} className="text-accent-amber" />
             <div>
-              <dt className="text-xs tracking-wide text-muted-foreground uppercase">Duration</dt>
-              <dd className="text-lg font-semibold tabular-nums">
+              <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Duration</dt>
+              <dd className="text-lg font-bold tabular-nums mt-0.5">
                 {formatElapsed(job.elapsed_seconds)}
               </dd>
             </div>
           </dl>
 
-          <dl className="grid gap-x-6 gap-y-2 border-t pt-4 text-sm sm:grid-cols-3">
+          <dl className="grid gap-x-6 gap-y-3 border-t border-border pt-4 text-sm sm:grid-cols-3">
             <div>
-              <dt className="text-muted-foreground">Filter — added by</dt>
-              <dd>{job.filter_added_by_name ?? (job.filter_added_by ? job.filter_added_by : 'All users')}</dd>
+              <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Filter — added by</dt>
+              <dd className="mt-0.5">{job.filter_added_by_name ?? (job.filter_added_by ? job.filter_added_by : 'All users')}</dd>
             </div>
             <div>
-              <dt className="text-muted-foreground">Filter — date range</dt>
-              <dd>
+              <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Filter — date range</dt>
+              <dd className="mt-0.5">
                 {job.filter_date_from || job.filter_date_to
                   ? `${formatDate(job.filter_date_from)} – ${formatDate(job.filter_date_to)}`
                   : 'Any date'}
               </dd>
             </div>
             <div>
-              <dt className="text-muted-foreground">Completed</dt>
-              <dd>{formatDateTime(job.completed_at)}</dd>
+              <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Completed</dt>
+              <dd className="mt-0.5">{formatDateTime(job.completed_at)}</dd>
             </div>
           </dl>
         </CardContent>
@@ -142,7 +138,7 @@ export function VerificationDetailPage() {
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-end gap-3">
             <div className="space-y-1">
-              <Label htmlFor="item-status">Status</Label>
+              <Label htmlFor="item-status" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</Label>
               <Select
                 id="item-status"
                 className="w-44"
@@ -161,19 +157,23 @@ export function VerificationDetailPage() {
               </Select>
             </div>
             <div className="min-w-48 flex-1 space-y-1">
-              <Label htmlFor="item-search">Search</Label>
-              <Input
-                id="item-search"
-                placeholder="Company or phone"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    setAppliedSearch(search.trim() || undefined)
-                    setPage(0)
-                  }
-                }}
-              />
+              <Label htmlFor="item-search" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Search</Label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
+                <Input
+                  id="item-search"
+                  className="pl-8"
+                  placeholder="Company or phone"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      setAppliedSearch(search.trim() || undefined)
+                      setPage(0)
+                    }
+                  }}
+                />
+              </div>
             </div>
             <Button
               onClick={() => {
@@ -188,67 +188,67 @@ export function VerificationDetailPage() {
           {items.isLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, index) => (
-                <Skeleton key={index} className="h-11 w-full" />
+                <Skeleton key={index} className="h-11 w-full rounded-lg" />
               ))}
             </div>
           ) : items.isError ? (
             <div
               role="alert"
-              className="rounded-lg border border-destructive/50 p-6 text-center text-sm text-destructive"
+              className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center text-sm text-destructive"
             >
               {problemDetail(items.error, 'Could not load results.')}
             </div>
           ) : rows.length === 0 ? (
-            <div className="rounded-lg border p-10 text-center">
-              <p className="font-medium">No results match this filter</p>
+            <div className="rounded-xl border border-border bg-surface-1/50 p-10 text-center">
+              <p className="font-semibold">No results match this filter</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Clear the status filter or the search term to see every company in this job.
               </p>
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto rounded-lg border">
+              <div className="overflow-x-auto rounded-xl border border-border">
                 <table className="w-full text-sm">
                   <caption className="sr-only">Per-company verification results</caption>
                   <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Company</th>
-                      <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Status</th>
-                      <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Phone</th>
-                      <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Line type</th>
-                      <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Carrier</th>
-                      <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Reason</th>
-                      <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground">Attempts</th>
-                      <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground">Completed</th>
+                    <tr className="border-b border-border bg-surface-1">
+                      <th scope="col" className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Company</th>
+                      <th scope="col" className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                      <th scope="col" className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Phone</th>
+                      <th scope="col" className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Line type</th>
+                      <th scope="col" className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Carrier</th>
+                      <th scope="col" className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Reason</th>
+                      <th scope="col" className="px-3 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Attempts</th>
+                      <th scope="col" className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Completed</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-border">
                     {rows.map((item) => (
-                      <tr key={item.id} className="border-b last:border-0 hover:bg-muted/30">
-                        <td className="px-3 py-2.5 font-medium">
+                      <tr key={item.id} className="hover:bg-accent/30 transition-colors duration-150">
+                        <td className="px-3 py-3 font-medium">
                           <Link to={`/companies/${item.company_id}`} className="text-primary hover:underline">
                             {item.company_name ?? item.company_id}
                           </Link>
                         </td>
-                        <td className="px-3 py-2.5">
+                        <td className="px-3 py-3">
                           <ItemStatusBadge status={item.status} />
                         </td>
-                        <td className="px-3 py-2.5">
+                        <td className="px-3 py-3 tabular-nums">
                           {formatPhone(item.normalized_phone_number ?? item.phone_number)}
                         </td>
-                        <td className="px-3 py-2.5">{formatLineType(item.line_type)}</td>
-                        <td className="px-3 py-2.5">{item.carrier_name ?? '—'}</td>
-                        <td className="px-3 py-2.5">
+                        <td className="px-3 py-3">{formatLineType(item.line_type)}</td>
+                        <td className="px-3 py-3">{item.carrier_name ?? <span className="text-muted-foreground/60">—</span>}</td>
+                        <td className="px-3 py-3">
                           {item.failure_code ? (
-                            <span title={item.failure_message ?? undefined}>
+                            <span title={item.failure_message ?? undefined} className="text-accent-rose font-medium">
                               {formatFailureCode(item.failure_code)}
                             </span>
                           ) : (
-                            '—'
+                            <span className="text-muted-foreground/60">—</span>
                           )}
                         </td>
-                        <td className="px-3 py-2.5 text-right tabular-nums">{item.attempt_count}</td>
-                        <td className="px-3 py-2.5 text-muted-foreground">
+                        <td className="px-3 py-3 text-right tabular-nums font-medium">{item.attempt_count}</td>
+                        <td className="px-3 py-3 text-muted-foreground text-[13px]">
                           {formatDateTime(item.completed_at)}
                         </td>
                       </tr>
@@ -257,11 +257,11 @@ export function VerificationDetailPage() {
                 </table>
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 shadow-card">
                 <p className="text-sm text-muted-foreground">
-                  Page {(items.data?.page ?? 0) + 1} of {Math.max(1, items.data?.total_pages ?? 1)}
+                  Page <span className="font-semibold text-foreground tabular-nums">{(items.data?.page ?? 0) + 1}</span> of <span className="font-semibold text-foreground tabular-nums">{Math.max(1, items.data?.total_pages ?? 1)}</span>
                   {' · '}
-                  {items.data?.total_elements ?? 0} results
+                  <span className="font-semibold text-foreground tabular-nums">{items.data?.total_elements ?? 0}</span> results
                 </p>
                 <div className="flex gap-2">
                   <Button
@@ -294,7 +294,7 @@ function BackLink() {
   return (
     <Link
       to="/verify"
-      className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
     >
       <ArrowLeft className="size-4" />
       Back to Verify
@@ -305,8 +305,8 @@ function BackLink() {
 function Stat({ label, value, className }: { label: string; value: number; className?: string }) {
   return (
     <div>
-      <dt className="text-xs tracking-wide text-muted-foreground uppercase">{label}</dt>
-      <dd className={`text-lg font-semibold tabular-nums ${className ?? ''}`}>{value}</dd>
+      <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</dt>
+      <dd className={`text-lg font-bold tabular-nums mt-0.5 ${className ?? ''}`}>{value}</dd>
     </div>
   )
 }

@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { useContactRoles } from '@/features/contactrole/hooks'
 import { useNicPrimary } from '@/features/nic/hooks'
-import { RotateCw, SlidersHorizontal } from 'lucide-react'
+import { RotateCw, Search, SlidersHorizontal, X } from 'lucide-react'
 import { useState } from 'react'
 import type { CompanyFilters as Filters } from '../types'
 
@@ -16,11 +16,6 @@ interface Props {
 const PIPELINE_STATES = ['IMPORTED', 'TRIAGE', 'RESEARCH', 'QUALIFICATION', 'READY', 'EXPORTED', 'DISQUALIFIED', 'ARCHIVED']
 const VERIFICATION_STATUSES = ['UNVERIFIED', 'VERIFIED', 'INVALIDATED']
 
-/**
- * Filter panel — primary controls always visible, secondary facets
- * behind a collapsible "Advanced" section so the panel stays quiet
- * until the user needs a deeper filter.
- */
 export function CompanyFilters({ filters, onChange }: Props) {
   const nicPrimary = useNicPrimary()
   const contactRoles = useContactRoles(false)
@@ -36,17 +31,20 @@ export function CompanyFilters({ filters, onChange }: Props) {
       {/* Row 1 — search + primary filters */}
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_repeat(2,minmax(0,200px))_auto]">
         <div className="min-w-0">
-          <Label htmlFor="filter-search">Search</Label>
-          <Input
-            id="filter-search"
-            className="mt-1"
-            placeholder="Name, phone, email, domain, contact…"
-            value={filters.q ?? ''}
-            onChange={(e) => onChange({ ...filters, q: e.target.value, page: 0 })}
-          />
+          <Label htmlFor="filter-search" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Search</Label>
+          <div className="relative mt-1">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
+            <Input
+              id="filter-search"
+              className="pl-8"
+              placeholder="Name, phone, email, domain, contact…"
+              value={filters.q ?? ''}
+              onChange={(e) => onChange({ ...filters, q: e.target.value, page: 0 })}
+            />
+          </div>
         </div>
         <div className="min-w-0">
-          <Label htmlFor="filter-state">Pipeline</Label>
+          <Label htmlFor="filter-state" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Pipeline</Label>
           <Select
             id="filter-state"
             className="mt-1"
@@ -58,7 +56,7 @@ export function CompanyFilters({ filters, onChange }: Props) {
           </Select>
         </div>
         <div className="min-w-0">
-          <Label htmlFor="filter-verification">Verification</Label>
+          <Label htmlFor="filter-verification" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Verification</Label>
           <Select
             id="filter-verification"
             className="mt-1"
@@ -80,21 +78,33 @@ export function CompanyFilters({ filters, onChange }: Props) {
           >
             <SlidersHorizontal /> Advanced
             {activeCount > 0 && (
-              <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/15 px-1 text-[10px] font-semibold text-primary">
+              <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/15 px-1 text-[10px] font-bold text-primary">
                 {activeCount}
               </span>
             )}
           </Button>
           {activeCount > 0 && (
-            <Button variant="ghost" size="sm" className="h-9" onClick={clear}>
+            <Button variant="ghost" size="sm" className="h-9 text-muted-foreground" onClick={clear}>
               <RotateCw /> Clear
             </Button>
           )}
         </div>
       </div>
 
+      {/* Active filter chips */}
+      {activeCount > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {filters.q && <FilterChip label={`Search: "${filters.q}"`} onRemove={() => onChange({ ...filters, q: undefined, page: 0 })} />}
+          {filters.pipeline_state && <FilterChip label={`Pipeline: ${titleCase(filters.pipeline_state)}`} onRemove={() => onChange({ ...filters, pipeline_state: undefined, page: 0 })} />}
+          {filters.verification_status && <FilterChip label={`Verification: ${titleCase(filters.verification_status)}`} onRemove={() => onChange({ ...filters, verification_status: undefined, page: 0 })} />}
+          {filters.city && <FilterChip label={`City: ${filters.city}`} onRemove={() => onChange({ ...filters, city: undefined, page: 0 })} />}
+          {filters.state && <FilterChip label={`State: ${filters.state}`} onRemove={() => onChange({ ...filters, state: undefined, page: 0 })} />}
+          {filters.region && <FilterChip label={`Region: ${filters.region}`} onRemove={() => onChange({ ...filters, region: undefined, page: 0 })} />}
+        </div>
+      )}
+
       {advanced && (
-        <div id="advanced-filters" className="grid gap-3 rounded-md border border-border/60 bg-muted/30 p-3 md:grid-cols-4">
+        <div id="advanced-filters" className="grid gap-3 rounded-xl border border-border bg-surface-1/50 p-4 md:grid-cols-4 animate-slide-up">
           <FilterField label="NIC (with sub-codes)">
             <Select
               value={filters.nic_parent_id ?? ''}
@@ -162,7 +172,7 @@ export function CompanyFilters({ filters, onChange }: Props) {
           {filters.nic_parent_id ? (
             <>
               <FilterField label="Sub-codes">
-                <label className="flex h-9 items-center gap-2 text-sm text-foreground">
+                <label className="flex h-9 items-center gap-2 text-sm text-foreground cursor-pointer">
                   <input
                     type="checkbox"
                     checked={filters.nic_include_descendants !== false}
@@ -171,12 +181,13 @@ export function CompanyFilters({ filters, onChange }: Props) {
                       nic_include_descendants: e.target.checked ? undefined : false,
                       page: 0,
                     })}
+                    className="rounded"
                   />
                   Include descendants
                 </label>
               </FilterField>
               <FilterField label="View">
-                <div className="flex gap-1.5">
+                <div className="flex gap-1">
                   <Button
                     size="sm"
                     variant={filters.view !== 'grouped_by_nic' ? 'default' : 'outline'}
@@ -200,9 +211,20 @@ export function CompanyFilters({ filters, onChange }: Props) {
 function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="min-w-0 space-y-1">
-      <Label>{label}</Label>
+      <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</Label>
       {children}
     </div>
+  )
+}
+
+function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-lg bg-primary/8 px-2.5 py-1 text-xs font-medium text-primary">
+      {label}
+      <button type="button" onClick={onRemove} className="hover:text-primary/70 transition-colors" aria-label={`Remove filter: ${label}`}>
+        <X className="size-3" />
+      </button>
+    </span>
   )
 }
 

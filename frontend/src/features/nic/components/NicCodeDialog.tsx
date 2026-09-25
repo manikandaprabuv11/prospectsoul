@@ -27,11 +27,6 @@ interface Props {
   errorMessage?: string
 }
 
-/**
- * Add / Edit dialog per UI/UX Addendum §2.3. Parent is displayed read-only —
- * the backend resolves the parent from the code prefix, so a manual override
- * only exists as an escape-hatch and is not exposed in v1.
- */
 export function NicCodeDialog({
   open,
   onOpenChange,
@@ -62,9 +57,9 @@ export function NicCodeDialog({
           <DialogTitle>{initial ? 'Edit NIC code' : 'Add NIC code'}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-3">
-          <div>
-            <Label htmlFor="nic-code">Code</Label>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="nic-code" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Code</Label>
             <Input
               id="nic-code"
               value={code}
@@ -73,11 +68,11 @@ export function NicCodeDialog({
               disabled={!!initial}
               maxLength={5}
             />
-            <p className="text-xs text-muted-foreground mt-1">1–5 digits. Level is derived from length.</p>
+            <p className="text-[11px] text-muted-foreground">1–5 digits. Level is derived from length.</p>
           </div>
 
-          <div>
-            <Label htmlFor="nic-description">Description</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="nic-description" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Description</Label>
             <Input
               id="nic-description"
               value={description}
@@ -85,8 +80,8 @@ export function NicCodeDialog({
             />
           </div>
 
-          <div>
-            <Label htmlFor="nic-industry">Industry type</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="nic-industry" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Industry type</Label>
             <Select
               id="nic-industry"
               value={industryType}
@@ -98,27 +93,31 @@ export function NicCodeDialog({
             </Select>
           </div>
 
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"
               checked={isPrimary}
               onChange={(e) => setIsPrimary(e.target.checked)}
+              className="size-4 rounded accent-primary"
             />
             Primary — surface first in filter pickers
           </label>
 
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"
               checked={active}
               onChange={(e) => setActive(e.target.checked)}
               disabled={!initial}
+              className="size-4 rounded accent-primary"
             />
             Active
           </label>
 
           {errorMessage ? (
-            <p className="text-sm text-destructive">{errorMessage}</p>
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm font-medium text-destructive">
+              {errorMessage}
+            </div>
           ) : null}
         </div>
 

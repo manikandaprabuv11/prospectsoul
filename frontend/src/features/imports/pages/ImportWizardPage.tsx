@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ArrowLeft, CheckCircle, Loader2, Upload } from 'lucide-react'
+import { ArrowLeft, Check, CheckCircle, Loader2, Upload } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import {
@@ -63,7 +63,6 @@ export function ImportWizardPage() {
     )
   }, [])
 
-  // Initialize mappings from suggestions
   if (suggestions && mappings.length === 0) {
     initMappings(suggestions.suggestions)
   }
@@ -88,7 +87,6 @@ export function ImportWizardPage() {
     )
   }
 
-  // Poll for processing completion
   if (step === 'processing' && batch?.status === 'COMPLETED') {
     setStep('complete')
   }
@@ -99,43 +97,52 @@ export function ImportWizardPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        breadcrumb={<Link to="/imports" className="inline-flex items-center gap-1 hover:text-foreground transition-colors"><ArrowLeft className="size-3.5" /> Back to imports</Link>}
+        breadcrumb={<Link to="/imports" className="inline-flex items-center gap-1 hover:text-foreground transition-colors duration-200"><ArrowLeft className="size-3.5" /> Back to imports</Link>}
         title="Import data"
         description="Upload a file, map its columns, preview the outcome, then process. Skip-on-error is on by default."
       />
 
-      {/* Step indicator — polished progress rail */}
-      <ol className="flex items-center gap-2 overflow-x-auto pb-1">
-        {stepList.map((s, i) => {
-          const state = i === currentIdx ? 'current' : i < currentIdx ? 'done' : 'todo'
-          return (
-            <li key={s} className="flex items-center gap-2 shrink-0">
-              <div className={
-                'flex size-6 items-center justify-center rounded-full text-[11px] font-semibold ' +
-                (state === 'done' ? 'bg-emerald-500 text-white' :
-                 state === 'current' ? 'bg-primary text-primary-foreground shadow' :
-                 'bg-muted text-muted-foreground border border-border')
-              }>{i + 1}</div>
-              <span className={
-                'text-xs font-medium capitalize ' +
-                (state === 'current' ? 'text-foreground' : 'text-muted-foreground')
-              }>{s}</span>
-              {i < stepList.length - 1 && (
-                <div className={'h-px w-8 ' + (i < currentIdx ? 'bg-emerald-500' : 'bg-border')} />
-              )}
-            </li>
-          )
-        })}
-      </ol>
+      {/* Step indicator */}
+      <div className="rounded-xl border border-border bg-card p-4 shadow-card">
+        <ol className="flex items-center gap-1">
+          {stepList.map((s, i) => {
+            const state = i === currentIdx ? 'current' : i < currentIdx ? 'done' : 'todo'
+            return (
+              <li key={s} className="flex items-center gap-1 shrink-0">
+                <div className={
+                  'flex size-7 items-center justify-center rounded-full text-[11px] font-bold transition-all duration-300 ' +
+                  (state === 'done' ? 'bg-accent-emerald text-white shadow-sm' :
+                   state === 'current' ? 'bg-primary text-primary-foreground shadow-md ring-4 ring-primary/15' :
+                   'bg-surface-1 text-muted-foreground border border-border')
+                }>
+                  {state === 'done' ? <Check className="size-3.5" /> : i + 1}
+                </div>
+                <span className={
+                  'text-xs font-medium capitalize ' +
+                  (state === 'current' ? 'text-foreground' : state === 'done' ? 'text-accent-emerald' : 'text-muted-foreground')
+                }>{s}</span>
+                {i < stepList.length - 1 && (
+                  <div className={'h-px w-8 mx-1 transition-colors duration-300 ' + (i < currentIdx ? 'bg-accent-emerald' : 'bg-border')} />
+                )}
+              </li>
+            )
+          })}
+        </ol>
+      </div>
 
       {/* Upload step */}
       {step === 'upload' && (
         <Card>
           <CardHeader><CardTitle>Upload File</CardTitle></CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center gap-4 rounded-lg border-2 border-dashed p-12">
-              <Upload className="size-12 text-muted-foreground" />
-              <p className="text-muted-foreground">Drop an Excel (.xlsx) or CSV (.csv) file here</p>
+            <div className="flex flex-col items-center gap-5 rounded-xl border-2 border-dashed border-border hover:border-primary/40 transition-colors duration-200 p-14 bg-surface-1/30">
+              <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/8 text-primary">
+                <Upload className="size-7" />
+              </div>
+              <div className="text-center space-y-1">
+                <p className="font-medium">Drop an Excel (.xlsx) or CSV (.csv) file here</p>
+                <p className="text-sm text-muted-foreground">Or click the button below to browse</p>
+              </div>
               <input
                 ref={fileRef}
                 type="file"
@@ -143,12 +150,12 @@ export function ImportWizardPage() {
                 className="hidden"
                 onChange={handleUpload}
               />
-              <Button onClick={() => fileRef.current?.click()} disabled={uploadMutation.isPending}>
+              <Button size="lg" onClick={() => fileRef.current?.click()} disabled={uploadMutation.isPending}>
                 {uploadMutation.isPending && <Loader2 className="animate-spin" />}
                 Choose File
               </Button>
               {uploadMutation.isError && (
-                <p className="text-sm text-destructive">
+                <p className="text-sm text-destructive font-medium">
                   {uploadMutation.error instanceof Error ? uploadMutation.error.message : 'Upload failed'}
                 </p>
               )}
@@ -162,35 +169,35 @@ export function ImportWizardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Column Mapping</CardTitle>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Review and adjust the column mappings. Low-confidence suggestions are marked.
             </p>
           </CardHeader>
           <CardContent>
             {suggestionsLoading ? (
               <div className="space-y-3">
-                {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="overflow-x-auto rounded-lg border">
+                <div className="overflow-x-auto rounded-xl border border-border">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b bg-muted/50">
-                        <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">Source Column</th>
-                        <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">Map To</th>
-                        <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">Confidence</th>
+                      <tr className="border-b border-border bg-surface-1">
+                        <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Source Column</th>
+                        <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Map To</th>
+                        <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Confidence</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-border">
                       {mappings.map((mapping) => {
                         const suggestion = suggestions?.suggestions.find(
                           (s) => s.source_column === mapping.source_column,
                         )
                         return (
-                          <tr key={mapping.source_column} className="border-b last:border-0">
-                            <td className="px-3 py-2.5 font-medium">{mapping.source_column}</td>
-                            <td className="px-3 py-2.5">
+                          <tr key={mapping.source_column} className="hover:bg-accent/30 transition-colors duration-150">
+                            <td className="px-4 py-3 font-medium">{mapping.source_column}</td>
+                            <td className="px-4 py-3">
                               <Select
                                 value={mapping.target_field ?? ''}
                                 onChange={(e) =>
@@ -204,7 +211,7 @@ export function ImportWizardPage() {
                                 ))}
                               </Select>
                             </td>
-                            <td className="px-3 py-2.5">
+                            <td className="px-4 py-3">
                               {suggestion?.confidence != null && suggestion.confidence > 0 ? (
                                 <Badge variant={suggestion.confidence >= 0.8 ? 'success' : 'warning'}>
                                   {Math.round(suggestion.confidence * 100)}% {suggestion.match_type}
@@ -213,7 +220,7 @@ export function ImportWizardPage() {
                                 <Badge variant="outline">No match</Badge>
                               )}
                               {suggestion?.ambiguous && (
-                                <span className="ml-2 text-xs text-amber-600">Needs review</span>
+                                <span className="ml-2 text-xs font-medium text-accent-amber">Needs review</span>
                               )}
                             </td>
                           </tr>
@@ -239,21 +246,21 @@ export function ImportWizardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Preview & Validate</CardTitle>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Review mapped data before importing. {preview?.total_rows} total rows.
             </p>
           </CardHeader>
           <CardContent>
             {previewLoading ? (
-              <Skeleton className="h-48 w-full" />
+              <Skeleton className="h-48 w-full rounded-xl" />
             ) : preview ? (
               <div className="space-y-4">
                 {preview.validation_errors.length > 0 && (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-900 dark:bg-amber-950">
-                    <p className="font-medium text-amber-800 dark:text-amber-200">
+                  <div className="rounded-xl border border-accent-amber/30 bg-accent-amber/5 p-4 text-sm">
+                    <p className="font-semibold text-accent-amber">
                       {preview.validation_errors.length} validation issue(s):
                     </p>
-                    <ul className="mt-2 list-disc pl-5">
+                    <ul className="mt-2 list-disc pl-5 text-foreground/80 space-y-0.5">
                       {preview.validation_errors.map((err, i) => (
                         <li key={i}>Row {err.row_number}: {err.field} — {err.message}</li>
                       ))}
@@ -261,23 +268,23 @@ export function ImportWizardPage() {
                   </div>
                 )}
 
-                <div className="overflow-x-auto rounded-lg border">
+                <div className="overflow-x-auto rounded-xl border border-border">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b bg-muted/50">
+                      <tr className="border-b border-border bg-surface-1">
                         {preview.preview_rows[0] &&
                           Object.keys(preview.preview_rows[0]).map((key) => (
-                            <th key={key} className="px-3 py-2.5 text-left font-medium text-muted-foreground">
+                            <th key={key} className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                               {key}
                             </th>
                           ))}
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-border">
                       {preview.preview_rows.map((row, i) => (
-                        <tr key={i} className="border-b last:border-0">
+                        <tr key={i} className="hover:bg-accent/30 transition-colors duration-150">
                           {Object.values(row).map((val, j) => (
-                            <td key={j} className="px-3 py-2.5">{val || '—'}</td>
+                            <td key={j} className="px-3 py-3">{val || <span className="text-muted-foreground/60">—</span>}</td>
                           ))}
                         </tr>
                       ))}
@@ -305,14 +312,17 @@ export function ImportWizardPage() {
         <Card>
           <CardHeader><CardTitle>Processing...</CardTitle></CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center gap-4 py-8">
-              <Loader2 className="size-12 animate-spin text-primary" />
-              <p className="text-muted-foreground">
-                Processing {batch.processed_rows} of {batch.total_rows} rows...
+            <div className="flex flex-col items-center gap-5 py-12">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-primary/10 animate-pulse-ring" />
+                <Loader2 className="size-14 animate-spin text-primary relative" />
+              </div>
+              <p className="text-muted-foreground font-medium">
+                Processing <span className="tabular-nums text-foreground">{batch.processed_rows}</span> of <span className="tabular-nums text-foreground">{batch.total_rows}</span> rows...
               </p>
-              <div className="h-2 w-64 overflow-hidden rounded-full bg-muted">
+              <div className="h-2.5 w-72 overflow-hidden rounded-full bg-surface-1">
                 <div
-                  className="h-full bg-primary transition-all"
+                  className="h-full rounded-full bg-brand-gradient transition-all duration-500"
                   style={{
                     width: `${batch.total_rows > 0 ? (batch.processed_rows / batch.total_rows) * 100 : 0}%`,
                   }}
@@ -328,24 +338,26 @@ export function ImportWizardPage() {
         <Card>
           <CardHeader><CardTitle>Import Complete</CardTitle></CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center gap-4 py-8">
-              <CheckCircle className="size-12 text-emerald-500" />
-              <p className="text-lg font-medium">Import completed successfully</p>
-              <div className="grid grid-cols-3 gap-8 text-center">
+            <div className="flex flex-col items-center gap-6 py-12">
+              <div className="flex size-16 items-center justify-center rounded-2xl bg-accent-emerald/10 animate-scale-in">
+                <CheckCircle className="size-10 text-accent-emerald" />
+              </div>
+              <p className="text-xl font-bold tracking-tight">Import completed successfully</p>
+              <div className="grid grid-cols-3 gap-10 text-center">
                 <div>
-                  <p className="text-2xl font-bold text-emerald-600">{batch.created_rows}</p>
-                  <p className="text-sm text-muted-foreground">Created</p>
+                  <p className="text-3xl font-bold tabular-nums text-accent-emerald">{batch.created_rows}</p>
+                  <p className="text-sm text-muted-foreground mt-1">Created</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-amber-600">{batch.duplicate_rows}</p>
-                  <p className="text-sm text-muted-foreground">Duplicates</p>
+                  <p className="text-3xl font-bold tabular-nums text-accent-amber">{batch.duplicate_rows}</p>
+                  <p className="text-sm text-muted-foreground mt-1">Duplicates</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-red-600">{batch.rejected_rows}</p>
-                  <p className="text-sm text-muted-foreground">Rejected</p>
+                  <p className="text-3xl font-bold tabular-nums text-accent-rose">{batch.rejected_rows}</p>
+                  <p className="text-sm text-muted-foreground mt-1">Rejected</p>
                 </div>
               </div>
-              <div className="mt-4 flex gap-3">
+              <div className="mt-2 flex gap-3">
                 <Button onClick={() => navigate(`/imports/${batch.id}`)}>
                   View Details
                 </Button>
