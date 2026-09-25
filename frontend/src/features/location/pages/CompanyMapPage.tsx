@@ -10,6 +10,7 @@ import { Lock, MapPin, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { useMapCompanies, usePincode } from '../hooks'
+import { InteractiveMap } from '../components/InteractiveMap'
 import type { MapCompanyItem, MapNicCodeRef } from '../types'
 
 /**
@@ -104,11 +105,6 @@ export function CompanyMapPage() {
   }
 
   const matchedNicCodeIds = owned.data?.matched_nic_code_ids ?? null
-  function visibleNicCodes(nicCodes: MapNicCodeRef[]): MapNicCodeRef[] {
-    if (!matchedNicCodeIds) return nicCodes
-    const matched = new Set(matchedNicCodeIds)
-    return nicCodes.filter((n) => n.id != null && matched.has(n.id))
-  }
 
   const center = useMemo(() => {
     if (centroid.data)
@@ -243,7 +239,12 @@ export function CompanyMapPage() {
       </div>
 
       {pincode && center ? (
-        <MapView center={center} radiusKm={radiusKm} ownedCount={list.length} />
+        <InteractiveMap
+          center={center}
+          radiusKm={radiusKm}
+          companies={list}
+          matchedNicCodeIds={matchedNicCodeIds}
+        />
       ) : (
         <EmptyState
           icon={<MapPin className="size-6" />}
@@ -266,7 +267,7 @@ export function CompanyMapPage() {
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {list.map((c) => {
-              const chips = visibleNicCodes(c.nic_codes ?? [])
+              const chips = visibleNicCodes(c.nic_codes ?? [], matchedNicCodeIds)
               return (
                 <li key={c.id} className="rounded-xl border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-card-hover flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -317,6 +318,12 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
   )
 }
 
+function visibleNicCodes(nicCodes: MapNicCodeRef[], matchedIds: string[] | null): MapNicCodeRef[] {
+  if (!matchedIds) return nicCodes
+  const matched = new Set(matchedIds)
+  return nicCodes.filter((n) => n.id != null && matched.has(n.id))
+}
+
 /** The default filter's `value` is stored as raw JSON (e.g. `"<uuid>"`) — parse it defensively. */
 function parseNicDefaultId(raw: string | null | undefined): string | undefined {
   if (!raw) return undefined
@@ -326,36 +333,4 @@ function parseNicDefaultId(raw: string | null | undefined): string | undefined {
   } catch {
     return undefined
   }
-}
-
-const MAPS_KEY = import.meta.env.VITE_MAPS_JS_API_KEY as string | undefined
-
-function MapView({ center, radiusKm, ownedCount }: { center: { lat: number; lng: number }; radiusKm: number; ownedCount: number }) {
-  const delta = 0.01 * Math.max(radiusKm, 2)
-  const bbox = [center.lng - delta, center.lat - delta, center.lng + delta, center.lat + delta]
-
-  const src = MAPS_KEY
-    ? `https://www.google.com/maps/embed/v1/view?key=${MAPS_KEY}&center=${center.lat},${center.lng}&zoom=13`
-    : `https://www.openstreetmap.org/export/embed.html?bbox=${bbox.join(',')}&layer=mapnik&marker=${center.lat},${center.lng}`
-
-  return (
-    <div className="rounded-xl overflow-hidden border border-border shadow-card bg-card">
-      <iframe
-        src={src}
-        title="Company map"
-        className="w-full h-[400px] border-0"
-        loading="lazy"
-        referrerPolicy="no-referrer-when-downgrade"
-      />
-      <div className="flex items-center justify-between border-t border-border px-3 py-2 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-2">
-          <span className="inline-block w-3 h-3 rounded-full bg-accent-teal" />
-          Owned in ProspectSoul ({ownedCount})
-        </span>
-        {!MAPS_KEY ? (
-          <span>OpenStreetMap fallback — set <code>VITE_MAPS_JS_API_KEY</code> for Google Maps.</span>
-        ) : null}
-      </div>
-    </div>
-  )
 }

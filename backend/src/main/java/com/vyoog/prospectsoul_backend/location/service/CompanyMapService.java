@@ -126,13 +126,13 @@ public class CompanyMapService {
             centreLng = master.getLongitude();
         } else {
             var coordCarrying = pincodeMatches.stream()
-                    .filter(c -> c.getLatitude() != null && c.getLongitude() != null)
+                    .filter(this::hasCoords)
                     .toList();
             if (!coordCarrying.isEmpty()) {
-                centreLat = coordCarrying.stream().map(Company::getLatitude)
+                centreLat = coordCarrying.stream().map(this::effectiveLat)
                         .reduce(BigDecimal.ZERO, BigDecimal::add)
                         .divide(BigDecimal.valueOf(coordCarrying.size()), java.math.RoundingMode.HALF_UP);
-                centreLng = coordCarrying.stream().map(Company::getLongitude)
+                centreLng = coordCarrying.stream().map(this::effectiveLng)
                         .reduce(BigDecimal.ZERO, BigDecimal::add)
                         .divide(BigDecimal.valueOf(coordCarrying.size()), java.math.RoundingMode.HALF_UP);
             } else {
@@ -147,8 +147,8 @@ public class CompanyMapService {
         final BigDecimal cLng = centreLng;
         List<Company> radiusExtras = companyRepository.findAll().stream()
                 .filter(c -> !pincode.equals(c.getPincode()))
-                .filter(c -> c.getLatitude() != null && c.getLongitude() != null)
-                .filter(c -> haversineKm(cLat, cLng, c.getLatitude(), c.getLongitude()) <= radiusKm)
+                .filter(this::hasCoords)
+                .filter(c -> haversineKm(cLat, cLng, effectiveLat(c), effectiveLng(c)) <= radiusKm)
                 .filter(c -> nicFilter == null || nicFilter.contains(c.getId()))
                 .toList();
 
@@ -178,8 +178,8 @@ public class CompanyMapService {
         List<MapCompanyResponse.Item> items = combined.values().stream()
                 .map(c -> new MapCompanyResponse.Item(
                         c.getId(), c.getCanonicalName(), c.getPipelineState().name(),
-                        c.getLatitude()  != null ? c.getLatitude()  : cLat,
-                        c.getLongitude() != null ? c.getLongitude() : cLng,
+                        effectiveLat(c) != null ? effectiveLat(c) : cLat,
+                        effectiveLng(c) != null ? effectiveLng(c) : cLng,
                         c.getPrimaryNicCodeId(),
                         nicByCompany.getOrDefault(c.getId(), List.of())))
                 .toList();
@@ -191,6 +191,18 @@ public class CompanyMapService {
                 items,
                 matchedNicCodeIdList
         );
+    }
+
+    private BigDecimal effectiveLat(Company c) {
+        return c.getLatitude() != null ? c.getLatitude() : c.getGoogleLat();
+    }
+
+    private BigDecimal effectiveLng(Company c) {
+        return c.getLongitude() != null ? c.getLongitude() : c.getGoogleLng();
+    }
+
+    private boolean hasCoords(Company c) {
+        return effectiveLat(c) != null && effectiveLng(c) != null;
     }
 
     private double haversineKm(BigDecimal lat1, BigDecimal lng1, BigDecimal lat2, BigDecimal lng2) {
