@@ -1,16 +1,22 @@
 package com.vyoog.prospectsoul_backend.enrichment.framework.service;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import com.vyoog.prospectsoul_backend.company.entity.Company;
+import com.vyoog.prospectsoul_backend.company.phone.entity.CompanyPhone;
+import com.vyoog.prospectsoul_backend.company.phone.entity.ConfidenceLevel;
+import com.vyoog.prospectsoul_backend.company.phone.entity.ConfidenceMode;
+import com.vyoog.prospectsoul_backend.company.phone.entity.NumberSourceType;
+import com.vyoog.prospectsoul_backend.company.phone.repository.CompanyPhoneRepository;
+import com.vyoog.prospectsoul_backend.company.phone.service.ConfidenceEngine;
 import com.vyoog.prospectsoul_backend.company.repository.CompanyRepository;
 import com.vyoog.prospectsoul_backend.enrichment.framework.entity.EnrichmentCandidateEntity;
 import com.vyoog.prospectsoul_backend.enrichment.framework.repository.EnrichmentCandidateRepository;
 import com.vyoog.prospectsoul_backend.enrichment.framework.spi.Candidate;
 import com.vyoog.prospectsoul_backend.enrichment.framework.spi.FactChange;
+import com.vyoog.prospectsoul_backend.imports.normalization.PhoneNormalizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,8 +28,18 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class FactUpdater {
 
+    private static final Map<String, NumberSourceType> PROVIDER_SOURCE_MAP = Map.of(
+            "GOOGLE_PLACES", NumberSourceType.GOOGLE_API,
+            "WEBSITE", NumberSourceType.WEBSITE,
+            "LINKEDIN", NumberSourceType.LINKEDIN,
+            "INDIAMART", NumberSourceType.INDIAMART
+    );
+
     private final CompanyRepository companyRepository;
     private final EnrichmentCandidateRepository candidateRepository;
+    private final CompanyPhoneRepository companyPhoneRepository;
+    private final ConfidenceEngine confidenceEngine;
+    private final PhoneNormalizer phoneNormalizer;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public FactUpdateResult applyFacts(UUID companyId, UUID jobId, String providerKey,
@@ -51,6 +67,9 @@ public class FactUpdater {
                 } else {
                     boolean wasEmpty = fact.oldValue() == null || fact.oldValue().isBlank();
                     setCompanyField(company, fact.field(), fact.newValue());
+                    if ("primary_phone_normalized".equals(fact.field()) && fact.newValue() != null) {
+                        ensureCompanyPhoneRecord(company, fact.newValue(), providerKey);
+                    }
                     if (wasEmpty) added++;
                     else updated++;
                 }
@@ -72,6 +91,38 @@ public class FactUpdater {
 
         companyRepository.save(company);
         return new FactUpdateResult(added, updated, candidatesAdded);
+    }
+
+    private void ensureCompanyPhoneRecord(Company company, String phoneValue, String providerKey) {
+        String normalized = phoneNormalizer.normalize(phoneValue);
+        if (normalized == null || normalized.isBlank()) return;
+
+        boolean exists = companyPhoneRepository
+                .findByCompanyIdAndNumberNormalized(company.getId(), normalized)
+                .isPresent();
+        if (exists) return;
+
+        NumberSourceType source = PROVIDER_SOURCE_MAP.getOrDefault(providerKey, NumberSourceType.GOOGLE_API);
+        ConfidenceEngine.ComputeResult conf = confidenceEngine.compute(
+                source, null, null, null, null);
+
+        boolean hasOtherPhones = !companyPhoneRepository
+                .findByCompanyIdOrderByIsPrimaryDescConfidenceAscCreatedAtDesc(company.getId())
+                .isEmpty();
+
+        CompanyPhone phone = CompanyPhone.builder()
+                .company(company)
+                .numberRaw(phoneValue)
+                .numberNormalized(normalized)
+                .numberSource(source)
+                .confidence(ConfidenceLevel.max(conf.confidence(), ConfidenceLevel.MEDIUM))
+                .confidenceMode(ConfidenceMode.AUTO)
+                .isPrimary(!hasOtherPhones)
+                .build();
+        companyPhoneRepository.save(phone);
+
+        log.info("Created CompanyPhone from enrichment provider={} for company={}, confidence={}",
+                providerKey, company.getId(), phone.getConfidence());
     }
 
     private void setCompanyField(Company company, String fieldName, String value) {
@@ -96,13 +147,9 @@ public class FactUpdater {
             case "social_instagram" -> company.setSocialInstagram(value);
             case "social_youtube" -> company.setSocialYoutube(value);
             case "products" -> company.setProducts(value);
-            case "primary_phone_country" -> company.setPrimaryPhoneCountry(value);
-            case "primary_phone_region" -> company.setPrimaryPhoneRegion(value);
-            case "primary_phone_carrier" -> company.setPrimaryPhoneCarrier(value);
-            case "primary_phone_type" -> company.setPrimaryPhoneType(value);
-            case "primary_phone_status" -> company.setPrimaryPhoneStatus(value);
-            case "primary_phone_dnd_registered" -> company.setPrimaryPhoneDndRegistered(
-                    value != null ? Boolean.parseBoolean(value) : null);
+            case "primary_phone_country", "primary_phone_region", "primary_phone_carrier",
+                 "primary_phone_type", "primary_phone_status", "primary_phone_dnd_registered" ->
+                    log.debug("Phone enrichment field '{}' now lives on company_phones; skipping company update", fieldName);
             default -> log.warn("Unknown company field for enrichment: {}", fieldName);
         }
     }
@@ -112,6 +159,9 @@ public class FactUpdater {
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Company not found: " + companyId));
         setCompanyField(company, fieldName, value);
+        if ("primary_phone_normalized".equals(fieldName) && value != null) {
+            ensureCompanyPhoneRecord(company, value, "MANUAL");
+        }
         companyRepository.save(company);
     }
 

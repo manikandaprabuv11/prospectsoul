@@ -206,27 +206,6 @@ public class Company {
     @Column(name = "social_youtube", length = 200)
     private String socialYoutube;
 
-    @Column(name = "primary_phone_country", length = 3)
-    private String primaryPhoneCountry;
-
-    @Column(name = "primary_phone_region", length = 60)
-    private String primaryPhoneRegion;
-
-    @Column(name = "primary_phone_carrier", length = 60)
-    private String primaryPhoneCarrier;
-
-    @Column(name = "primary_phone_type", length = 20)
-    private String primaryPhoneType;
-
-    @Column(name = "primary_phone_status", length = 20)
-    private String primaryPhoneStatus;
-
-    @Column(name = "primary_phone_dnd_registered")
-    private Boolean primaryPhoneDndRegistered;
-
-    @Column(name = "primary_phone_last_enriched_at")
-    private Instant primaryPhoneLastEnrichedAt;
-
     @PrePersist
     void prePersist() {
         Instant now = Instant.now();

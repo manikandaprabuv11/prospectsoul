@@ -10,6 +10,8 @@ import com.vyoog.prospectsoul_backend.company.dto.request.CompanyUpdateRequest;
 import com.vyoog.prospectsoul_backend.company.dto.response.CompanyGroupedByNicResponse;
 import com.vyoog.prospectsoul_backend.company.dto.response.CompanyResponse;
 import com.vyoog.prospectsoul_backend.company.specification.CompanySpecification;
+import com.vyoog.prospectsoul_backend.company.phone.entity.ConfidenceLevel;
+import com.vyoog.prospectsoul_backend.company.phone.entity.NumberSourceType;
 import java.math.BigDecimal;
 import java.util.List;
 import com.vyoog.prospectsoul_backend.company.download.CompanyDownloadRequest;
@@ -92,6 +94,9 @@ public class CompanyController {
             @RequestParam(name = "nic_parent_ids", required = false) List<String> nicParentIdsRaw,
             @RequestParam(name = "nic_include_descendants", required = false) Boolean nicIncludeDescendants,
             @RequestParam(name = "has_contact_role_id", required = false) UUID hasContactRoleId,
+            @RequestParam(name = "confidence", required = false) ConfidenceLevel confidence,
+            @RequestParam(name = "number_source", required = false) NumberSourceType numberSource,
+            @RequestParam(name = "has_decision_maker", required = false) Boolean hasDecisionMaker,
             @RequestParam(name = "apply_defaults", defaultValue = "false") boolean applyDefaults,
             @RequestParam(name = "view", defaultValue = "flat") String view,
             @RequestParam(defaultValue = "0") int page,
@@ -188,7 +193,8 @@ public class CompanyController {
                 pipelineState, verificationStatus,
                 region, district, pincode,
                 turnoverMin, turnoverMax, employeeMin, employeeMax, gstPresent,
-                nicCodeId, nicIds, hasContactRoleId);
+                nicCodeId, nicIds, hasContactRoleId,
+                confidence, numberSource, hasDecisionMaker);
 
         if ("grouped_by_nic".equalsIgnoreCase(view)) {
             if (nicParentId == null) {

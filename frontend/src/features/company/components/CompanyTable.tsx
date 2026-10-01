@@ -3,11 +3,11 @@ import { StatusChip } from '@/components/feedback/StatusChip'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import {
   ArrowDown, ArrowUp, ArrowUpDown, Building2, ChevronDown, ChevronRight, Eye, Pencil,
-  ExternalLink, Globe, Link2, Mail, MapPin, Phone, User,
+  ExternalLink, Globe, Link2, Mail, MapPin, Phone, Star, User,
 } from 'lucide-react'
 import { Fragment, useState } from 'react'
 import { Link } from 'react-router'
-import type { Company } from '../types'
+import type { Company, ConfidenceLevel } from '../types'
 
 interface Props {
   companies: Company[]
@@ -61,6 +61,8 @@ export function CompanyTable({ companies, onSort, sortField, sortDir }: Props) {
               <Th>Location</Th>
               <Th>Industry / NIC</Th>
               <Th>Phone</Th>
+              <Th>Confidence</Th>
+              <Th>Designation</Th>
               <Th>Website</Th>
               <Th>Status</Th>
               <th scope="col" className="px-3 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -124,16 +126,34 @@ export function CompanyTable({ companies, onSort, sortField, sortDir }: Props) {
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       {c.primary_contact_phone ? (
-                        <a href={`tel:${c.primary_contact_phone}`} className="inline-flex items-center gap-1.5 text-foreground hover:text-primary transition-colors">
-                          <Phone className="size-3 text-muted-foreground" />
-                          {c.primary_contact_phone}
-                        </a>
+                        <span className="inline-flex items-center gap-1.5">
+                          <a href={`tel:${c.primary_contact_phone}`} className="inline-flex items-center gap-1.5 text-foreground hover:text-primary transition-colors">
+                            <Phone className="size-3 text-muted-foreground" />
+                            {formatPhone(c.primary_contact_phone)}
+                          </a>
+                          {(c.additional_phone_count ?? 0) > 0 && (
+                            <span className="text-[10px] text-muted-foreground bg-muted rounded px-1 py-0.5">
+                              +{c.additional_phone_count}
+                            </span>
+                          )}
+                        </span>
                       ) : c.primary_phone_normalized ? (
                         <span className="inline-flex items-center gap-1.5 text-muted-foreground">
                           <Phone className="size-3" />
-                          {c.primary_phone_normalized}
+                          {formatPhone(c.primary_phone_normalized)}
+                          {(c.additional_phone_count ?? 0) > 0 && (
+                            <span className="text-[10px] bg-muted rounded px-1 py-0.5">
+                              +{c.additional_phone_count}
+                            </span>
+                          )}
                         </span>
                       ) : '—'}
+                    </td>
+                    <td className="px-3 py-3">
+                      <ConfidenceBadge level={c.primary_phone_confidence ?? null} />
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm">
+                      <DesignationCell designation={c.primary_phone_designation ?? null} />
                     </td>
                     <td className="px-3 py-3 max-w-[180px]">
                       {c.website_domain ? (
@@ -170,7 +190,7 @@ export function CompanyTable({ companies, onSort, sortField, sortDir }: Props) {
                   </tr>
                   {isExpanded && (
                     <tr className="bg-surface-1/60">
-                      <td colSpan={8} className="px-4 py-4">
+                      <td colSpan={10} className="px-4 py-4">
                         <CompanyDetailsPanel company={c} />
                       </td>
                     </tr>
@@ -245,8 +265,8 @@ function CompanyDetailsPanel({ company: c }: { company: Company }) {
       <DetailSection title="Enrichment & Social">
         <DetailRow label="Google category" value={c.google_business_category} />
         <DetailRow label="Website title" value={c.website_title} />
-        <DetailRow label="Phone status" value={c.primary_phone_status} />
-        <DetailRow label="Phone carrier" value={c.primary_phone_carrier} />
+        <DetailRow label="Phone status" value={c.phones?.[0]?.enriched_status} />
+        <DetailRow label="Phone carrier" value={c.phones?.[0]?.enriched_carrier} />
         <div className="flex flex-wrap gap-1.5 pt-1">
           <SocialLink href={c.social_linkedin} icon={<Link2 className="size-3.5" />} label="LinkedIn" />
           <SocialLink href={c.social_facebook} icon={<Link2 className="size-3.5" />} label="Facebook" />
@@ -344,6 +364,48 @@ function SortableTh({
       </button>
     </th>
   )
+}
+
+const CONFIDENCE_STYLES: Record<ConfidenceLevel, string> = {
+  HIGH: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/20',
+  MEDIUM: 'bg-amber-500/15 text-amber-700 border-amber-500/20',
+  LOW: 'bg-neutral-400/15 text-neutral-500 border-neutral-400/20',
+}
+const CONFIDENCE_LABELS: Record<ConfidenceLevel, string> = { HIGH: 'H', MEDIUM: 'M', LOW: 'L' }
+
+function ConfidenceBadge({ level }: { level: ConfidenceLevel | null }) {
+  if (!level) return <span className="text-muted-foreground">—</span>
+  return (
+    <span
+      className={`inline-flex size-6 items-center justify-center rounded-md border text-[11px] font-bold ${CONFIDENCE_STYLES[level]}`}
+      title={level.charAt(0) + level.slice(1).toLowerCase()}
+    >
+      {CONFIDENCE_LABELS[level]}
+    </span>
+  )
+}
+
+function DesignationCell({ designation }: { designation: string | null }) {
+  if (!designation) return <span className="text-muted-foreground">—</span>
+  const isDm = DECISION_MAKER_TITLES.has(designation.toUpperCase())
+  return (
+    <span className={isDm ? 'font-medium text-amber-600' : 'text-foreground'}>
+      {isDm && <Star className="mr-0.5 inline size-3 fill-amber-400 text-amber-400" />}
+      {designation}
+    </span>
+  )
+}
+
+const DECISION_MAKER_TITLES = new Set([
+  'MD', 'MANAGING DIRECTOR', 'CEO', 'CHIEF EXECUTIVE OFFICER',
+  'FOUNDER', 'CO-FOUNDER', 'OWNER', 'PROPRIETOR', 'PARTNER',
+  'DIRECTOR', 'CHAIRMAN', 'PRESIDENT',
+])
+
+function formatPhone(p: string): string {
+  const digits = p.replace(/\D/g, '')
+  if (digits.length === 10) return `${digits.slice(0, 5)} ${digits.slice(5)}`
+  return p
 }
 
 function formatCurrency(v: string | number): string {

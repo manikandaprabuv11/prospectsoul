@@ -8,6 +8,9 @@ import java.util.UUID;
 
 import com.vyoog.prospectsoul_backend.company.entity.Company;
 import com.vyoog.prospectsoul_backend.company.nic.entity.CompanyNicCode;
+import com.vyoog.prospectsoul_backend.company.phone.entity.CompanyPhone;
+import com.vyoog.prospectsoul_backend.company.phone.entity.ConfidenceLevel;
+import com.vyoog.prospectsoul_backend.company.phone.entity.NumberSourceType;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Subquery;
@@ -39,7 +42,11 @@ public final class CompanySpecification {
             Boolean gstPresent,
             UUID nicCodeId,
             Collection<UUID> nicCodeIds,      // resolved descendant set — see repository
-            UUID hasContactRoleId
+            UUID hasContactRoleId,
+            // v1.2: phone confidence filters
+            ConfidenceLevel confidence,
+            NumberSourceType numberSource,
+            Boolean hasDecisionMaker
     ) {}
 
     public static Specification<Company> withFilters(Filters f) {
@@ -122,6 +129,40 @@ public final class CompanySpecification {
                 predicates.add(root.get("id").in(sub));
             }
 
+            // v1.2: phone confidence filters — correlated subqueries on company_phones
+            if (f.confidence != null && query != null) {
+                Subquery<UUID> sub = query.subquery(UUID.class);
+                var phone = sub.from(CompanyPhone.class);
+                sub.select(phone.get("company").get("id"))
+                        .where(cb.and(
+                                cb.equal(phone.get("company").get("id"), root.get("id")),
+                                cb.isTrue(phone.get("isPrimary")),
+                                cb.equal(phone.get("confidence"), f.confidence)));
+                predicates.add(cb.exists(sub));
+            }
+            if (f.numberSource != null && query != null) {
+                Subquery<UUID> sub = query.subquery(UUID.class);
+                var phone = sub.from(CompanyPhone.class);
+                sub.select(phone.get("company").get("id"))
+                        .where(cb.and(
+                                cb.equal(phone.get("company").get("id"), root.get("id")),
+                                cb.equal(phone.get("numberSource"), f.numberSource)));
+                predicates.add(cb.exists(sub));
+            }
+            if (f.hasDecisionMaker != null && query != null) {
+                Subquery<UUID> sub = query.subquery(UUID.class);
+                var phone = sub.from(CompanyPhone.class);
+                sub.select(phone.get("company").get("id"))
+                        .where(cb.and(
+                                cb.equal(phone.get("company").get("id"), root.get("id")),
+                                cb.isNotNull(phone.get("designationOverride"))));
+                if (Boolean.TRUE.equals(f.hasDecisionMaker)) {
+                    predicates.add(cb.exists(sub));
+                } else {
+                    predicates.add(cb.not(cb.exists(sub)));
+                }
+            }
+
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
@@ -142,7 +183,8 @@ public final class CompanySpecification {
                                                       String pipelineState, String verificationStatus) {
         return withFilters(new Filters(search, city, state, industry, cluster, source,
                 pipelineState, verificationStatus,
-                null, null, null, null, null, null, null, null, null, null, null));
+                null, null, null, null, null, null, null, null, null, null, null,
+                null, null, null));
     }
 
     private static void unused(JoinType j) { /* keep the import for future use */ }

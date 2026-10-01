@@ -68,7 +68,7 @@ export function CompanyDetailPage() {
               companyId={id!}
               lastGoogleEnrich={company.google_last_enriched_at}
               lastWebsiteEnrich={company.website_last_enriched_at}
-              lastPhoneEnrich={company.primary_phone_last_enriched_at}
+              lastPhoneEnrich={company.phones?.[0]?.enriched_at ?? null}
             />
             {company.verification_status !== 'VERIFIED' && (
               <Button
@@ -182,7 +182,7 @@ export function CompanyDetailPage() {
       </Card>
 
       {(company.google_place_id || company.website_title || company.social_linkedin ||
-        company.primary_phone_status) ? (
+        company.phones?.some(p => p.enriched_status)) ? (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -225,10 +225,10 @@ export function CompanyDetailPage() {
                   <a href={company.social_x} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate">{company.social_x}</a>
                 } />
               )}
-              {company.primary_phone_status && <Field label="Phone status" value={company.primary_phone_status} />}
-              {company.primary_phone_type && <Field label="Phone type" value={company.primary_phone_type} />}
-              {company.primary_phone_carrier && <Field label="Carrier" value={company.primary_phone_carrier} />}
-              {company.primary_phone_region && <Field label="Phone region" value={company.primary_phone_region} />}
+              {company.phones?.find(p => p.is_primary)?.enriched_status && <Field label="Phone status" value={company.phones.find(p => p.is_primary)!.enriched_status!} />}
+              {company.phones?.find(p => p.is_primary)?.enriched_line_type && <Field label="Phone type" value={company.phones.find(p => p.is_primary)!.enriched_line_type!} />}
+              {company.phones?.find(p => p.is_primary)?.enriched_carrier && <Field label="Carrier" value={company.phones.find(p => p.is_primary)!.enriched_carrier!} />}
+              {company.phones?.find(p => p.is_primary)?.enriched_region && <Field label="Phone region" value={company.phones.find(p => p.is_primary)!.enriched_region!} />}
             </div>
           </CardContent>
         </Card>

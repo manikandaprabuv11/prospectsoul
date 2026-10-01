@@ -1,9 +1,15 @@
 package com.vyoog.prospectsoul_backend.enrichment.phone;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.*;
 
 import com.vyoog.prospectsoul_backend.company.entity.Company;
+import com.vyoog.prospectsoul_backend.company.phone.entity.CompanyPhone;
+import com.vyoog.prospectsoul_backend.company.phone.entity.ConfidenceLevel;
+import com.vyoog.prospectsoul_backend.company.phone.entity.ConfidenceMode;
+import com.vyoog.prospectsoul_backend.company.phone.repository.CompanyPhoneRepository;
+import com.vyoog.prospectsoul_backend.company.phone.service.ConfidenceEngine;
 import com.vyoog.prospectsoul_backend.company.repository.CompanyRepository;
 import com.vyoog.prospectsoul_backend.contact.entity.Contact;
 import com.vyoog.prospectsoul_backend.contact.repository.ContactRepository;
@@ -24,6 +30,8 @@ public class PhoneProvider implements EnrichmentProvider {
     private final PhoneFieldMapper fieldMapper;
     private final CompanyRepository companyRepository;
     private final ContactRepository contactRepository;
+    private final CompanyPhoneRepository companyPhoneRepository;
+    private final ConfidenceEngine confidenceEngine;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -50,17 +58,61 @@ public class PhoneProvider implements EnrichmentProvider {
             Company company = companyRepository.findById(companyId)
                     .orElseThrow(() -> new IllegalArgumentException("Company not found: " + companyId));
 
-            String phone = company.getPrimaryPhoneNormalized();
-            if (phone != null && !phone.isBlank()) {
-                PhoneValidatorClient.PhoneValidationResult result = validatorClient.validate(phone);
-                PhoneFieldMapper.MappingResult mapping = fieldMapper.mapCompanyPhone(result,
-                        company.getPrimaryPhoneNormalized(), company.getPrimaryPhoneCountry(),
-                        company.getPrimaryPhoneRegion(), company.getPrimaryPhoneCarrier(),
-                        company.getPrimaryPhoneType(), company.getPrimaryPhoneStatus());
-                allFacts.addAll(mapping.facts());
-                allCandidates.addAll(mapping.candidates());
-                validationLog.add(Map.of("entity", "COMPANY", "phone", phone,
-                        "status", result.status(), "e164", result.e164() != null ? result.e164() : ""));
+            // Enrich all company phones in company_phones table
+            List<CompanyPhone> phones = companyPhoneRepository
+                    .findByCompanyIdOrderByIsPrimaryDescConfidenceAscCreatedAtDesc(companyId);
+
+            for (CompanyPhone phone : phones) {
+                String number = phone.getNumberNormalized();
+                if (number == null || number.isBlank()) continue;
+
+                PhoneValidatorClient.PhoneValidationResult result = validatorClient.validate(number);
+
+                phone.setEnrichedCountry(result.countryCode());
+                phone.setEnrichedRegion(result.region());
+                phone.setEnrichedCarrier(result.carrier());
+                phone.setEnrichedLineType(result.phoneType());
+                phone.setEnrichedStatus(result.status());
+                phone.setEnrichedDnd(null);
+                phone.setEnrichedAt(Instant.now());
+
+                // Recompute confidence using designation info
+                if (phone.getConfidenceMode() != ConfidenceMode.MANUAL) {
+                    String designation = phone.resolveDesignation();
+                    ConfidenceEngine.ComputeResult confResult = confidenceEngine.compute(
+                            phone.getNumberSource(), designation,
+                            phone.getConfidence(), phone.getConfidenceMode(), null);
+                    ConfidenceLevel newConf = confResult.confidence();
+
+                    // Validated phones get at least MEDIUM confidence
+                    if (newConf == ConfidenceLevel.LOW) {
+                        newConf = ConfidenceLevel.MEDIUM;
+                    }
+
+                    phone.setConfidence(newConf);
+                    phone.setConfidenceMode(confResult.mode());
+                }
+
+                companyPhoneRepository.save(phone);
+
+                validationLog.add(Map.of("entity", "COMPANY_PHONE", "phone_id", phone.getId().toString(),
+                        "phone", number, "status", result.status(),
+                        "e164", result.e164() != null ? result.e164() : ""));
+            }
+
+            // Fallback: also validate the legacy primary phone on the company
+            // if there are no company_phones records
+            if (phones.isEmpty()) {
+                String legacyPhone = company.getPrimaryPhoneNormalized();
+                if (legacyPhone != null && !legacyPhone.isBlank()) {
+                    PhoneValidatorClient.PhoneValidationResult result = validatorClient.validate(legacyPhone);
+                    PhoneFieldMapper.MappingResult mapping = fieldMapper.mapCompanyPhone(result,
+                            legacyPhone, null, null, null, null, null);
+                    allFacts.addAll(mapping.facts());
+                    validationLog.add(Map.of("entity", "COMPANY_LEGACY", "phone", legacyPhone,
+                            "status", result.status(),
+                            "e164", result.e164() != null ? result.e164() : ""));
+                }
             }
 
             List<Contact> contacts = contactRepository.findByCompanyId(companyId);
@@ -88,6 +140,7 @@ public class PhoneProvider implements EnrichmentProvider {
         }
 
         return new ProviderResult(
+                allFacts.isEmpty() && !validationLog.isEmpty() ? ProviderStatus.SUCCESS :
                 allFacts.isEmpty() ? ProviderStatus.PARTIAL : ProviderStatus.SUCCESS,
                 allFacts, allCandidates, rawPayload,
                 BigDecimal.ZERO, null, null

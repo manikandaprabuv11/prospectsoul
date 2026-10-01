@@ -82,7 +82,7 @@ class CompanyNicFilterIntegrationTest {
         var filters = new CompanySpecification.Filters(
                 null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null, null,
-                null, descendants, null);
+                null, descendants, null, null, null, null);
         var page = companyService.listWithFilters(filters, 0, 100, "createdAt", "desc");
         assertThat(page.totalElements()).isEqualTo(3);
         assertThat(page.content()).extracting("canonicalName")
@@ -92,7 +92,7 @@ class CompanyNicFilterIntegrationTest {
         var filtersDirect = new CompanySpecification.Filters(
                 null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null, null,
-                null, List.of(n22.getId()), null);
+                null, List.of(n22.getId()), null, null, null, null);
         var pageDirect = companyService.listWithFilters(filtersDirect, 0, 100, "createdAt", "desc");
         assertThat(pageDirect.totalElements()).isEqualTo(0);
     }
@@ -110,7 +110,7 @@ class CompanyNicFilterIntegrationTest {
         CompanyGroupedByNicResponse resp = companyService.groupedByNic(n22.getId(),
                 new CompanySpecification.Filters(null, null, null, null, null, null, null, null,
                         null, null, null, null, null, null, null, null,
-                        null, null, null));
+                        null, null, null, null, null, null));
 
         assertThat(resp.view()).isEqualTo("grouped_by_nic");
         assertThat(resp.rootNode().code()).isEqualTo("22");

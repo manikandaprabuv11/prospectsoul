@@ -15,6 +15,8 @@ import java.util.UUID;
 import com.vyoog.prospectsoul_backend.common.audit.service.AuditService;
 import com.vyoog.prospectsoul_backend.common.exception.BusinessRuleException;
 import com.vyoog.prospectsoul_backend.company.entity.Company;
+import com.vyoog.prospectsoul_backend.company.phone.entity.CompanyPhone;
+import com.vyoog.prospectsoul_backend.company.phone.repository.CompanyPhoneRepository;
 import com.vyoog.prospectsoul_backend.company.repository.CompanyRepository;
 import com.vyoog.prospectsoul_backend.company.specification.CompanySpecification;
 import com.vyoog.prospectsoul_backend.contact.entity.Contact;
@@ -50,6 +52,7 @@ public class CompanyDownloadService {
     private final CompanyRepository companyRepository;
     private final ContactRepository contactRepository;
     private final NicCodeRepository nicCodeRepository;
+    private final CompanyPhoneRepository companyPhoneRepository;
     private final AuditService auditService;
 
     @Value("${prospectsoul.download.row-cap:10000}")
@@ -176,13 +179,27 @@ public class CompanyDownloadService {
                     (contact.getRole() == null ? "" : contact.getRole().getLabel());
             case "primary_contact_phone"    -> contact == null ? "" : contact.getPhone();
             case "primary_contact_email"    -> contact == null ? "" : contact.getEmail();
+            case "primary_phone_status", "primary_phone_carrier", "primary_phone_type" -> {
+                var phones = companyPhoneRepository
+                        .findByCompanyIdOrderByIsPrimaryDescConfidenceAscCreatedAtDesc(c.getId());
+                CompanyPhone pp = phones.stream()
+                        .filter(p -> Boolean.TRUE.equals(p.getIsPrimary())).findFirst()
+                        .or(() -> phones.stream().findFirst()).orElse(null);
+                yield pp == null ? "" : switch (col) {
+                    case "primary_phone_status"  -> pp.getEnrichedStatus() != null ? pp.getEnrichedStatus() : "";
+                    case "primary_phone_carrier" -> pp.getEnrichedCarrier() != null ? pp.getEnrichedCarrier() : "";
+                    case "primary_phone_type"    -> pp.getEnrichedLineType() != null ? pp.getEnrichedLineType() : "";
+                    default -> "";
+                };
+            }
             default                         -> "";
         };
     }
 
     private CompanySpecification.Filters toFilters(CompanyDownloadRequest.Filter f) {
         if (f == null) return new CompanySpecification.Filters(null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null,
+                null, null, null);
         Collection<UUID> nicIds = null;
         if (f.nicParentId() != null) {
             boolean include = f.nicIncludeDescendants() == null || f.nicIncludeDescendants();
@@ -193,6 +210,7 @@ public class CompanyDownloadService {
                 f.pipelineState(), f.verificationStatus(),
                 f.region(), f.district(), f.pincode(),
                 f.turnoverMin(), f.turnoverMax(), f.employeeMin(), f.employeeMax(), f.gstPresent(),
-                f.nicCodeId(), nicIds, f.hasContactRoleId());
+                f.nicCodeId(), nicIds, f.hasContactRoleId(),
+                null, null, null);
     }
 }

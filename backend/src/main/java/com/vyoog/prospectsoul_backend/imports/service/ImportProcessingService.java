@@ -33,6 +33,12 @@ import com.vyoog.prospectsoul_backend.imports.normalization.WebsiteNormalizer;
 import com.vyoog.prospectsoul_backend.imports.parser.ActivitiesJsonParser;
 import com.vyoog.prospectsoul_backend.imports.repository.ImportBatchRepository;
 import com.vyoog.prospectsoul_backend.imports.repository.ImportRowRepository;
+import com.vyoog.prospectsoul_backend.company.phone.entity.CompanyPhone;
+import com.vyoog.prospectsoul_backend.company.phone.entity.ConfidenceLevel;
+import com.vyoog.prospectsoul_backend.company.phone.entity.ConfidenceMode;
+import com.vyoog.prospectsoul_backend.company.phone.entity.NumberSourceType;
+import com.vyoog.prospectsoul_backend.company.phone.service.ConfidenceEngine;
+import com.vyoog.prospectsoul_backend.company.phone.service.PhoneNormalizationResult;
 import com.vyoog.prospectsoul_backend.nic.entity.NicCode;
 import com.vyoog.prospectsoul_backend.nic.repository.NicCodeRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -82,6 +88,7 @@ public class ImportProcessingService {
     private final NicCodeRepository nicCodeRepository;
     private final CompanyNicCodeRepository companyNicCodeRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final ConfidenceEngine confidenceEngine;
     private final ImportProcessingService self;
 
     @PersistenceContext
@@ -100,7 +107,8 @@ public class ImportProcessingService {
             PhoneNormalizer phoneNormalizer, WebsiteNormalizer websiteNormalizer,
             ObjectMapper objectMapper, ActivitiesJsonParser activitiesParser,
             NicCodeRepository nicCodeRepository, CompanyNicCodeRepository companyNicCodeRepository,
-            JdbcTemplate jdbcTemplate, @Lazy ImportProcessingService self) {
+            JdbcTemplate jdbcTemplate, ConfidenceEngine confidenceEngine,
+            @Lazy ImportProcessingService self) {
         this.batchRepository = batchRepository;
         this.rowRepository = rowRepository;
         this.companyRepository = companyRepository;
@@ -114,6 +122,7 @@ public class ImportProcessingService {
         this.nicCodeRepository = nicCodeRepository;
         this.companyNicCodeRepository = companyNicCodeRepository;
         this.jdbcTemplate = jdbcTemplate;
+        this.confidenceEngine = confidenceEngine;
         this.self = self;
     }
 
@@ -306,6 +315,18 @@ public class ImportProcessingService {
             matchedId = ctx.phones.get(normalizedPhone);
             if (matchedId != null) matchReason = "phone_match";
         }
+        // v1.2: also check alternate phones against the dedup context
+        if (matchedId == null) {
+            for (String altKey : List.of("alternate_phone_1", "alternate_phone_2", "owner_phone")) {
+                String altRaw = mappedData.getOrDefault(altKey, "").trim();
+                if (altRaw.isBlank()) continue;
+                String altNorm = phoneNormalizer.normalize(altRaw);
+                if (altNorm != null && phoneNormalizer.isValid(altNorm)) {
+                    matchedId = ctx.phones.get(altNorm);
+                    if (matchedId != null) { matchReason = "phone_match"; break; }
+                }
+            }
+        }
         if (matchedId == null && normalizedDomain != null && !normalizedDomain.isBlank()) {
             matchedId = ctx.domains.get(normalizedDomain);
             if (matchedId != null) matchReason = "domain_match";
@@ -357,10 +378,39 @@ public class ImportProcessingService {
                 .updatedBy(actor)
                 .build();
         company.setCompletenessScore(computeCompleteness(company));
+
+        // v1.2: build phone tuples for all phone columns
+        NumberSourceType importSource = resolveNumberSource(
+                mappedData.getOrDefault("number_source", ""), source);
+        String designation = trimOrNull(mappedData.getOrDefault("designation", ""));
+        List<PhoneTuple> phoneTuples = new ArrayList<>(4);
+        if (normalizedPhone != null && !normalizedPhone.isBlank()
+                && phoneNormalizer.isValid(normalizedPhone)) {
+            PhoneTuple pt = buildPhoneTuple(
+                    mappedData.getOrDefault("primary_phone_normalized", ""),
+                    normalizedPhone, importSource, designation, true);
+            phoneTuples.add(pt);
+        }
+        for (String altKey : List.of("alternate_phone_1", "alternate_phone_2", "owner_phone")) {
+            String altRaw = mappedData.getOrDefault(altKey, "").trim();
+            if (altRaw.isBlank()) continue;
+            String altNorm = phoneNormalizer.normalize(altRaw);
+            if (altNorm == null || !phoneNormalizer.isValid(altNorm)) continue;
+            String altDesignation = "owner_phone".equals(altKey) ? "Owner" : designation;
+            PhoneTuple pt = buildPhoneTuple(altRaw, altNorm, importSource, altDesignation, false);
+            phoneTuples.add(pt);
+        }
+
         // Deferred dedup keys — filled in after JPA assigns the company id.
-        List<DedupKey> dedupKeys = new ArrayList<>(4);
+        List<DedupKey> dedupKeys = new ArrayList<>(4 + phoneTuples.size());
         if (normalizedPhone != null && !normalizedPhone.isBlank())
             dedupKeys.add((id, c) -> c.phones.putIfAbsent(normalizedPhone, id));
+        for (PhoneTuple pt : phoneTuples) {
+            if (!pt.isPrimary() && pt.numberNormalized() != null) {
+                final String pn = pt.numberNormalized();
+                dedupKeys.add((id, c) -> c.phones.putIfAbsent(pn, id));
+            }
+        }
         final String domainKey = normalizedDomain;
         if (domainKey != null && !domainKey.isBlank())
             dedupKeys.add((id, c) -> c.domains.putIfAbsent(domainKey, id));
@@ -405,7 +455,7 @@ public class ImportProcessingService {
         row.setStatus(ImportRow.RowStatus.CREATED);
         row.setOutcomeReason(rowOutcome != null ? rowOutcome : "created");
 
-        pending.add(new Pending(row, company, activityTuples, dedupKeys));
+        pending.add(new Pending(row, company, activityTuples, phoneTuples, dedupKeys));
     }
 
     /** Post-persist hook that folds a fresh company id into a dedup map. */
@@ -414,16 +464,26 @@ public class ImportProcessingService {
         void assign(UUID id, DedupContext ctx);
     }
 
-    /** Row + company + parsed activities + deferred dedup key updates. */
+    /** Row + company + parsed activities + phone tuples + deferred dedup key updates. */
     private static final class Pending {
         final ImportRow row;
         final Company company;
         final List<Object[]> activities;
+        final List<PhoneTuple> phones;
         final List<DedupKey> dedupKeys;
-        Pending(ImportRow row, Company company, List<Object[]> activities, List<DedupKey> dedupKeys) {
-            this.row = row; this.company = company; this.activities = activities; this.dedupKeys = dedupKeys;
+        Pending(ImportRow row, Company company, List<Object[]> activities,
+                List<PhoneTuple> phones, List<DedupKey> dedupKeys) {
+            this.row = row; this.company = company; this.activities = activities;
+            this.phones = phones; this.dedupKeys = dedupKeys;
         }
     }
+
+    private record PhoneTuple(
+            String numberRaw, String numberNormalized, NumberSourceType source,
+            ConfidenceLevel confidence, ConfidenceMode mode,
+            String designationOverride, boolean isPrimary,
+            com.vyoog.prospectsoul_backend.company.phone.entity.PhoneType phoneType
+    ) {}
 
     // -------- Dedup snapshot loader --------
 
@@ -459,6 +519,17 @@ public class ImportProcessingService {
             }
         });
 
+        // v1.2: load all company_phones into the dedup phone index
+        jdbcTemplate.query("""
+                SELECT company_id, number_normalized
+                  FROM company_phones
+                 WHERE number_normalized IS NOT NULL
+                """, (rs) -> {
+            UUID companyId = (UUID) rs.getObject("company_id");
+            String phone = rs.getString("number_normalized");
+            if (phone != null && !phone.isBlank()) ctx.phones.putIfAbsent(phone, companyId);
+        });
+
         // Cache the whole NIC master by code — usually ~2000 rows.
         for (NicCode c : nicCodeRepository.findAll()) {
             ctx.nicByCode.put(c.getCode(), c);
@@ -490,6 +561,24 @@ public class ImportProcessingService {
                         .companyId(cid).nicCode(resolved).nicCodeRaw((String) act[1])
                         .descriptionRaw((String) act[2]).isPrimary(seq == 1).sequenceNo(seq).build());
                 if (seq == 1 && resolved != null) p.company.setPrimaryNicCodeId(resolved.getId());
+            }
+            // v1.2: persist phone records
+            if (p.phones != null) {
+                for (PhoneTuple pt : p.phones) {
+                    entityManager.persist(CompanyPhone.builder()
+                            .company(p.company)
+                            .numberRaw(pt.numberRaw())
+                            .numberNormalized(pt.numberNormalized())
+                            .phoneType(pt.phoneType())
+                            .numberSource(pt.source())
+                            .confidence(pt.confidence())
+                            .confidenceMode(pt.mode())
+                            .designationOverride(pt.designationOverride())
+                            .isPrimary(pt.isPrimary())
+                            .batchId(p.row.getBatch().getId())
+                            .importRowId(p.row.getId())
+                            .build());
+                }
             }
         }
         entityManager.flush();
@@ -644,13 +733,27 @@ public class ImportProcessingService {
                     p.company.setPrimaryNicCodeId(resolved.getId());
                 }
             }
+            // v1.2: persist phone records
+            if (p.phones != null) {
+                for (PhoneTuple pt : p.phones) {
+                    entityManager.persist(CompanyPhone.builder()
+                            .company(p.company)
+                            .numberRaw(pt.numberRaw())
+                            .numberNormalized(pt.numberNormalized())
+                            .phoneType(pt.phoneType())
+                            .numberSource(pt.source())
+                            .confidence(pt.confidence())
+                            .confidenceMode(pt.mode())
+                            .designationOverride(pt.designationOverride())
+                            .isPrimary(pt.isPrimary())
+                            .batchId(p.row.getBatch().getId())
+                            .importRowId(p.row.getId())
+                            .build());
+                }
+            }
             if (p.dedupKeys != null) for (DedupKey k : p.dedupKeys) k.assign(companyId, ctx);
         }
         entityManager.flush();
-        // Do not clear the persistence context here — subsequent per-chunk
-        // work uses jdbcTemplate for updates, not JPA merge, so keeping the
-        // context small is not critical and clearing detaches ImportRow
-        // entities which then trigger a costly merge path.
     }
 
     /**
@@ -675,6 +778,24 @@ public class ImportProcessingService {
                     .companyId(companyId).nicCode(resolved).nicCodeRaw(rawCode)
                     .descriptionRaw(rawDesc).isPrimary(seq == 1).sequenceNo(seq).build());
             if (seq == 1 && resolved != null) p.company.setPrimaryNicCodeId(resolved.getId());
+        }
+        // v1.2: persist phone records
+        if (p.phones != null) {
+            for (PhoneTuple pt : p.phones) {
+                entityManager.persist(CompanyPhone.builder()
+                        .company(p.company)
+                        .numberRaw(pt.numberRaw())
+                        .numberNormalized(pt.numberNormalized())
+                        .phoneType(pt.phoneType())
+                        .numberSource(pt.source())
+                        .confidence(pt.confidence())
+                        .confidenceMode(pt.mode())
+                        .designationOverride(pt.designationOverride())
+                        .isPrimary(pt.isPrimary())
+                        .batchId(p.row.getBatch().getId())
+                        .importRowId(p.row.getId())
+                        .build());
+            }
         }
         entityManager.flush();
         if (p.dedupKeys != null) for (DedupKey k : p.dedupKeys) k.assign(companyId, ctx);
@@ -775,4 +896,35 @@ public class ImportProcessingService {
                 "duration_ms", durationMs));
     }
 
+    // -------- v1.2: phone import helpers --------
+
+    private PhoneTuple buildPhoneTuple(String raw, String normalized, NumberSourceType source,
+                                        String designation, boolean isPrimary) {
+        PhoneNormalizationResult pnr = PhoneNormalizationResult.classify(normalized);
+        ConfidenceEngine.ComputeResult cr = confidenceEngine.compute(
+                source, designation, null, null, null);
+        return new PhoneTuple(raw, normalized, source, cr.confidence(), cr.mode(),
+                designation, isPrimary, pnr.phoneType());
+    }
+
+    private NumberSourceType resolveNumberSource(String columnValue, String batchSource) {
+        if (columnValue != null && !columnValue.isBlank()) {
+            String upper = columnValue.trim().toUpperCase(Locale.ROOT)
+                    .replace(' ', '_').replace('-', '_');
+            try {
+                return NumberSourceType.valueOf(upper);
+            } catch (IllegalArgumentException ignored) {}
+            // Common CSV values
+            return switch (upper) {
+                case "BUSINESS_CARD", "BUSINESSCARD" -> NumberSourceType.BUSINESS_CARD;
+                case "FIELD_VISIT", "FIELDVISIT" -> NumberSourceType.FIELD_VISIT;
+                case "GOOGLE", "GOOGLE_MAPS" -> NumberSourceType.GOOGLE_API;
+                default -> NumberSourceType.IMPORT_DEFAULT;
+            };
+        }
+        if (batchSource != null && batchSource.toUpperCase(Locale.ROOT).contains("INDIAMART")) {
+            return NumberSourceType.INDIAMART;
+        }
+        return NumberSourceType.IMPORT_DEFAULT;
+    }
 }

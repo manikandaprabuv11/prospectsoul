@@ -18,6 +18,13 @@ public class WebsiteFactExtractor {
     private static final int MAX_EMAILS = 20;
     private static final int MAX_PHONES = 20;
 
+    // Indian phone: optional +91/0091/91 prefix, then 10 digits starting with 6-9, with separators
+    private static final Pattern PHONE_PATTERN = Pattern.compile(
+            "(?:\\+91|0091|91)?[\\s.\\-]*([6-9]\\d[\\s.\\-]*\\d[\\s.\\-]*\\d[\\s.\\-]*\\d[\\s.\\-]*\\d[\\s.\\-]*\\d[\\s.\\-]*\\d[\\s.\\-]*\\d[\\s.\\-]*\\d)");
+    // tel: href pattern — phones are often in <a href="tel:+919843012345">
+    private static final Pattern TEL_HREF_PATTERN = Pattern.compile(
+            "href=[\"']tel:(?:\\+91|0091|91)?[\\s\\-]?([6-9]\\d{9})[\"']", Pattern.CASE_INSENSITIVE);
+
     private static final Pattern LINKEDIN_PATTERN = Pattern.compile(
             "https?://(?:www\\.)?linkedin\\.com/(?:company|in)/[\\w\\-]+/?");
     private static final Pattern FACEBOOK_PATTERN = Pattern.compile(
@@ -58,6 +65,27 @@ public class WebsiteFactExtractor {
         }
         result.emails = new ArrayList<>(emails);
 
+        // Extract phones from tel: hrefs first (most reliable)
+        Set<String> phones = new LinkedHashSet<>();
+        Matcher telMatcher = TEL_HREF_PATTERN.matcher(html);
+        while (telMatcher.find() && phones.size() < MAX_PHONES) {
+            phones.add(telMatcher.group(1));
+        }
+
+        // Then extract from visible text content (strip tags/scripts/styles)
+        String textContent = html.replaceAll("(?s)<script[^>]*>.*?</script>", " ")
+                .replaceAll("(?s)<style[^>]*>.*?</style>", " ")
+                .replaceAll("<[^>]+>", " ");
+
+        Matcher phoneMatcher = PHONE_PATTERN.matcher(textContent);
+        while (phoneMatcher.find() && phones.size() < MAX_PHONES) {
+            String digits = phoneMatcher.group(1).replaceAll("[\\s.\\-]", "");
+            if (digits.length() == 10) {
+                phones.add(digits);
+            }
+        }
+        result.phones = new ArrayList<>(phones);
+
         Set<String> pincodes = new LinkedHashSet<>();
         Matcher pinMatcher = PINCODE_PATTERN.matcher(html);
         while (pinMatcher.find() && pincodes.size() < 10) {
@@ -97,6 +125,7 @@ public class WebsiteFactExtractor {
         public String title;
         public String description;
         public List<String> emails = List.of();
+        public List<String> phones = List.of();
         public List<String> pincodes = List.of();
         public String socialLinkedin;
         public String socialFacebook;
