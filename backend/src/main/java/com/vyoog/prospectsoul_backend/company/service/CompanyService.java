@@ -327,6 +327,19 @@ public class CompanyService {
 
 
 
+    private static final int MAX_IDS = 10_000;
+
+    @Transactional(readOnly = true)
+    public com.vyoog.prospectsoul_backend.company.dto.response.CompanyIdsResponse listIdsWithFilters(
+            CompanySpecification.Filters filters) {
+        Page<Company> result = companyRepository.findAll(
+                CompanySpecification.withFilters(filters),
+                PageRequest.of(0, MAX_IDS, Sort.by(Sort.Direction.DESC, "createdAt")));
+        List<UUID> ids = result.getContent().stream().map(Company::getId).toList();
+        return new com.vyoog.prospectsoul_backend.company.dto.response.CompanyIdsResponse(
+                ids, result.getTotalElements(), result.getTotalElements() > MAX_IDS);
+    }
+
     @Transactional(readOnly = true)
     public PageResponse<CompanyResponse> listWithFilters(CompanySpecification.Filters filters,
                                                           int page, int size, String sortField, String sortDir) {

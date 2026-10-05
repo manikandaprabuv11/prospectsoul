@@ -146,6 +146,12 @@ export interface PageResponse<T> {
   total_pages: number
 }
 
+export interface CompanyIdsResponse {
+  ids: string[]
+  total: number
+  capped: boolean
+}
+
 export interface CompanyFilters {
   q?: string
   city?: string
