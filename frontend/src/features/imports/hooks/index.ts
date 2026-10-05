@@ -3,10 +3,10 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { importApi } from '../api'
 import type { ColumnMapping } from '../types'
 
-export function useImportBatches(page = 0, size = 25) {
+export function useImportBatches(page = 0, size = 25, status?: string) {
   return useQuery({
-    queryKey: ['imports', page, size],
-    queryFn: () => importApi.list(page, size),
+    queryKey: ['imports', page, size, status],
+    queryFn: () => importApi.list(page, size, status),
     refetchInterval: (query) => {
       const anyMoving = query.state.data?.content?.some(
         (b) => b.status === 'PROCESSING' || b.status === 'MAPPING' || b.status === 'PREVIEWING',
@@ -47,10 +47,11 @@ export function useImportRows(
   page = 0,
   size = 25,
   isLive = false,
+  status?: string,
 ) {
   return useQuery({
-    queryKey: ['import-rows', id, page, size],
-    queryFn: () => importApi.getRows(id!, page, size),
+    queryKey: ['import-rows', id, page, size, status],
+    queryFn: () => importApi.getRows(id!, page, size, status),
     enabled: !!id,
     refetchInterval: isLive ? 1500 : false,
     refetchIntervalInBackground: true,

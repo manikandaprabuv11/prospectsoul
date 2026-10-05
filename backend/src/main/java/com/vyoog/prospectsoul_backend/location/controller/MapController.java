@@ -1,18 +1,29 @@
 package com.vyoog.prospectsoul_backend.location.controller;
 
 import com.vyoog.prospectsoul_backend.common.exception.BusinessRuleException;
+import com.vyoog.prospectsoul_backend.common.security.CurrentUser;
 import com.vyoog.prospectsoul_backend.common.security.RoleConstants;
 import com.vyoog.prospectsoul_backend.company.defaultfilter.entity.CompanyDefaultFilter;
 import com.vyoog.prospectsoul_backend.company.defaultfilter.service.CompanyDefaultFilterService;
+import com.vyoog.prospectsoul_backend.location.dto.request.MapDownloadRequest;
 import com.vyoog.prospectsoul_backend.location.dto.response.MapCompanyResponse;
 import com.vyoog.prospectsoul_backend.location.dto.response.PincodeCentroidResponse;
 import com.vyoog.prospectsoul_backend.location.service.CompanyMapService;
+import com.vyoog.prospectsoul_backend.location.service.MapDownloadService;
 import com.vyoog.prospectsoul_backend.location.service.PincodeCentroidService;
 import com.vyoog.prospectsoul_backend.nic.repository.NicCodeRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,6 +42,7 @@ public class MapController {
 
     private final PincodeCentroidService pincodeCentroidService;
     private final CompanyMapService companyMapService;
+    private final MapDownloadService mapDownloadService;
     private final CompanyDefaultFilterService companyDefaultFilterService;
     private final NicCodeRepository nicCodeRepository;
     private final ObjectMapper objectMapper;
@@ -123,5 +135,62 @@ public class MapController {
         }
 
         return companyMapService.companiesInPincode(pincode, radiusKm, nicCodeIds);
+    }
+
+    @PostMapping("/companies/download")
+    @PreAuthorize(RoleConstants.HAS_READ)
+    public ResponseEntity<ByteArrayResource> downloadCompanies(
+            @Valid @RequestBody MapDownloadRequest request,
+            Authentication auth) {
+
+        LinkedHashSet<UUID> pageParentIds = new LinkedHashSet<>();
+        if (request.nicParentIds() != null) {
+            pageParentIds.addAll(request.nicParentIds());
+        }
+        boolean includeDesc = request.effectiveNicIncludeDescendants();
+
+        LinkedHashSet<UUID> pageNicIds = new LinkedHashSet<>();
+        for (UUID pid : pageParentIds) {
+            if (includeDesc) pageNicIds.addAll(nicCodeRepository.findDescendantIds(pid));
+            else pageNicIds.add(pid);
+        }
+
+        UUID configNicParentId = null;
+        if (request.effectiveApplyDefaults()) {
+            for (CompanyDefaultFilter d : companyDefaultFilterService.activeDefaults()) {
+                if (!"nic_parent_id".equals(d.getFilterKey())) continue;
+                try {
+                    JsonNode v = d.getValue() == null || d.getValue().isBlank()
+                            ? null : objectMapper.readTree(d.getValue());
+                    if (v != null && v.isTextual()) configNicParentId = UUID.fromString(v.asText());
+                } catch (Exception e) {
+                    // Malformed default value shouldn't kill the request.
+                }
+            }
+        }
+
+        Collection<UUID> nicCodeIds;
+        if (configNicParentId != null) {
+            LinkedHashSet<UUID> configNicIds = includeDesc
+                    ? new LinkedHashSet<>(nicCodeRepository.findDescendantIds(configNicParentId))
+                    : new LinkedHashSet<>(List.of(configNicParentId));
+            if (!pageParentIds.isEmpty()) {
+                configNicIds.retainAll(pageNicIds);
+            }
+            nicCodeIds = configNicIds;
+        } else if (!pageParentIds.isEmpty()) {
+            nicCodeIds = pageNicIds;
+        } else {
+            nicCodeIds = null;
+        }
+
+        MapDownloadService.DownloadResult result = mapDownloadService.download(
+                request.pincode(), request.effectiveRadiusKm(), nicCodeIds, CurrentUser.id(auth));
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + result.fileName() + "\"")
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(new ByteArrayResource(result.bytes()));
     }
 }

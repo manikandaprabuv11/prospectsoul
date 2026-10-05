@@ -13,6 +13,8 @@ public interface ImportRowRepository extends JpaRepository<ImportRow, UUID> {
 
     Page<ImportRow> findByBatchIdOrderByRowNumberAsc(UUID batchId, Pageable pageable);
 
+    Page<ImportRow> findByBatchIdAndStatusOrderByRowNumberAsc(UUID batchId, ImportRow.RowStatus status, Pageable pageable);
+
     @Query("SELECT COUNT(r) FROM ImportRow r WHERE r.batch.id = :batchId AND r.status = :status")
     long countByBatchIdAndStatus(@Param("batchId") UUID batchId, @Param("status") ImportRow.RowStatus status);
 }

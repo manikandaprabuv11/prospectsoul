@@ -57,14 +57,11 @@ export interface Company {
   social_x?: string | null
   social_instagram?: string | null
   social_youtube?: string | null
-  // Enrichment: Phone
-  primary_phone_country?: string | null
-  primary_phone_region?: string | null
-  primary_phone_carrier?: string | null
-  primary_phone_type?: string | null
-  primary_phone_status?: string | null
-  primary_phone_dnd_registered?: boolean | null
-  primary_phone_last_enriched_at?: string | null
+  // v1.2: phone confidence fields (from company_phones)
+  primary_phone_confidence?: 'HIGH' | 'MEDIUM' | 'LOW' | null
+  primary_phone_designation?: string | null
+  additional_phone_count?: number | null
+  phones?: CompanyPhone[] | null
   // Enriched by the list endpoint only.
   primary_contact_name?: string | null
   primary_contact_phone?: string | null
@@ -72,10 +69,48 @@ export interface Company {
   nic_codes?: { code: string; description: string; primary: boolean }[] | null
 }
 
+export type ConfidenceLevel = 'HIGH' | 'MEDIUM' | 'LOW'
+export type NumberSourceType = 'BUSINESS_CARD' | 'FIELD_VISIT' | 'REFERENCE' | 'MANUAL_ENTRY' | 'WEBSITE' | 'GOOGLE_API' | 'LINKEDIN' | 'INDIAMART' | 'IMPORT_DEFAULT'
+
+export interface CompanyPhone {
+  id: string
+  number_raw: string
+  number_normalized: string | null
+  phone_type: string
+  number_source: NumberSourceType
+  confidence: ConfidenceLevel
+  confidence_mode: 'AUTO' | 'MANUAL'
+  designation: string | null
+  is_decision_maker: boolean
+  is_primary: boolean
+  contact_id: string | null
+  contact_name: string | null
+  designation_override: string | null
+  override_reason: string | null
+  enriched_country: string | null
+  enriched_region: string | null
+  enriched_carrier: string | null
+  enriched_line_type: string | null
+  enriched_status: string | null
+  enriched_dnd: boolean | null
+  enriched_at: string | null
+  created_at: string
+  created_by: string | null
+}
+
+export interface CompanyPhoneRequest {
+  id?: string | null
+  number_raw: string
+  number_source: NumberSourceType
+  confidence?: ConfidenceLevel | null
+  contact_id?: string | null
+  designation_override?: string | null
+  is_primary?: boolean
+}
+
 export interface CompanyCreateRequest {
   canonical_name: string
   website_domain?: string
-  primary_phone?: string
   email?: string
   city?: string
   state?: string
@@ -84,12 +119,13 @@ export interface CompanyCreateRequest {
   size_band?: string
   tags?: string[]
   source?: string
+  gst_number?: string
+  phones?: CompanyPhoneRequest[]
 }
 
 export interface CompanyUpdateRequest {
   canonical_name?: string
   website_domain?: string
-  primary_phone?: string
   email?: string
   city?: string
   state?: string
@@ -98,6 +134,8 @@ export interface CompanyUpdateRequest {
   size_band?: string
   tags?: string[]
   source?: string
+  gst_number?: string
+  phones?: CompanyPhoneRequest[]
 }
 
 export interface PageResponse<T> {
@@ -134,6 +172,9 @@ export interface CompanyFilters {
   nic_parent_ids?: string[]
   nic_include_descendants?: boolean
   has_contact_role_id?: string
+  confidence?: ConfidenceLevel
+  number_source?: NumberSourceType
+  has_decision_maker?: boolean
   view?: 'grouped_by_nic'
   apply_defaults?: boolean
 }

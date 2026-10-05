@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { StatCard } from '@/components/layout/StatCard'
@@ -7,17 +6,43 @@ import { ErrorState } from '@/components/feedback/ErrorState'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { StatusChip } from '@/components/feedback/StatusChip'
 import { InlineTip } from '@/components/feedback/InlineTip'
+import { Pagination } from '@/shared/components/Pagination'
 import { ArrowLeft, CheckCircle2, FileSpreadsheet, Loader2, XCircle, ListChecks } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useImportBatch, useImportRows } from '../hooks'
 
+const ROW_STATUS_FILTERS = [
+  { value: '', label: 'All' },
+  { value: 'CREATED', label: 'Created', accent: 'text-accent-emerald' },
+  { value: 'DUPLICATE', label: 'Duplicate', accent: 'text-accent-amber' },
+  { value: 'REJECTED', label: 'Rejected', accent: 'text-accent-rose' },
+  { value: 'FAILED', label: 'Failed', accent: 'text-accent-rose' },
+  { value: 'PENDING', label: 'Pending', accent: 'text-muted-foreground' },
+] as const
+
 export function ImportDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { data: batch, isLoading, isError } = useImportBatch(id)
   const [rowPage, setRowPage] = useState(0)
+  const [rowStatusFilter, setRowStatusFilter] = useState('')
   const isLive = batch?.status === 'PROCESSING'
-  const { data: rows } = useImportRows(id, rowPage, 25, isLive)
+  const { data: rows } = useImportRows(id, rowPage, 25, isLive, rowStatusFilter || undefined)
+
+  function handleRowStatusChange(status: string) {
+    setRowStatusFilter(status)
+    setRowPage(0)
+  }
+
+  function countForStatus(status: string): number | undefined {
+    if (!batch) return undefined
+    switch (status) {
+      case 'CREATED': return batch.created_rows
+      case 'DUPLICATE': return batch.duplicate_rows
+      case 'REJECTED': return batch.rejected_rows
+      default: return undefined
+    }
+  }
 
   if (isLoading) {
     return (
@@ -116,17 +141,43 @@ export function ImportDetailPage() {
       )}
 
       <Card>
-        <CardHeader className="border-b-0 pb-2 flex-row items-center justify-between">
-          <CardTitle>Rows</CardTitle>
-          {isLive && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary">
-              <span className="relative flex size-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex size-2 rounded-full bg-primary"></span>
+        <CardHeader className="border-b-0 pb-2 space-y-3">
+          <div className="flex items-center justify-between">
+            <CardTitle>Rows</CardTitle>
+            {isLive && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary">
+                <span className="relative flex size-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex size-2 rounded-full bg-primary"></span>
+                </span>
+                Live
               </span>
-              Live
-            </span>
-          )}
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {ROW_STATUS_FILTERS.map((f) => {
+              const isActive = rowStatusFilter === f.value
+              const count = countForStatus(f.value)
+              return (
+                <button
+                  key={f.value}
+                  type="button"
+                  onClick={() => handleRowStatusChange(f.value)}
+                  className={
+                    'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ' +
+                    (isActive
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-muted text-muted-foreground hover:bg-accent hover:text-foreground')
+                  }
+                >
+                  {f.label}
+                  {count != null && (
+                    <span className={isActive ? 'opacity-80' : 'tabular-nums'}>{count.toLocaleString()}</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
         </CardHeader>
         <CardContent className="pt-2">
           {!rows ? (
@@ -159,12 +210,14 @@ export function ImportDetailPage() {
               </div>
 
               {rows.total_pages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 border-t border-border text-xs text-muted-foreground tabular-nums bg-surface-1/50">
-                  <span>Page <span className="font-semibold text-foreground">{rows.page + 1}</span> of <span className="font-semibold text-foreground">{rows.total_pages}</span></span>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="xs" disabled={rows.page === 0} onClick={() => setRowPage((p) => p - 1)}>Prev</Button>
-                    <Button variant="outline" size="xs" disabled={rows.page >= rows.total_pages - 1} onClick={() => setRowPage((p) => p + 1)}>Next</Button>
-                  </div>
+                <div className="mt-4">
+                  <Pagination
+                    page={rows.page}
+                    totalPages={rows.total_pages}
+                    totalElements={rows.total_elements}
+                    itemLabel="rows"
+                    onPageChange={setRowPage}
+                  />
                 </div>
               )}
             </div>

@@ -269,16 +269,36 @@ public class ImportService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<ImportBatchResponse> listBatches(int page, int size) {
+    public PageResponse<ImportBatchResponse> listBatches(int page, int size, String status) {
         size = Math.min(size, 100);
+        if (status != null && !status.isBlank()) {
+            ImportBatch.BatchStatus batchStatus;
+            try {
+                batchStatus = ImportBatch.BatchStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new BusinessRuleException("Invalid batch status: " + status);
+            }
+            var result = batchRepository.findByStatusOrderByCreatedAtDesc(batchStatus, PageRequest.of(page, size));
+            return PageResponse.from(result.map(importMapper::toBatchResponse));
+        }
         var result = batchRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(page, size));
         return PageResponse.from(result.map(importMapper::toBatchResponse));
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<ImportRowResponse> listRows(UUID batchId, int page, int size) {
+    public PageResponse<ImportRowResponse> listRows(UUID batchId, int page, int size, String status) {
         findBatch(batchId);
         size = Math.min(size, 100);
+        if (status != null && !status.isBlank()) {
+            ImportRow.RowStatus rowStatus;
+            try {
+                rowStatus = ImportRow.RowStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new BusinessRuleException("Invalid row status: " + status);
+            }
+            var result = rowRepository.findByBatchIdAndStatusOrderByRowNumberAsc(batchId, rowStatus, PageRequest.of(page, size));
+            return PageResponse.from(result.map(importMapper::toRowResponse));
+        }
         var result = rowRepository.findByBatchIdOrderByRowNumberAsc(batchId, PageRequest.of(page, size));
         return PageResponse.from(result.map(importMapper::toRowResponse));
     }

@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import com.vyoog.prospectsoul_backend.company.phone.dto.request.CompanyPhoneRequest;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -25,14 +27,14 @@ public record CompanyUpdateRequest(
         @Size(max = 50)  String source,
 
         // Sales-Intelligence extension.
-        @Pattern(regexp = "^\\d{6}$", message = "pincode must be a 6-digit string")
+        @Pattern(regexp = "^$|^\\d{6}$", message = "pincode must be a 6-digit string")
         String pincode,
         @Size(max = 120) String district,
         String addressLine,
         @Size(max = 120) String region,
         String products,
         @Min(0) BigDecimal turnover,
-        @Pattern(regexp = "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$",
+        @Pattern(regexp = "^$|^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$",
                  message = "gst_number must match the 15-character GSTIN format")
         @Size(max = 15) String gstNumber,
         @Min(0) Integer employeeCount,
@@ -42,5 +44,9 @@ public record CompanyUpdateRequest(
         @Min(0) Integer lgDistrictCode,
         UUID primaryNicCodeId,
         BigDecimal latitude,
-        BigDecimal longitude
+        BigDecimal longitude,
+
+        // v1.2: multi-phone support (full replacement strategy)
+        @Valid
+        List<CompanyPhoneRequest> phones
 ) {}

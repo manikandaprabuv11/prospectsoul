@@ -26,6 +26,9 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         problem.setType(URI.create("about:blank"));
         problem.setTitle("Conflict");
+        if (ex.getDetails() != null) {
+            ex.getDetails().forEach(problem::setProperty);
+        }
         return problem;
     }
 

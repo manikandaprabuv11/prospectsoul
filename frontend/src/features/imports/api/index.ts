@@ -16,9 +16,9 @@ export const importApi = {
     return apiClient.post<ImportBatch>('/api/v1/imports', { formData })
   },
 
-  list(page = 0, size = 25) {
+  list(page = 0, size = 25, status?: string) {
     return apiClient.get<PageResponse<ImportBatch>>('/api/v1/imports', {
-      query: { page, size },
+      query: { page, size, status: status || undefined },
     })
   },
 
@@ -26,9 +26,9 @@ export const importApi = {
     return apiClient.get<ImportBatch>(`/api/v1/imports/${id}`)
   },
 
-  getRows(id: string, page = 0, size = 25) {
+  getRows(id: string, page = 0, size = 25, status?: string) {
     return apiClient.get<PageResponse<ImportRow>>(`/api/v1/imports/${id}/rows`, {
-      query: { page, size },
+      query: { page, size, status: status || undefined },
     })
   },
 

@@ -10,4 +10,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ImportBatchRepository extends JpaRepository<ImportBatch, UUID> {
 
     Page<ImportBatch> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    Page<ImportBatch> findByStatusOrderByCreatedAtDesc(ImportBatch.BatchStatus status, Pageable pageable);
 }

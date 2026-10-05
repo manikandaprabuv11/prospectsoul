@@ -73,8 +73,11 @@ export function AppSidebar({ mobileOpen, onMobileClose, collapsed, onToggleColla
     [permissions],
   )
 
-  const isActive = (item: NavItem) =>
-    item.exact ? location.pathname === item.to : location.pathname.startsWith(item.to)
+  const isActive = (item: NavItem) => {
+    if (item.exact) return location.pathname === item.to
+    if (location.pathname === item.to) return true
+    return location.pathname.startsWith(item.to + '/')
+  }
 
   const sidebarWidth = collapsed ? 'w-[68px]' : 'w-[260px]'
 

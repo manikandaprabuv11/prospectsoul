@@ -6,6 +6,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import com.vyoog.prospectsoul_backend.company.phone.dto.response.CompanyPhoneResponse;
+import com.vyoog.prospectsoul_backend.company.phone.entity.ConfidenceLevel;
+
 public record CompanyResponse(
         UUID id,
         String canonicalName,
@@ -65,14 +68,11 @@ public record CompanyResponse(
         String socialX,
         String socialInstagram,
         String socialYoutube,
-        // Enrichment: Phone
-        String primaryPhoneCountry,
-        String primaryPhoneRegion,
-        String primaryPhoneCarrier,
-        String primaryPhoneType,
-        String primaryPhoneStatus,
-        Boolean primaryPhoneDndRegistered,
-        Instant primaryPhoneLastEnrichedAt,
+        // v1.2: phone confidence fields (from company_phones)
+        ConfidenceLevel primaryPhoneConfidence,
+        String primaryPhoneDesignation,
+        Integer additionalPhoneCount,
+        List<CompanyPhoneResponse> phones,
         // List-only enriched fields
         String primaryContactName,
         String primaryContactPhone,

@@ -1,13 +1,26 @@
 package com.vyoog.prospectsoul_backend.company.mapper;
 
+import java.util.List;
+
 import com.vyoog.prospectsoul_backend.company.dto.response.CompanyResponse;
 import com.vyoog.prospectsoul_backend.company.entity.Company;
+import com.vyoog.prospectsoul_backend.company.phone.dto.response.CompanyPhoneResponse;
+import com.vyoog.prospectsoul_backend.company.phone.entity.ConfidenceLevel;
 import org.springframework.stereotype.Component;
 
 @Component
 public class CompanyMapper {
 
     public CompanyResponse toResponse(Company e) {
+        return toResponse(e, null, null, null, 0, null);
+    }
+
+    public CompanyResponse toResponse(Company e,
+                                       ConfidenceLevel primaryPhoneConfidence,
+                                       String primaryPhoneDesignation,
+                                       Integer additionalPhoneCount,
+                                       int fallbackAdditional,
+                                       List<CompanyPhoneResponse> phones) {
         return new CompanyResponse(
                 e.getId(),
                 e.getCanonicalName(),
@@ -63,14 +76,11 @@ public class CompanyMapper {
                 e.getSocialX(),
                 e.getSocialInstagram(),
                 e.getSocialYoutube(),
-                // Enrichment: Phone
-                e.getPrimaryPhoneCountry(),
-                e.getPrimaryPhoneRegion(),
-                e.getPrimaryPhoneCarrier(),
-                e.getPrimaryPhoneType(),
-                e.getPrimaryPhoneStatus(),
-                e.getPrimaryPhoneDndRegistered(),
-                e.getPrimaryPhoneLastEnrichedAt(),
+                // v1.2: phone confidence fields from company_phones
+                primaryPhoneConfidence,
+                primaryPhoneDesignation,
+                additionalPhoneCount != null ? additionalPhoneCount : fallbackAdditional,
+                phones,
                 // List-only enriched
                 null, null, null, null,
                 e.getCreatedBy(),

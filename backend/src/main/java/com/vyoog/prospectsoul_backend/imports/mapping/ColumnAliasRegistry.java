@@ -106,6 +106,29 @@ public class ColumnAliasRegistry {
         ALIAS_MAP.put("contact_role", List.of(
                 "Role", "Designation Type", "Contact Type", "Position Type"
         ));
+
+        // v1.2: multi-phone import columns
+        ALIAS_MAP.put("alternate_phone_1", List.of(
+                "Alternate Phone", "Alternate Phone 1", "Alt Phone", "Alt Phone 1",
+                "Phone 2", "Phone2", "Secondary Phone", "Second Phone",
+                "Other Phone", "Other Phone 1"
+        ));
+        ALIAS_MAP.put("alternate_phone_2", List.of(
+                "Alternate Phone 2", "Alt Phone 2", "Phone 3", "Phone3",
+                "Third Phone", "Other Phone 2"
+        ));
+        ALIAS_MAP.put("owner_phone", List.of(
+                "Owner Phone", "Owner Mobile", "Owner Number",
+                "Proprietor Phone", "Proprietor Mobile"
+        ));
+        ALIAS_MAP.put("number_source", List.of(
+                "Number Source", "Phone Source", "Source of Number",
+                "Phone Origin", "Data Source Phone"
+        ));
+        ALIAS_MAP.put("designation", List.of(
+                "Designation", "Contact Designation", "Title",
+                "Contact Title", "Job Title", "Position"
+        ));
     }
 
     public Set<String> getTargetFields() {

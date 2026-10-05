@@ -47,8 +47,9 @@ public class ImportController {
     @PreAuthorize(RoleConstants.HAS_READ)
     public PageResponse<ImportBatchResponse> list(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "25") int size) {
-        return importService.listBatches(page, size);
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(required = false) String status) {
+        return importService.listBatches(page, size, status);
     }
 
     @GetMapping("/{id}")
@@ -62,8 +63,9 @@ public class ImportController {
     public PageResponse<ImportRowResponse> listRows(
             @PathVariable UUID id,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "25") int size) {
-        return importService.listRows(id, page, size);
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(required = false) String status) {
+        return importService.listRows(id, page, size, status);
     }
 
     @GetMapping("/{id}/mappings/suggest")

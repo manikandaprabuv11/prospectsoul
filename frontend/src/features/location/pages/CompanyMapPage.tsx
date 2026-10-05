@@ -1,14 +1,17 @@
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { LoadingRows } from '@/components/feedback/LoadingRows'
 import { InlineTip } from '@/components/feedback/InlineTip'
+import { useAuth } from '@/auth/useAuth'
 import { useCompanyDefaults } from '@/features/companydefaults/hooks'
 import { useNicCode, useNicPrimary, useResolveNicByCode } from '@/features/nic/hooks'
-import { Lock, MapPin, X } from 'lucide-react'
+import { Download, Loader2, Lock, MapPin, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
+import { locationApi } from '../api'
 import { useMapCompanies, usePincode } from '../hooks'
 import { InteractiveMap } from '../components/InteractiveMap'
 import type { MapCompanyItem, MapNicCodeRef } from '../types'
@@ -29,6 +32,10 @@ export function CompanyMapPage() {
   // shareable and the two screens' NIC filter behave identically.
   const nicParentIds = sp.getAll('nic_parent_ids')
   const nicIncludeDescendants = sp.get('nic_include_descendants') !== 'false'
+
+  const auth = useAuth()
+  const [downloading, setDownloading] = useState(false)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
 
   const nicPrimary = useNicPrimary()
   const centroid = usePincode(pincode)
@@ -105,6 +112,34 @@ export function CompanyMapPage() {
   }
 
   const matchedNicCodeIds = owned.data?.matched_nic_code_ids ?? null
+
+  async function handleDownload() {
+    setDownloadError(null)
+    setDownloading(true)
+    try {
+      const blob = await locationApi.downloadCompanies(
+        pincode,
+        radiusKm,
+        {
+          nic_parent_ids: nicParentIds.length ? nicParentIds : undefined,
+          nic_include_descendants: nicParentIds.length ? nicIncludeDescendants : undefined,
+        },
+        auth.token ? `Bearer ${auth.token}` : undefined,
+      )
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `map-companies-${pincode}-${radiusKm}km.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      setDownloadError(e instanceof Error ? e.message : 'Download failed')
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   const center = useMemo(() => {
     if (centroid.data)
@@ -206,6 +241,21 @@ export function CompanyMapPage() {
               {centroid.data.state ? `, ${centroid.data.state}` : ''}
             </div>
           ) : null}
+          {list.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleDownload}
+              disabled={downloading}
+              className="ml-auto"
+            >
+              {downloading ? (
+                <><Loader2 className="size-4 animate-spin" /> Downloading…</>
+              ) : (
+                <><Download className="size-4" /> Download Excel ({list.length})</>
+              )}
+            </Button>
+          )}
         </div>
 
         {(nicParentIds.length > 0 || configNicId) && (
@@ -226,6 +276,12 @@ export function CompanyMapPage() {
                 onRemove={() => removeNicParent(id)}
               />
             ))}
+          </div>
+        )}
+
+        {downloadError && (
+          <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm font-medium text-destructive">
+            {downloadError}
           </div>
         )}
 

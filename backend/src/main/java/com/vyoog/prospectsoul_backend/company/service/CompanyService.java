@@ -26,6 +26,11 @@ import com.vyoog.prospectsoul_backend.contact.repository.ContactRepository;
 import com.vyoog.prospectsoul_backend.company.nic.entity.CompanyNicCode;
 import com.vyoog.prospectsoul_backend.company.nic.repository.CompanyNicCodeRepository;
 import java.math.BigDecimal;
+import com.vyoog.prospectsoul_backend.company.phone.dto.response.CompanyPhoneResponse;
+import com.vyoog.prospectsoul_backend.company.phone.entity.CompanyPhone;
+import com.vyoog.prospectsoul_backend.company.phone.mapper.CompanyPhoneMapper;
+import com.vyoog.prospectsoul_backend.company.phone.repository.CompanyPhoneRepository;
+import com.vyoog.prospectsoul_backend.company.phone.service.CompanyPhoneService;
 import com.vyoog.prospectsoul_backend.imports.normalization.CompanyNameNormalizer;
 import com.vyoog.prospectsoul_backend.imports.normalization.PhoneNormalizer;
 import com.vyoog.prospectsoul_backend.imports.normalization.WebsiteNormalizer;
@@ -59,17 +64,22 @@ public class CompanyService {
     private final NicCodeRepository nicCodeRepository;
     private final ContactRepository contactRepository;
     private final CompanyNicCodeRepository companyNicCodeRepository;
+    private final CompanyPhoneService companyPhoneService;
+    private final CompanyPhoneRepository companyPhoneRepository;
+    private final CompanyPhoneMapper companyPhoneMapper;
     private final CompanyNameNormalizer nameNormalizer;
     private final PhoneNormalizer phoneNormalizer;
     private final WebsiteNormalizer websiteNormalizer;
+    private final GstValidator gstValidator;
 
     @Transactional
     public CompanyResponse create(CompanyCreateRequest request, String actor) {
+        validateGst(request.gstNumber());
         Company company = Company.builder()
                 .canonicalName(request.canonicalName().trim())
                 .normalizedName(nameNormalizer.normalize(request.canonicalName()))
                 .websiteDomain(normalizeWebsite(request.websiteDomain()))
-                .primaryPhoneNormalized(normalizePhone(request.primaryPhone()))
+                .primaryPhoneNormalized(request.primaryPhone() != null ? normalizePhone(request.primaryPhone()) : null)
                 .email(trimOrNull(request.email()))
                 .city(trimOrNull(request.city()))
                 .state(trimOrNull(request.state()))
@@ -100,15 +110,41 @@ public class CompanyService {
         company.setCompletenessScore(computeCompleteness(company));
         Company saved = companyRepository.save(company);
 
-        auditService.record("COMPANY", saved.getId(), actor, "CREATE", null, companyMapper.toResponse(saved));
-        return companyMapper.toResponse(saved);
+        // v1.2: create phone records if provided
+        if (request.phones() != null && !request.phones().isEmpty()) {
+            companyPhoneService.syncPhonesForCompany(saved.getId(), request.phones(), actor);
+            saved = companyRepository.findById(saved.getId()).orElse(saved);
+        }
+
+        CompanyResponse response = toDetailResponse(saved);
+        auditService.record("COMPANY", saved.getId(), actor, "CREATE", null, response);
+        return response;
     }
 
     @Transactional(readOnly = true)
     public CompanyResponse getById(UUID id) {
         Company company = companyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Company", id));
-        return companyMapper.toResponse(company);
+        return toDetailResponse(company);
+    }
+
+    private CompanyResponse toDetailResponse(Company company) {
+        var phones = companyPhoneRepository
+                .findByCompanyIdOrderByIsPrimaryDescConfidenceAscCreatedAtDesc(company.getId());
+        var phoneResponses = phones.stream().map(companyPhoneMapper::toResponse).toList();
+
+        CompanyPhone primary = phones.stream()
+                .filter(p -> Boolean.TRUE.equals(p.getIsPrimary()))
+                .findFirst()
+                .or(() -> phones.stream().findFirst())
+                .orElse(null);
+
+        return companyMapper.toResponse(company,
+                primary != null ? primary.getConfidence() : null,
+                primary != null ? primary.resolveDesignation() : null,
+                Math.max(0, phones.size() - 1),
+                0,
+                phoneResponses);
     }
 
     @Transactional(readOnly = true)
@@ -132,10 +168,11 @@ public class CompanyService {
 
     @Transactional
     public CompanyResponse update(UUID id, CompanyUpdateRequest request, String actor) {
+        validateGst(request.gstNumber());
         Company company = companyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Company", id));
 
-        CompanyResponse previousState = companyMapper.toResponse(company);
+        CompanyResponse previousState = toDetailResponse(company);
         boolean coreFieldChanged = false;
 
         if (request.canonicalName() != null) {
@@ -196,6 +233,19 @@ public class CompanyService {
         if (request.latitude() != null) company.setLatitude(request.latitude());
         if (request.longitude() != null) company.setLongitude(request.longitude());
 
+        // v1.2: sync phone records if provided (full replacement)
+        if (request.phones() != null) {
+            companyPhoneService.syncPhonesForCompany(id, request.phones(), actor);
+            // Primary phone change on verified company triggers verification drop
+            if (!coreFieldChanged) {
+                boolean primaryPhoneChanged = request.phones().stream()
+                        .anyMatch(p -> Boolean.TRUE.equals(p.isPrimary()));
+                if (primaryPhoneChanged && company.getVerificationStatus() == Company.VerificationStatus.VERIFIED) {
+                    coreFieldChanged = true;
+                }
+            }
+        }
+
         if (coreFieldChanged && company.getVerificationStatus() == Company.VerificationStatus.VERIFIED) {
             company.setVerificationStatus(Company.VerificationStatus.INVALIDATED);
             company.setVerifiedBy(null);
@@ -206,9 +256,10 @@ public class CompanyService {
         company.setCompletenessScore(computeCompleteness(company));
         Company saved = companyRepository.save(company);
 
+        CompanyResponse response = toDetailResponse(saved);
         auditService.record("COMPANY", saved.getId(), actor, "UPDATE",
-                previousState, companyMapper.toResponse(saved));
-        return companyMapper.toResponse(saved);
+                previousState, response);
+        return response;
     }
 
     @Transactional
@@ -216,7 +267,7 @@ public class CompanyService {
         Company company = companyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Company", id));
 
-        CompanyResponse previousState = companyMapper.toResponse(company);
+        CompanyResponse previousState = toDetailResponse(company);
 
         company.setVerificationStatus(Company.VerificationStatus.VERIFIED);
         company.setVerifiedBy(actor);
@@ -224,26 +275,27 @@ public class CompanyService {
         company.setUpdatedBy(actor);
         Company saved = companyRepository.save(company);
 
+        CompanyResponse response = toDetailResponse(saved);
         auditService.record("COMPANY", saved.getId(), actor, "VERIFY",
-                previousState, companyMapper.toResponse(saved));
-        return companyMapper.toResponse(saved);
+                previousState, response);
+        return response;
     }
 
     public List<CompanyResponse> findDuplicates(String normalizedPhone, String websiteDomain,
                                                  String normalizedName, String city) {
         if (normalizedPhone != null && !normalizedPhone.isBlank()) {
             return companyRepository.findByPrimaryPhoneNormalized(normalizedPhone)
-                    .map(c -> List.of(companyMapper.toResponse(c)))
+                    .map(c -> List.of(toDetailResponse(c)))
                     .orElse(List.of());
         }
         if (websiteDomain != null && !websiteDomain.isBlank()) {
             return companyRepository.findByWebsiteDomain(websiteDomain)
-                    .map(c -> List.of(companyMapper.toResponse(c)))
+                    .map(c -> List.of(toDetailResponse(c)))
                     .orElse(List.of());
         }
         if (normalizedName != null && !normalizedName.isBlank() && city != null && !city.isBlank()) {
             return companyRepository.findByNormalizedNameAndCity(normalizedName, city)
-                    .map(c -> List.of(companyMapper.toResponse(c)))
+                    .map(c -> List.of(toDetailResponse(c)))
                     .orElse(List.of());
         }
         return List.of();
@@ -297,7 +349,6 @@ public class CompanyService {
         return resp;
     }
 
-    /** Backwards-compat overload used by internal callers if any. */
     private PageResponse<CompanyResponse> enrichPage(PageResponse<CompanyResponse> page) {
         if (page.content().isEmpty()) return page;
         var ids = page.content().stream().map(CompanyResponse::id).toList();
@@ -316,9 +367,24 @@ public class CompanyService {
                     .add(new CompanyResponse.NicCodeRef(code, desc, Boolean.TRUE.equals(cnc.getIsPrimary())));
         }
 
+        // v1.2: bulk-load primary phone data for all companies on the page
+        Map<UUID, CompanyPhone> primaryPhones = new java.util.HashMap<>();
+        Map<UUID, Integer> phoneCounts = new java.util.HashMap<>();
+        for (UUID companyId : ids) {
+            var phones = companyPhoneRepository
+                    .findByCompanyIdOrderByIsPrimaryDescConfidenceAscCreatedAtDesc(companyId);
+            phoneCounts.put(companyId, Math.max(0, phones.size() - 1));
+            phones.stream()
+                    .filter(p -> Boolean.TRUE.equals(p.getIsPrimary()))
+                    .findFirst()
+                    .or(() -> phones.stream().findFirst())
+                    .ifPresent(p -> primaryPhones.put(companyId, p));
+        }
+
         var enriched = page.content().stream().map(r -> {
             Contact c = primaryContact.get(r.id());
             var nics = nicByCompany.getOrDefault(r.id(), java.util.List.of());
+            CompanyPhone pp = primaryPhones.get(r.id());
             return new CompanyResponse(
                     r.id(), r.canonicalName(), r.normalizedName(), r.websiteDomain(),
                     r.primaryPhoneNormalized(), r.email(), r.city(), r.state(), r.cluster(),
@@ -332,9 +398,11 @@ public class CompanyService {
                     r.googleLastEnrichedAt(),
                     r.websiteReachable(), r.websiteTitle(), r.websiteDescription(), r.websiteLastEnrichedAt(),
                     r.socialLinkedin(), r.socialFacebook(), r.socialX(), r.socialInstagram(), r.socialYoutube(),
-                    r.primaryPhoneCountry(), r.primaryPhoneRegion(), r.primaryPhoneCarrier(),
-                    r.primaryPhoneType(), r.primaryPhoneStatus(), r.primaryPhoneDndRegistered(),
-                    r.primaryPhoneLastEnrichedAt(),
+                    // v1.2: phone confidence fields from company_phones
+                    pp != null ? pp.getConfidence() : null,
+                    pp != null ? pp.resolveDesignation() : null,
+                    phoneCounts.getOrDefault(r.id(), 0),
+                    null,
                     c != null ? c.getName() : null,
                     c != null ? c.getPhone() : null,
                     c != null && c.getRole() != null ? c.getRole().getLabel() : null,
@@ -398,12 +466,21 @@ public class CompanyService {
                 base.region(), base.district(), base.pincode(),
                 base.turnoverMin(), base.turnoverMax(),
                 base.employeeMin(), base.employeeMax(), base.gstPresent(),
-                null, nicIds, base.hasContactRoleId()
+                null, nicIds, base.hasContactRoleId(),
+                base.confidence(), base.numberSource(), base.hasDecisionMaker()
         );
     }
 
     public java.util.List<java.util.UUID> expandNicSubtree(java.util.UUID parentId) {
         return nicCodeRepository.findDescendantIds(parentId);
+    }
+
+    private void validateGst(String gstNumber) {
+        if (gstNumber == null || gstNumber.isBlank()) return;
+        var result = gstValidator.validate(gstNumber);
+        if (!result.valid()) {
+            throw new com.vyoog.prospectsoul_backend.common.exception.BusinessRuleException(result.error());
+        }
     }
 
     private String trimOrNull(String value) {

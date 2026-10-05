@@ -367,7 +367,8 @@ export function BatchEnrichPanel({ canRun }: Props) {
 }
 
 function lastEnrichedSummary(company: Company): string {
-  const dates = [company.google_last_enriched_at, company.website_last_enriched_at, company.primary_phone_last_enriched_at]
+  const primaryPhone = company.phones?.find(p => p.is_primary)
+  const dates = [company.google_last_enriched_at, company.website_last_enriched_at, primaryPhone?.enriched_at]
     .filter((d): d is string => !!d)
     .sort()
   const latest = dates[dates.length - 1]

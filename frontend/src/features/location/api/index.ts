@@ -1,4 +1,5 @@
 import { apiClient } from '@/api/client'
+import { env } from '@/constants/env'
 import type { MapCompaniesFilters, MapCompaniesResponse, PincodeCentroidResponse } from '../types'
 
 export const locationApi = {
@@ -18,5 +19,32 @@ export const locationApi = {
         apply_defaults: filters?.apply_defaults ?? true,
       },
     })
+  },
+  async downloadCompanies(
+    pincode: string,
+    radiusKm: number,
+    filters?: MapCompaniesFilters,
+    authHeader?: string,
+  ): Promise<Blob> {
+    const resp = await fetch(`${env.apiBaseUrl}/map/companies/download`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'content-type': 'application/json',
+        ...(authHeader ? { authorization: authHeader } : {}),
+      },
+      body: JSON.stringify({
+        pincode,
+        radius_km: radiusKm,
+        nic_parent_ids: filters?.nic_parent_ids ?? [],
+        nic_include_descendants: filters?.nic_include_descendants,
+        apply_defaults: filters?.apply_defaults ?? true,
+      }),
+    })
+    if (!resp.ok) {
+      const problem = await resp.json().catch(() => ({}))
+      throw new Error(problem.detail ?? `Download failed (${resp.status})`)
+    }
+    return resp.blob()
   },
 }

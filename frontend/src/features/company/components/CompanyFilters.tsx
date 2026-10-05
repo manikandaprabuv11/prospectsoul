@@ -7,7 +7,7 @@ import { useCompanyDefaults } from '@/features/companydefaults/hooks'
 import { useNicCode, useNicPrimary, useResolveNicByCode } from '@/features/nic/hooks'
 import { Lock, RotateCw, Search, SlidersHorizontal, X } from 'lucide-react'
 import { useState } from 'react'
-import type { CompanyFilters as Filters } from '../types'
+import type { CompanyFilters as Filters, ConfidenceLevel, NumberSourceType } from '../types'
 
 interface Props {
   filters: Filters
@@ -16,6 +16,11 @@ interface Props {
 
 const PIPELINE_STATES = ['IMPORTED', 'TRIAGE', 'RESEARCH', 'QUALIFICATION', 'READY', 'EXPORTED', 'DISQUALIFIED', 'ARCHIVED']
 const VERIFICATION_STATUSES = ['UNVERIFIED', 'VERIFIED', 'INVALIDATED']
+const CONFIDENCE_LEVELS: ConfidenceLevel[] = ['HIGH', 'MEDIUM', 'LOW']
+const NUMBER_SOURCES: NumberSourceType[] = [
+  'MANUAL_ENTRY', 'BUSINESS_CARD', 'FIELD_VISIT', 'REFERENCE',
+  'WEBSITE', 'GOOGLE_API', 'LINKEDIN', 'INDIAMART', 'IMPORT_DEFAULT',
+]
 
 export function CompanyFilters({ filters, onChange }: Props) {
   const nicPrimary = useNicPrimary()
@@ -157,6 +162,9 @@ export function CompanyFilters({ filters, onChange }: Props) {
           {filters.city && <FilterChip label={`City: ${filters.city}`} onRemove={() => onChange({ ...filters, city: undefined, page: 0 })} />}
           {filters.state && <FilterChip label={`State: ${filters.state}`} onRemove={() => onChange({ ...filters, state: undefined, page: 0 })} />}
           {filters.region && <FilterChip label={`Region: ${filters.region}`} onRemove={() => onChange({ ...filters, region: undefined, page: 0 })} />}
+          {filters.confidence && <FilterChip label={`Confidence: ${titleCase(filters.confidence)}`} onRemove={() => onChange({ ...filters, confidence: undefined, page: 0 })} />}
+          {filters.number_source && <FilterChip label={`Source: ${titleCase(filters.number_source)}`} onRemove={() => onChange({ ...filters, number_source: undefined, page: 0 })} />}
+          {filters.has_decision_maker !== undefined && <FilterChip label={`Decision Maker: ${filters.has_decision_maker ? 'Yes' : 'No'}`} onRemove={() => onChange({ ...filters, has_decision_maker: undefined, page: 0 })} />}
         </div>
       )}
 
@@ -265,6 +273,38 @@ export function CompanyFilters({ filters, onChange }: Props) {
               ))}
             </Select>
           </FilterField>
+          <FilterField label="Confidence">
+            <Select
+              value={filters.confidence ?? ''}
+              onChange={(e) => onChange({ ...filters, confidence: (e.target.value || undefined) as ConfidenceLevel | undefined, page: 0 })}
+            >
+              <option value="">Any</option>
+              {CONFIDENCE_LEVELS.map((c) => <option key={c} value={c}>{titleCase(c)}</option>)}
+            </Select>
+          </FilterField>
+          <FilterField label="Number source">
+            <Select
+              value={filters.number_source ?? ''}
+              onChange={(e) => onChange({ ...filters, number_source: (e.target.value || undefined) as NumberSourceType | undefined, page: 0 })}
+            >
+              <option value="">Any</option>
+              {NUMBER_SOURCES.map((s) => <option key={s} value={s}>{titleCase(s)}</option>)}
+            </Select>
+          </FilterField>
+          <FilterField label="Decision maker">
+            <Select
+              value={filters.has_decision_maker === undefined ? '' : String(filters.has_decision_maker)}
+              onChange={(e) => onChange({
+                ...filters,
+                has_decision_maker: e.target.value === '' ? undefined : e.target.value === 'true',
+                page: 0,
+              })}
+            >
+              <option value="">Any</option>
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </Select>
+          </FilterField>
 
           {selectedNicIds.length > 0 ? (
             <>
@@ -348,7 +388,7 @@ function countActive(f: Filters) {
     'q','city','state','pipeline_state','verification_status',
     'region','district','pincode','turnover_min','turnover_max',
     'employee_min','employee_max','gst_present','nic_code_id',
-    'has_contact_role_id',
+    'has_contact_role_id','confidence','number_source','has_decision_maker',
   ]
   const scalarCount = keys.filter((k) => {
     const v = f[k]

@@ -75,7 +75,7 @@ class CompanyControllerIntegrationTest {
         var request = new CompanyCreateRequest(
                 "Acme Corp Pvt Ltd", "https://acme.com", "+919876543210",
                 "info@acme.com", "Mumbai", "Maharashtra", "West",
-                "Manufacturing", "MEDIUM", null, "MANUAL_ENTRY", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+                "Manufacturing", "MEDIUM", null, "MANUAL_ENTRY", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 
         mockMvc.perform(post("/api/v1/companies")
                         .with(analystJwt())
@@ -95,7 +95,7 @@ class CompanyControllerIntegrationTest {
     @Test
     void createCompany_withViewerRole_returns403() throws Exception {
         var request = new CompanyCreateRequest(
-                "Viewer Corp", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+                "Viewer Corp", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 
         mockMvc.perform(post("/api/v1/companies")
                         .with(viewerJwt())
@@ -107,7 +107,7 @@ class CompanyControllerIntegrationTest {
     @Test
     void createCompany_missingName_returns400() throws Exception {
         var request = new CompanyCreateRequest(
-                "", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+                "", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 
         mockMvc.perform(post("/api/v1/companies")
                         .with(analystJwt())
@@ -165,7 +165,7 @@ class CompanyControllerIntegrationTest {
         String id = createTestCompany("Update Target Corp");
 
         var updateRequest = new CompanyUpdateRequest(
-                null, null, null, "newemail@test.com", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+                null, null, null, "newemail@test.com", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 
         mockMvc.perform(patch("/api/v1/companies/" + id)
                         .with(analystJwt())
@@ -187,7 +187,7 @@ class CompanyControllerIntegrationTest {
 
         // update core field
         var updateRequest = new CompanyUpdateRequest(
-                "New Name Corp", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+                "New Name Corp", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 
         mockMvc.perform(patch("/api/v1/companies/" + id)
                         .with(analystJwt())
@@ -383,7 +383,7 @@ class CompanyControllerIntegrationTest {
     private String createCompanyWithPincode(String name, String pincode) throws Exception {
         var request = new CompanyCreateRequest(
                 name, null, null, null, "TestCity", "TestState", null, null, null, null, null,
-                pincode, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+                pincode, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 
         String response = mockMvc.perform(post("/api/v1/companies")
                         .with(analystJwt())
@@ -397,7 +397,7 @@ class CompanyControllerIntegrationTest {
 
     private String createTestCompany(String name) throws Exception {
         var request = new CompanyCreateRequest(
-                name, null, null, null, "TestCity", "TestState", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+                name, null, null, null, "TestCity", "TestState", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 
         String response = mockMvc.perform(post("/api/v1/companies")
                         .with(analystJwt())
