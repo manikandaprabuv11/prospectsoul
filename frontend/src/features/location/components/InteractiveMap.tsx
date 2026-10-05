@@ -44,27 +44,18 @@ interface InteractiveMapProps {
   matchedNicCodeIds: string[] | null
 }
 
-function FitBounds({ center, radiusKm, companies }: { center: { lat: number; lng: number }; radiusKm: number; companies: MapCompanyItem[] }) {
+function FitBounds({ center, radiusKm }: { center: { lat: number; lng: number }; radiusKm: number }) {
   const map = useMap()
   const prevKey = useRef('')
 
   useEffect(() => {
-    const key = `${center.lat},${center.lng},${radiusKm},${companies.length}`
+    const key = `${center.lat},${center.lng},${radiusKm}`
     if (key === prevKey.current) return
     prevKey.current = key
 
-    if (companies.length === 0) {
-      map.setView([center.lat, center.lng], zoomForRadius(radiusKm))
-      return
-    }
-
-    const points: L.LatLngExpression[] = [
-      [center.lat, center.lng],
-      ...companies.map((c) => [Number(c.lat), Number(c.lng)] as [number, number]),
-    ]
-    const bounds = L.latLngBounds(points)
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 })
-  }, [map, center, radiusKm, companies])
+    const circleBounds = L.latLng(center.lat, center.lng).toBounds(radiusKm * 2 * 1000)
+    map.fitBounds(circleBounds, { padding: [40, 40] })
+  }, [map, center, radiusKm])
 
   return null
 }
@@ -112,7 +103,7 @@ export function InteractiveMap({ center, radiusKm, companies, matchedNicCodeIds 
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <FitBounds center={center} radiusKm={radiusKm} companies={companies} />
+        <FitBounds center={center} radiusKm={radiusKm} />
 
         <Marker position={[center.lat, center.lng]} icon={centerIcon}>
           <Popup>
