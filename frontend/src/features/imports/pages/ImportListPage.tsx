@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { LoadingRows } from '@/components/feedback/LoadingRows'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { EmptyState } from '@/components/feedback/EmptyState'
@@ -10,9 +11,17 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { useImportBatches } from '../hooks'
 
+const BATCH_STATUSES = ['UPLOADED', 'MAPPING', 'PREVIEWING', 'VALIDATED', 'PROCESSING', 'COMPLETED', 'FAILED'] as const
+
 export function ImportListPage() {
   const [page, setPage] = useState(0)
-  const { data, isLoading, isError, error } = useImportBatches(page)
+  const [statusFilter, setStatusFilter] = useState('')
+  const { data, isLoading, isError, error } = useImportBatches(page, 25, statusFilter || undefined)
+
+  function handleStatusChange(value: string) {
+    setStatusFilter(value)
+    setPage(0)
+  }
 
   return (
     <div className="space-y-6">
@@ -25,6 +34,18 @@ export function ImportListPage() {
           </Button>
         }
       />
+
+      <div className="flex items-center gap-3">
+        <div className="min-w-[10rem]">
+          <label htmlFor="batch-status-filter" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</label>
+          <Select id="batch-status-filter" className="mt-1" value={statusFilter} onChange={(e) => handleStatusChange(e.target.value)}>
+            <option value="">All statuses</option>
+            {BATCH_STATUSES.map((s) => (
+              <option key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</option>
+            ))}
+          </Select>
+        </div>
+      </div>
 
       {isLoading ? (
         <LoadingRows count={5} height="h-14" />

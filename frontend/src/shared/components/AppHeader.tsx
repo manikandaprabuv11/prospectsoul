@@ -100,13 +100,15 @@ export function AppHeader({ onOpenMobileNav }: Props) {
         </kbd>
       </div>
 
-      {/* Notifications stub */}
-      <Button variant="ghost" size="icon-sm" className="relative text-muted-foreground hover:text-foreground">
+      {/* Notifications — not wired yet; disabled to avoid confusion */}
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className="relative text-muted-foreground cursor-default opacity-40"
+        disabled
+        title="Notifications — coming soon"
+      >
         <Bell className="size-4" />
-        <span className="absolute -top-0.5 -right-0.5 flex size-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-rose opacity-75" />
-          <span className="relative inline-flex size-2 rounded-full bg-accent-rose" />
-        </span>
       </Button>
 
       <div className="h-6 w-px bg-border hidden md:block" />

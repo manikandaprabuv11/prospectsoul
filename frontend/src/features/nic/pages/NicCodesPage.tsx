@@ -1,27 +1,31 @@
 import { Button } from '@/components/ui/button'
-import { PageHeader } from '@/components/layout/PageHeader'
-import { Plus, LayoutList, Search, TreePine } from 'lucide-react'
+import { Pagination } from '@/shared/components/Pagination'
+import { Plus, FileUp, LayoutList, Loader2, Search, TreePine } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { useSearchParams } from 'react-router'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { NicCodeDialog } from '../components/NicCodeDialog'
-import { NicImportPanel } from '../components/NicImportPanel'
 import { NicTreeView } from '../components/NicTreeView'
 import {
   useCreateNicCode,
+  useImportNicFile,
   useNicCodeList,
   useNicTree,
   useToggleNicPrimary,
   useUpdateNicCode,
 } from '../hooks'
-import type { IndustryType, NicCodeResponse, NicListFilters } from '../types'
+import type { IndustryType, NicCodeResponse, NicImportResultResponse, NicListFilters } from '../types'
 
 export function NicCodesPage() {
   const [sp, setSp] = useSearchParams()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<NicCodeResponse | null>(null)
   const [dialogError, setDialogError] = useState<string | undefined>()
+  const importRef = useRef<HTMLInputElement>(null)
+  const importMutation = useImportNicFile()
+  const [importResult, setImportResult] = useState<NicImportResultResponse | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
 
   const view = sp.get('view') ?? 'table'
   const filters: NicListFilters = useMemo(
@@ -47,8 +51,26 @@ export function NicCodesPage() {
     const next = new URLSearchParams(sp)
     if (value === undefined || value === '') next.delete(key)
     else next.set(key, value)
-    next.set('page', '0')
+    if (key !== 'page') next.set('page', '0')
     setSp(next)
+  }
+
+  function setPage(p: number) {
+    updateParam('page', String(p))
+  }
+
+  async function handleImport(file: File | null) {
+    if (!file) return
+    setImportError(null)
+    setImportResult(null)
+    try {
+      const res = await importMutation.mutateAsync(file)
+      setImportResult(res)
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Import failed')
+    } finally {
+      if (importRef.current) importRef.current.value = ''
+    }
   }
 
   async function handleSave(payload: {
@@ -83,89 +105,138 @@ export function NicCodesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="NIC Code Master"
-        description="Reference data — admin-editable. Primary codes surface first in filter pickers."
-        actions={
-          <>
-            <div className="inline-flex rounded-lg border border-border bg-surface-1 p-0.5">
-              <Button
-                variant={view === 'table' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => updateParam('view', 'table')}
-              >
-                <LayoutList /> Table
-              </Button>
-              <Button
-                variant={view === 'tree' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => updateParam('view', 'tree')}
-              >
-                <TreePine /> Tree
-              </Button>
-            </div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold tracking-tight text-foreground">NIC Code Master</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Reference data — primary codes surface first in filter pickers.</p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="inline-flex rounded-lg border border-border bg-surface-1 p-0.5">
             <Button
-              onClick={() => { setEditing(null); setDialogError(undefined); setDialogOpen(true); }}
+              variant={view === 'table' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => updateParam('view', 'table')}
             >
-              <Plus /> Add code
+              <LayoutList className="size-3.5" /> Table
             </Button>
-          </>
-        }
-      />
+            <Button
+              variant={view === 'tree' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => updateParam('view', 'tree')}
+            >
+              <TreePine className="size-3.5" /> Tree
+            </Button>
+          </div>
+          <div className="h-6 w-px bg-border" />
+          <Button variant="outline" size="sm" onClick={() => importRef.current?.click()} disabled={importMutation.isPending}>
+            {importMutation.isPending ? <><Loader2 className="size-3.5 animate-spin" /> Importing…</> : <><FileUp className="size-3.5" /> Import master</>}
+          </Button>
+          <input
+            ref={importRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            className="hidden"
+            onChange={(e) => handleImport(e.target.files?.[0] ?? null)}
+          />
+          <Button size="sm" onClick={() => { setEditing(null); setDialogError(undefined); setDialogOpen(true) }}>
+            <Plus className="size-3.5" /> Add code
+          </Button>
+        </div>
+      </div>
 
-      <NicImportPanel />
+      {importError && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm font-medium text-destructive">{importError}</div>
+      )}
+      {importResult && (
+        <div className="flex items-center gap-6 rounded-xl border border-border bg-surface-1/50 px-4 py-2.5 text-sm">
+          <ImportStat label="Read" value={importResult.rows_read} />
+          <ImportStat label="Created" value={importResult.created} accent="text-accent-emerald" />
+          <ImportStat label="Updated" value={importResult.updated} accent="text-accent-sky" />
+          <ImportStat label="Unresolved" value={importResult.unresolved_parents} accent="text-accent-amber" />
+          <ImportStat label="Rejected" value={importResult.rejected} accent="text-accent-rose" />
+          <button type="button" onClick={() => setImportResult(null)} className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors">Dismiss</button>
+        </div>
+      )}
 
       {view === 'table' ? (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4 shadow-card">
-            <div className="relative min-w-[240px]">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
-              <Input
-                placeholder="Search description or code prefix"
-                className="pl-8"
-                value={filters.q ?? ''}
-                onChange={(e) => updateParam('q', e.target.value || undefined)}
-              />
+          <div className="rounded-xl border border-border bg-card p-4 shadow-card">
+            <div className="grid gap-3 grid-cols-[minmax(0,1fr)_repeat(2,minmax(0,160px))_auto_auto]">
+              <div className="min-w-0">
+                <label htmlFor="nic-search" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Search</label>
+                <div className="relative mt-1">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
+                  <Input
+                    id="nic-search"
+                    placeholder="Code or description…"
+                    className="pl-8"
+                    value={filters.q ?? ''}
+                    onChange={(e) => updateParam('q', e.target.value || undefined)}
+                  />
+                </div>
+              </div>
+              <div className="min-w-0">
+                <label htmlFor="nic-level" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Level</label>
+                <Select
+                  id="nic-level"
+                  className="mt-1"
+                  value={filters.level?.toString() ?? ''}
+                  onChange={(e) => updateParam('level', e.target.value || undefined)}
+                >
+                  <option value="">All levels</option>
+                  <option value="1">1 — Section</option>
+                  <option value="2">2 — Division</option>
+                  <option value="3">3 — Group</option>
+                  <option value="4">4 — Class</option>
+                  <option value="5">5 — Sub-class</option>
+                </Select>
+              </div>
+              <div className="min-w-0">
+                <label htmlFor="nic-type" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Type</label>
+                <Select
+                  id="nic-type"
+                  className="mt-1"
+                  value={filters.industry_type ?? ''}
+                  onChange={(e) => updateParam('industry_type', e.target.value || undefined)}
+                >
+                  <option value="">All types</option>
+                  <option value="Manufacturing">Manufacturing</option>
+                  <option value="Service">Service</option>
+                  <option value="Unknown">Unknown</option>
+                </Select>
+              </div>
+              <div className="flex items-end pb-0.5">
+                <button
+                  type="button"
+                  onClick={() => updateParam('is_primary', filters.is_primary ? undefined : 'true')}
+                  className={
+                    'inline-flex items-center gap-1.5 rounded-lg px-3 h-9 text-xs font-medium transition-colors border ' +
+                    (filters.is_primary
+                      ? 'bg-accent-amber/10 text-accent-amber border-accent-amber/30'
+                      : 'bg-transparent text-muted-foreground border-border hover:bg-accent hover:text-foreground')
+                  }
+                >
+                  <span className="text-sm">{filters.is_primary ? '★' : '☆'}</span>
+                  Primary
+                </button>
+              </div>
+              <div className="flex items-end pb-0.5">
+                <button
+                  type="button"
+                  onClick={() => updateParam('active', filters.active === false ? undefined : 'false')}
+                  className={
+                    'inline-flex items-center gap-1.5 rounded-lg px-3 h-9 text-xs font-medium transition-colors border ' +
+                    (filters.active !== false
+                      ? 'bg-accent-emerald/10 text-accent-emerald border-accent-emerald/30'
+                      : 'bg-transparent text-muted-foreground border-border hover:bg-accent hover:text-foreground')
+                  }
+                >
+                  <span className={`inline-flex size-2 rounded-full ${filters.active !== false ? 'bg-accent-emerald' : 'bg-muted-foreground/40'}`} />
+                  Active
+                </button>
+              </div>
             </div>
-            <Select
-              value={filters.level?.toString() ?? ''}
-              onChange={(e) => updateParam('level', e.target.value || undefined)}
-            >
-              <option value="">Any level</option>
-              <option value="1">1 - Section</option>
-              <option value="2">2 - Division</option>
-              <option value="3">3 - Group</option>
-              <option value="4">4 - Class</option>
-              <option value="5">5 - Sub-class</option>
-            </Select>
-            <Select
-              value={filters.industry_type ?? ''}
-              onChange={(e) => updateParam('industry_type', e.target.value || undefined)}
-            >
-              <option value="">Any type</option>
-              <option value="Manufacturing">Manufacturing</option>
-              <option value="Service">Service</option>
-              <option value="Unknown">Unknown</option>
-            </Select>
-            <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.is_primary === true}
-                onChange={(e) => updateParam('is_primary', e.target.checked ? 'true' : undefined)}
-                className="rounded"
-              />
-              Primary only
-            </label>
-            <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.active !== false}
-                onChange={(e) => updateParam('active', e.target.checked ? undefined : 'false')}
-                className="rounded"
-              />
-              Active only
-            </label>
           </div>
 
           {list.isLoading ? (
@@ -247,31 +318,13 @@ export function NicCodesPage() {
           )}
 
           {list.data ? (
-            <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 shadow-card text-sm">
-              <span className="text-muted-foreground">
-                Page <span className="font-semibold text-foreground tabular-nums">{list.data.page + 1}</span> of <span className="font-semibold text-foreground tabular-nums">{list.data.total_pages || 1}</span>
-                {' · '}
-                <span className="font-semibold text-foreground tabular-nums">{list.data.total_elements}</span> codes
-              </span>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={list.data.page === 0}
-                  onClick={() => updateParam('page', String(list.data.page - 1))}
-                >
-                  Prev
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={list.data.page + 1 >= list.data.total_pages}
-                  onClick={() => updateParam('page', String(list.data.page + 1))}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
+            <Pagination
+              page={list.data.page}
+              totalPages={list.data.total_pages}
+              totalElements={list.data.total_elements}
+              itemLabel="codes"
+              onPageChange={setPage}
+            />
           ) : null}
         </div>
       ) : (
@@ -299,6 +352,15 @@ export function NicCodesPage() {
         saving={create.isPending || update.isPending}
         errorMessage={dialogError}
       />
+    </div>
+  )
+}
+
+function ImportStat({ label, value, accent }: { label: string; value: number; accent?: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className={`text-sm font-bold tabular-nums ${accent ?? 'text-foreground'}`}>{value}</span>
     </div>
   )
 }
