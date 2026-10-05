@@ -3,6 +3,7 @@ import type {
   Company,
   CompanyCreateRequest,
   CompanyFilters,
+  CompanyIdsResponse,
   CompanyUpdateRequest,
   PageResponse,
 } from '../types'
@@ -44,6 +45,37 @@ export const companyApi = {
         size: filters.size ?? 25,
         sort: filters.sort ?? 'createdAt',
         sort_dir: filters.sort_dir ?? 'desc',
+      },
+    })
+  },
+
+  listIds(filters: CompanyFilters = {}) {
+    return apiClient.get<CompanyIdsResponse>('/api/v1/companies/ids', {
+      query: {
+        q: filters.q,
+        city: filters.city,
+        state: filters.state,
+        industry: filters.industry,
+        cluster: filters.cluster,
+        source: filters.source,
+        pipeline_state: filters.pipeline_state,
+        verification_status: filters.verification_status,
+        region: filters.region,
+        district: filters.district,
+        pincode: filters.pincode,
+        turnover_min: filters.turnover_min,
+        turnover_max: filters.turnover_max,
+        employee_min: filters.employee_min,
+        employee_max: filters.employee_max,
+        gst_present: filters.gst_present,
+        nic_code_id: filters.nic_code_id,
+        nic_parent_ids: filters.nic_parent_ids,
+        nic_include_descendants: filters.nic_include_descendants,
+        has_contact_role_id: filters.has_contact_role_id,
+        confidence: filters.confidence,
+        number_source: filters.number_source,
+        has_decision_maker: filters.has_decision_maker,
+        apply_defaults: filters.apply_defaults ?? true,
       },
     })
   },

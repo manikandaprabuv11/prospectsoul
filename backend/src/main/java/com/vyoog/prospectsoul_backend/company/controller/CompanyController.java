@@ -64,6 +64,111 @@ public class CompanyController {
         return companyService.getById(id);
     }
 
+    @GetMapping("/ids")
+    @PreAuthorize(RoleConstants.HAS_READ)
+    public com.vyoog.prospectsoul_backend.company.dto.response.CompanyIdsResponse listIds(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String state,
+            @RequestParam(required = false) String industry,
+            @RequestParam(required = false) String cluster,
+            @RequestParam(required = false) String source,
+            @RequestParam(name = "pipeline_state", required = false) String pipelineState,
+            @RequestParam(name = "verification_status", required = false) String verificationStatus,
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String district,
+            @RequestParam(required = false) String pincode,
+            @RequestParam(name = "turnover_min", required = false) BigDecimal turnoverMin,
+            @RequestParam(name = "turnover_max", required = false) BigDecimal turnoverMax,
+            @RequestParam(name = "employee_min", required = false) Integer employeeMin,
+            @RequestParam(name = "employee_max", required = false) Integer employeeMax,
+            @RequestParam(name = "gst_present", required = false) Boolean gstPresent,
+            @RequestParam(name = "nic_code_id", required = false) UUID nicCodeId,
+            @RequestParam(name = "nic_parent_id", required = false) UUID nicParentId,
+            @RequestParam(name = "nic_parent_ids", required = false) List<String> nicParentIdsRaw,
+            @RequestParam(name = "nic_include_descendants", required = false) Boolean nicIncludeDescendants,
+            @RequestParam(name = "has_contact_role_id", required = false) UUID hasContactRoleId,
+            @RequestParam(name = "confidence", required = false) ConfidenceLevel confidence,
+            @RequestParam(name = "number_source", required = false) NumberSourceType numberSource,
+            @RequestParam(name = "has_decision_maker", required = false) Boolean hasDecisionMaker,
+            @RequestParam(name = "apply_defaults", defaultValue = "false") boolean applyDefaults) {
+
+        UUID configNicParentId = null;
+        if (applyDefaults) {
+            for (CompanyDefaultFilter d : companyDefaultFilterService.activeDefaults()) {
+                try {
+                    JsonNode v = d.getValue() == null || d.getValue().isBlank()
+                            ? null : objectMapper.readTree(d.getValue());
+                    switch (d.getFilterKey()) {
+                        case "employee_min":    if (employeeMin == null && v != null && v.isNumber()) employeeMin = v.asInt(); break;
+                        case "employee_max":    if (employeeMax == null && v != null && v.isNumber()) employeeMax = v.asInt(); break;
+                        case "turnover_min":    if (turnoverMin == null && v != null && v.isNumber()) turnoverMin = v.decimalValue(); break;
+                        case "turnover_max":    if (turnoverMax == null && v != null && v.isNumber()) turnoverMax = v.decimalValue(); break;
+                        case "gst_present":     if (gstPresent  == null && v != null && v.isBoolean()) gstPresent = v.asBoolean(); break;
+                        case "pipeline_state":  if ((pipelineState == null || pipelineState.isBlank()) && v != null && v.isTextual()) pipelineState = v.asText(); break;
+                        case "verification_status": if ((verificationStatus == null || verificationStatus.isBlank()) && v != null && v.isTextual()) verificationStatus = v.asText(); break;
+                        case "region":          if ((region == null || region.isBlank()) && v != null && v.isTextual()) region = v.asText(); break;
+                        case "district":        if ((district == null || district.isBlank()) && v != null && v.isTextual()) district = v.asText(); break;
+                        case "pincode":         if ((pincode == null || pincode.isBlank()) && v != null && v.isTextual()) pincode = v.asText(); break;
+                        case "nic_parent_id":   if (v != null && v.isTextual()) configNicParentId = UUID.fromString(v.asText()); break;
+                    }
+                } catch (Exception e) {
+                    // Malformed default value shouldn't kill the request.
+                }
+            }
+        }
+
+        java.util.LinkedHashSet<UUID> pageParentIds = new java.util.LinkedHashSet<>();
+        if (nicParentIdsRaw != null) {
+            for (String raw : nicParentIdsRaw) {
+                if (raw == null || raw.isBlank()) continue;
+                for (String token : raw.split(",")) {
+                    String t = token.trim();
+                    if (t.isEmpty()) continue;
+                    try {
+                        pageParentIds.add(UUID.fromString(t));
+                    } catch (IllegalArgumentException e) {
+                        throw new com.vyoog.prospectsoul_backend.common.exception.BusinessRuleException(
+                                "Invalid UUID in nic_parent_ids: " + t);
+                    }
+                }
+            }
+        }
+        if (nicParentId != null) pageParentIds.add(nicParentId);
+        boolean includeDesc = nicIncludeDescendants == null || nicIncludeDescendants;
+
+        java.util.LinkedHashSet<UUID> pageNicIds = new java.util.LinkedHashSet<>();
+        for (UUID pid : pageParentIds) {
+            if (includeDesc) pageNicIds.addAll(companyService.expandNicSubtree(pid));
+            else pageNicIds.add(pid);
+        }
+
+        java.util.Collection<UUID> nicIds;
+        if (configNicParentId != null) {
+            java.util.LinkedHashSet<UUID> configNicIds = includeDesc
+                    ? new java.util.LinkedHashSet<>(companyService.expandNicSubtree(configNicParentId))
+                    : new java.util.LinkedHashSet<>(List.of(configNicParentId));
+            if (!pageParentIds.isEmpty()) {
+                configNicIds.retainAll(pageNicIds);
+            }
+            nicIds = configNicIds;
+        } else if (!pageParentIds.isEmpty()) {
+            nicIds = pageNicIds;
+        } else {
+            nicIds = null;
+        }
+
+        CompanySpecification.Filters filters = new CompanySpecification.Filters(
+                q, city, state, industry, cluster, source,
+                pipelineState, verificationStatus,
+                region, district, pincode,
+                turnoverMin, turnoverMax, employeeMin, employeeMax, gstPresent,
+                nicCodeId, nicIds, hasContactRoleId,
+                confidence, numberSource, hasDecisionMaker);
+
+        return companyService.listIdsWithFilters(filters);
+    }
+
     @GetMapping
     @PreAuthorize(RoleConstants.HAS_READ)
     public Object list(

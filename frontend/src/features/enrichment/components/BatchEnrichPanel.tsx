@@ -10,18 +10,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Pagination } from '@/shared/components/Pagination'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CheckCircle2, Loader2, Search, Sparkles, XCircle } from 'lucide-react'
+import { CheckCircle2, Loader2, Sparkles, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useCompanies } from '@/features/company/hooks'
-import type { Company } from '@/features/company/types'
+import { companyApi } from '@/features/company/api'
+import { CompanyFilters } from '@/features/company/components/CompanyFilters'
+import type { Company, CompanyFilters as Filters } from '@/features/company/types'
 import { queryClient } from '@/lib/query-client'
 import { enrichmentApi } from '../api'
 
 const PAGE_SIZE = 25
+
+const DEFAULT_FILTERS: Filters = {
+  page: 0,
+  size: PAGE_SIZE,
+  sort: 'createdAt',
+  sort_dir: 'desc',
+}
 
 const PROVIDERS = [
   { key: 'GOOGLE_PLACES', label: 'Google Places' },
@@ -57,39 +64,31 @@ interface Props {
 }
 
 export function BatchEnrichPanel({ canRun }: Props) {
-  const [search, setSearch] = useState('')
-  const [appliedSearch, setAppliedSearch] = useState<string | undefined>(undefined)
-  const [page, setPage] = useState(0)
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [providers, setProviders] = useState<Set<string>>(new Set(PROVIDERS.map((p) => p.key)))
   const [confirming, setConfirming] = useState(false)
   const [running, setRunning] = useState(false)
   const [runStates, setRunStates] = useState<Map<string, RunState>>(new Map())
+  const [selectingAll, setSelectingAll] = useState(false)
+  const [allFilterSelected, setAllFilterSelected] = useState(false)
 
-  const companies = useCompanies({
-    q: appliedSearch,
-    page,
-    size: PAGE_SIZE,
-    sort: 'createdAt',
-    sort_dir: 'desc',
-  })
+  const companies = useCompanies(filters)
 
   const rows = companies.data?.content ?? []
-  const allSelected = rows.length > 0 && rows.every((row) => selected.has(row.id))
-  const someSelected = rows.some((row) => selected.has(row.id))
+  const totalElements = companies.data?.total_elements ?? 0
+  const totalPages = companies.data?.total_pages ?? 1
+  const allOnPageSelected = rows.length > 0 && rows.every((row) => selected.has(row.id))
+  const someOnPageSelected = rows.some((row) => selected.has(row.id))
+  const showSelectAllBanner = allOnPageSelected && totalPages > 1 && !allFilterSelected
 
-  function applySearch() {
-    setAppliedSearch(search.trim() || undefined)
-    setPage(0)
-  }
-
-  function resetSearch() {
-    setSearch('')
-    setAppliedSearch(undefined)
-    setPage(0)
+  function handleFiltersChange(next: Filters) {
+    setFilters(next)
+    setAllFilterSelected(false)
   }
 
   function toggleRow(id: string, checked: boolean) {
+    setAllFilterSelected(false)
     setSelected((current) => {
       const next = new Set(current)
       if (checked) next.add(id)
@@ -99,6 +98,7 @@ export function BatchEnrichPanel({ canRun }: Props) {
   }
 
   function toggleCurrentPage(checked: boolean) {
+    if (!checked) setAllFilterSelected(false)
     setSelected((current) => {
       const next = new Set(current)
       for (const row of rows) {
@@ -107,6 +107,22 @@ export function BatchEnrichPanel({ canRun }: Props) {
       }
       return next
     })
+  }
+
+  async function selectAllMatching() {
+    setSelectingAll(true)
+    try {
+      const result = await companyApi.listIds(filters)
+      setSelected(new Set(result.ids))
+      setAllFilterSelected(true)
+    } finally {
+      setSelectingAll(false)
+    }
+  }
+
+  function clearSelection() {
+    setSelected(new Set())
+    setAllFilterSelected(false)
   }
 
   function toggleProvider(key: string, checked: boolean) {
@@ -173,28 +189,7 @@ export function BatchEnrichPanel({ canRun }: Props) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="rounded-xl border border-border bg-card p-4 shadow-card">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="min-w-48 flex-1 space-y-1">
-              <Label htmlFor="enrich-search" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Search</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input
-                  id="enrich-search"
-                  className="pl-9"
-                  placeholder="Company name, city or website"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') applySearch()
-                  }}
-                />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={applySearch}>Apply</Button>
-              <Button variant="outline" onClick={resetSearch}>Reset</Button>
-            </div>
-          </div>
+          <CompanyFilters filters={filters} onChange={handleFiltersChange} />
         </div>
 
         <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-surface-1/50 p-3">
@@ -223,11 +218,43 @@ export function BatchEnrichPanel({ canRun }: Props) {
           </div>
         ) : rows.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border bg-surface-1/50 py-12 text-center">
-            <p className="font-semibold">No companies match this search</p>
-            <p className="mt-1 text-sm text-muted-foreground">Try a different name, city or website.</p>
+            <p className="font-semibold">No companies match these filters</p>
+            <p className="mt-1 text-sm text-muted-foreground">Try adjusting the filters above.</p>
           </div>
         ) : (
           <>
+            {showSelectAllBanner && (
+              <div className="flex items-center justify-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 text-sm">
+                <span>
+                  All <strong>{rows.length}</strong> companies on this page are selected.
+                </span>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 font-semibold"
+                  onClick={selectAllMatching}
+                  disabled={selectingAll}
+                >
+                  {selectingAll ? (
+                    <><Loader2 className="size-3 animate-spin" /> Selecting…</>
+                  ) : (
+                    <>Select all {totalElements.toLocaleString()} companies matching this filter</>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {allFilterSelected && (
+              <div className="flex items-center justify-center gap-2 rounded-lg border border-accent-emerald/20 bg-accent-emerald/5 px-4 py-2.5 text-sm">
+                <span>
+                  All <strong>{selected.size.toLocaleString()}</strong> companies matching this filter are selected.
+                </span>
+                <Button variant="link" size="sm" className="h-auto p-0 font-semibold" onClick={clearSelection}>
+                  Clear selection
+                </Button>
+              </div>
+            )}
+
             <div className="overflow-x-auto rounded-xl border border-border shadow-card">
               <table className="w-full text-sm">
                 <caption className="sr-only">Companies available for enrichment</caption>
@@ -235,7 +262,7 @@ export function BatchEnrichPanel({ canRun }: Props) {
                   <tr className="border-b border-border bg-surface-1">
                     <th scope="col" className="w-10 px-3 py-2.5 text-left">
                       <Checkbox
-                        checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                        checked={allOnPageSelected ? true : someOnPageSelected ? 'indeterminate' : false}
                         onCheckedChange={(checked) => toggleCurrentPage(checked === true)}
                         disabled={!canRun || running || rows.length === 0}
                         aria-label="Select all companies on this page"
@@ -297,10 +324,10 @@ export function BatchEnrichPanel({ canRun }: Props) {
               <p aria-live="polite" className="text-sm font-semibold">
                 {selected.size === 0
                   ? 'No companies selected'
-                  : `${selected.size} ${selected.size === 1 ? 'company' : 'companies'} selected`}
+                  : `${selected.size.toLocaleString()} ${selected.size === 1 ? 'company' : 'companies'} selected`}
               </p>
               {selected.size > 0 && !running && (
-                <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+                <Button variant="ghost" size="sm" onClick={clearSelection}>
                   Clear selection
                 </Button>
               )}
@@ -308,10 +335,10 @@ export function BatchEnrichPanel({ canRun }: Props) {
 
             <Pagination
               page={companies.data?.page ?? 0}
-              totalPages={companies.data?.total_pages ?? 1}
-              totalElements={companies.data?.total_elements}
+              totalPages={totalPages}
+              totalElements={totalElements}
               itemLabel="companies"
-              onPageChange={setPage}
+              onPageChange={(p) => setFilters((f) => ({ ...f, page: p }))}
             />
 
             {hasRunResults && (
@@ -346,7 +373,7 @@ export function BatchEnrichPanel({ canRun }: Props) {
           <DialogHeader>
             <DialogTitle>Run enrichment?</DialogTitle>
             <DialogDescription>
-              {selected.size} {selected.size === 1 ? 'company' : 'companies'} will be enriched via{' '}
+              {selected.size.toLocaleString()} {selected.size === 1 ? 'company' : 'companies'} will be enriched via{' '}
               {[...providers].join(', ')}.
             </DialogDescription>
           </DialogHeader>
